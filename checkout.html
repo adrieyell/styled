@@ -1,0 +1,263 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Checkout - Styled</title>
+    <link
+      href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300;1,400&family=Jost:wght@300;400;500&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="css/shared.css" />
+    <link rel="stylesheet" href="css/checkout.css" />
+  </head>
+  <body>
+    <div class="announcement-bar">
+      <span></span>
+      <div class="ann-center">
+        <img
+          src="assets/images/shipping.png"
+          alt=""
+          class="ann-truck-icon"
+        />FREE SHIPPING ON ORDERS OVER ₱1000
+      </div>
+      <div class="ann-right">
+        <a href="#">Help</a><span>|</span><a href="#">Track Order</a>
+      </div>
+    </div>
+    <nav>
+      <a href="index.html" class="nav-logo"
+        ><img src="assets/images/logo_styled.png" alt="Styled"
+      /></a>
+      <ul class="nav-links">
+        <li><a href="index.html">Home</a></li>
+        <li><a href="#">Shop</a></li>
+        <li><a href="about.html">About Us</a></li>
+        <li><a href="contact.html">Contact</a></li>
+      </ul>
+      <div class="nav-icons">
+        <div class="search-wrapper" style="position: relative">
+          <button title="Search" id="search-btn">
+            <svg
+              class="nav-icon-img"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="1.7"
+            >
+              <circle cx="11" cy="11" r="7" />
+              <line x1="16.5" y1="16.5" x2="22" y2="22" />
+            </svg>
+          </button>
+          <div class="search-dropdown" id="search-dropdown">
+            <input
+              type="text"
+              id="search-input"
+              placeholder="Search products or categories..."
+              autocomplete="off"
+            />
+            <div class="search-results" id="search-results"></div>
+          </div>
+        </div>
+        <button title="Account">
+          <svg
+            class="nav-icon-img"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="1.7"
+          >
+            <circle cx="12" cy="8" r="4" />
+            <path d="M4 20c0-4 3.6-7 8-7s8 3 8 7" />
+          </svg>
+        </button>
+        <button title="Wishlist">
+          <svg
+            class="nav-icon-img"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="1.7"
+          >
+            <path
+              d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.6l-1-1a5.5 5.5 0 0 0-7.8 7.8l1 1L12 21l7.8-7.8 1-1a5.5 5.5 0 0 0 0-7.6z"
+            />
+          </svg>
+        </button>
+        <button title="Cart" style="position: relative" id="cart-btn">
+          <svg
+            class="nav-icon-img"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="1.7"
+          >
+            <path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z" />
+            <line x1="3" y1="6" x2="21" y2="6" />
+            <path d="M16 10a4 4 0 0 1-8 0" /></svg
+          ><span class="cart-badge">0</span>
+        </button>
+      </div>
+    </nav>
+    <div class="checkout-wrapper">
+      <div class="checkout-left">
+        <p class="checkout-eyebrow">Review Your Order</p>
+        <h1 class="checkout-title">Your <em>Cart</em></h1>
+        <div class="style-tip" id="style-tip-box">
+          <img
+            src="assets/images/logo_styled.png"
+            alt="Style tip"
+            class="style-tip-img"
+            id="style-tip-img"
+          />
+          <p class="style-tip-label">Styled Tip</p>
+          <p class="style-tip-text" id="style-tip-text">Loading your cart...</p>
+          <div class="style-tip-clearfix"></div>
+        </div>
+        <div class="order-table-wrap">
+          <table class="order-table">
+            <thead>
+              <tr>
+                <th style="width: 45%">Item</th>
+                <th>Qty</th>
+                <th>Unit Price</th>
+                <th>Total</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody id="cart-table-body"></tbody>
+          </table>
+        </div>
+        <div class="cart-empty" id="cart-empty" style="display: none">
+          <p>Your cart is empty.</p>
+          <a href="index.html" class="btn-primary">Continue Shopping</a>
+        </div>
+        <div class="order-totals" id="order-totals">
+          <div class="total-row">
+            <span>Subtotal</span><span id="subtotal-val">₱0.00</span>
+          </div>
+          <div class="total-row">
+            <span>Shipping</span><span id="shipping-val">—</span>
+          </div>
+          <div class="total-row grand">
+            <span>Total</span><span id="grand-total-val">₱0.00</span>
+          </div>
+        </div>
+        <div style="margin-top: 32px">
+          <a
+            href="index.html"
+            class="btn-outline"
+            style="font-size: 10px; padding: 12px 24px"
+            >← Continue Shopping</a
+          >
+        </div>
+      </div>
+      <div class="checkout-right">
+        <div class="checkout-form">
+          <p class="form-section-title">Contact Information</p>
+          <div class="form-field">
+            <input type="text" id="co-name" placeholder="Full Name" />
+          </div>
+          <div class="form-row">
+            <div class="form-field">
+              <input type="email" id="co-email" placeholder="Email Address" />
+            </div>
+            <div class="form-field">
+              <input type="tel" id="co-phone" placeholder="Phone Number" />
+            </div>
+          </div>
+          <p class="form-section-title">Shipping Address</p>
+          <div class="form-field">
+            <input type="text" id="co-address" placeholder="Street Address" />
+          </div>
+          <div class="form-row">
+            <div class="form-field">
+              <input type="text" id="co-city" placeholder="City" />
+            </div>
+            <div class="form-field">
+              <input type="text" id="co-zip" placeholder="ZIP Code" />
+            </div>
+          </div>
+          <div class="form-field">
+            <input
+              type="text"
+              id="co-province"
+              placeholder="Province / Region"
+            />
+          </div>
+          <p class="form-section-title">Payment Details</p>
+          <div class="form-field">
+            <input
+              type="text"
+              id="co-card"
+              placeholder="Card Number"
+              maxlength="19"
+            />
+          </div>
+          <div class="form-row">
+            <div class="form-field">
+              <input
+                type="text"
+                id="co-expiry"
+                placeholder="MM / YY"
+                maxlength="7"
+              />
+            </div>
+            <div class="form-field">
+              <input type="text" id="co-cvv" placeholder="CVV" maxlength="3" />
+            </div>
+          </div>
+          <div class="form-field">
+            <input type="text" id="co-cardholder" placeholder="Name on Card" />
+          </div>
+          <p class="form-section-title">Promo Code</p>
+          <div class="promo-row">
+            <input
+              type="text"
+              id="co-promo"
+              placeholder="Enter promo code"
+            /><button class="promo-btn" id="apply-promo-btn">Apply</button>
+          </div>
+          <button class="btn-place-order" id="place-order-btn">
+            Place Order
+          </button>
+          <p class="secure-note">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="#7a6a5a">
+              <path
+                d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4z"
+              /></svg
+            >Secured by SSL encryption
+          </p>
+        </div>
+      </div>
+    </div>
+    <div class="success-overlay" id="success-overlay">
+      <div class="success-card">
+        <div class="success-icon">
+          <svg
+            width="24"
+            height="24"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="#2c1f14"
+            stroke-width="2"
+          >
+            <polyline points="20 6 9 17 4 12" />
+          </svg>
+        </div>
+        <h2 class="success-title">Order <em>Placed!</em></h2>
+        <p class="success-sub">
+          Thank you for shopping with Styled.<br />You'll receive a confirmation
+          email shortly.
+        </p>
+        <p class="success-order-num" id="success-order-num">
+          Order #STY-000000
+        </p>
+        <a href="index.html" class="btn-primary">Back to Home</a>
+      </div>
+    </div>
+    <button class="back-to-top" id="back-to-top" title="Back to top">↑</button>
+    <script src="js/main.js"></script>
+    <script src="js/checkout.js"></script>
+  </body>
+</html>

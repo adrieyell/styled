@@ -1,0 +1,306 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Contact - Styled</title>
+    <link
+      href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300;1,400&family=Jost:wght@300;400;500&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="css/shared.css" />
+    <link rel="stylesheet" href="css/contact.css" />
+  </head>
+  <body>
+    <div class="announcement-bar">
+      <span></span>
+      <div class="ann-center">
+        <img
+          src="assets/images/shipping.png"
+          alt=""
+          class="ann-truck-icon"
+        />FREE SHIPPING ON ORDERS OVER ₱1000
+      </div>
+      <div class="ann-right">
+        <a href="#">Help</a><span>|</span><a href="#">Track Order</a>
+      </div>
+    </div>
+    <nav>
+      <a href="index.html" class="nav-logo"
+        ><img src="assets/images/logo_styled.png" alt="Styled"
+      /></a>
+      <ul class="nav-links">
+        <li><a href="index.html">Home</a></li>
+        <li><a href="#">Shop</a></li>
+        <li><a href="about.html">About Us</a></li>
+        <li><a href="contact.html" class="active">Contact</a></li>
+      </ul>
+      <div class="nav-icons">
+        <div class="search-wrapper" style="position: relative">
+          <button title="Search" id="search-btn">
+            <svg
+              class="nav-icon-img"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="1.7"
+            >
+              <circle cx="11" cy="11" r="7" />
+              <line x1="16.5" y1="16.5" x2="22" y2="22" />
+            </svg>
+          </button>
+          <div class="search-dropdown" id="search-dropdown">
+            <input
+              type="text"
+              id="search-input"
+              placeholder="Search products or categories..."
+              autocomplete="off"
+            />
+            <div class="search-results" id="search-results"></div>
+          </div>
+        </div>
+        <button title="Account">
+          <svg
+            class="nav-icon-img"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="1.7"
+          >
+            <circle cx="12" cy="8" r="4" />
+            <path d="M4 20c0-4 3.6-7 8-7s8 3 8 7" />
+          </svg>
+        </button>
+        <button title="Wishlist">
+          <svg
+            class="nav-icon-img"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="1.7"
+          >
+            <path
+              d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.6l-1-1a5.5 5.5 0 0 0-7.8 7.8l1 1L12 21l7.8-7.8 1-1a5.5 5.5 0 0 0 0-7.6z"
+            />
+          </svg>
+        </button>
+        <button title="Cart" style="position: relative" id="cart-btn">
+          <svg
+            class="nav-icon-img"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="1.7"
+          >
+            <path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z" />
+            <line x1="3" y1="6" x2="21" y2="6" />
+            <path d="M16 10a4 4 0 0 1-8 0" /></svg
+          ><span class="cart-badge">0</span>
+        </button>
+      </div>
+    </nav>
+    <section class="contact-section">
+      <div class="contact-left">
+        <p class="contact-eyebrow">Get in Touch</p>
+        <h1 class="contact-title">We'd love to<br /><em>hear from you.</em></h1>
+        <p class="contact-desc">
+          For inquiries regarding orders, sizing, collaborations, or any general
+          concerns, please feel free to reach out.
+        </p>
+        <div class="contact-info-list">
+          <div class="contact-info-item">
+            <div class="contact-info-icon">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="#7a6a5a">
+                <path
+                  d="M20 4H4a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2zm0 2-8 5-8-5h16zm0 12H4V8l8 5 8-5v10z"
+                />
+              </svg>
+            </div>
+            <div>
+              <p class="contact-info-label">Customer Support</p>
+              <p class="contact-info-val">
+                support@styled.com<br />Response Time: 1–2 business days
+              </p>
+            </div>
+          </div>
+          <div class="contact-info-item">
+            <div class="contact-info-icon">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="#7a6a5a">
+                <path
+                  d="M19 3h-4.18C14.4 1.84 13.3 1 12 1s-2.4.84-2.82 2H5a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V5a2 2 0 0 0-2-2zm-7 0a1 1 0 1 1 0 2 1 1 0 0 1 0-2zm7 18H5V5h2v2h10V5h2v16z"
+                />
+              </svg>
+            </div>
+            <div>
+              <p class="contact-info-label">Business Inquiries</p>
+              <p class="contact-info-val">hello@styled.com</p>
+            </div>
+          </div>
+          <div class="contact-info-item">
+            <div class="contact-info-icon">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="#7a6a5a">
+                <path
+                  d="M12 12a5 5 0 1 0 0-10 5 5 0 0 0 0 10zm0 2c-5.33 0-8 2.67-8 4v2h16v-2c0-1.33-2.67-4-8-4z"
+                />
+              </svg>
+            </div>
+            <div>
+              <p class="contact-info-label">Follow Us</p>
+              <p class="contact-info-val">
+                Instagram: @styled<br />TikTok: @styled
+              </p>
+            </div>
+          </div>
+        </div>
+        <div class="contact-map">
+          <p
+            class="contact-info-label"
+            style="margin-bottom: 12px; margin-top: 36px"
+          >
+            Our Location
+          </p>
+          <iframe
+            src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d4368.659786481131!2d120.9928584382662!3d14.604207372875548!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x3397c9fc11a6ceb3%3A0x9d4220dade0140ab!2sNational%20University-Manila!5e1!3m2!1sen!2sph!4v1777561219688!5m2!1sen!2sph"
+            width="100%"
+            height="220"
+            style="border: 0; display: block"
+            allowfullscreen
+            loading="lazy"
+          ></iframe>
+        </div>
+      </div>
+      <div class="contact-right">
+        <div class="success-msg" id="success-msg">
+          ✓ Your message has been sent! We'll get back to you within 1-2
+          business days.
+        </div>
+        <div class="form-row">
+          <div class="form-field">
+            <input type="text" id="f-name" placeholder="Name" />
+          </div>
+          <div class="form-field">
+            <input type="email" id="f-email" placeholder="Email" />
+          </div>
+        </div>
+        <div class="form-field">
+          <input type="text" id="f-subject" placeholder="Subject" />
+        </div>
+        <div class="form-field">
+          <textarea id="f-message" placeholder="Message"></textarea>
+        </div>
+        <button class="btn-send" id="send-message-btn">Send Message</button>
+        <div class="contact-hours">
+          <div class="hours-icon">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="#7a6a5a">
+              <path
+                d="M12 2a10 10 0 1 0 0 20A10 10 0 0 0 12 2zm0 18a8 8 0 1 1 0-16 8 8 0 0 1 0 16zm.5-13H11v6l5.25 3.15.75-1.23-4.5-2.67V7z"
+              />
+            </svg>
+          </div>
+          <div>
+            <p class="hours-label">Customer Care Hours</p>
+            <p class="hours-val">Monday - Friday, 9:00 AM - 6:00 PM</p>
+          </div>
+        </div>
+      </div>
+    </section>
+    <div class="trust-bar">
+      <div class="trust-item">
+        <img src="assets/images/shipping.png" alt="" class="trust-icon-img" />
+        <div>
+          <p class="trust-label">Free Shipping</p>
+          <p class="trust-sub">On orders over ₱1000</p>
+        </div>
+      </div>
+      <div class="trust-item trust-divider">
+        <img src="assets/images/returns.png" alt="" class="trust-icon-img" />
+        <div>
+          <p class="trust-label">Easy Returns</p>
+          <p class="trust-sub">30-day return policy</p>
+        </div>
+      </div>
+      <div class="trust-item trust-divider">
+        <img src="assets/images/quality.png" alt="" class="trust-icon-img" />
+        <div>
+          <p class="trust-label">Quality Guarantee</p>
+          <p class="trust-sub">Made from premium materials</p>
+        </div>
+      </div>
+      <div class="trust-item trust-divider">
+        <img src="assets/images/secure.png" alt="" class="trust-icon-img" />
+        <div>
+          <p class="trust-label">Secure Payment</p>
+          <p class="trust-sub">100% secure checkout</p>
+        </div>
+      </div>
+    </div>
+    <footer>
+      <div class="footer-top">
+        <div class="footer-logo">
+          <img src="assets/images/logo_withtext.png" alt="Styled" />
+          <p class="footer-tagline">
+            Minimal. Modern. Timeless.<br />Clothing that empowers you<br />to
+            be your best self.
+          </p>
+          <div class="footer-socials">
+            <a href="#"
+              ><img
+                src="assets/images/instagram.png"
+                alt="Instagram"
+                class="social-icon-img" /></a
+            ><a href="#"
+              ><img
+                src="assets/images/facebook.png"
+                alt="Facebook"
+                class="social-icon-img" /></a
+            ><a href="#"
+              ><img
+                src="assets/images/pinterest.png"
+                alt="Pinterest"
+                class="social-icon-img" /></a
+            ><a href="#"
+              ><img
+                src="assets/images/tiktok.png"
+                alt="TikTok"
+                class="social-icon-img"
+            /></a>
+          </div>
+        </div>
+        <div class="footer-col">
+          <h4>Shop</h4>
+          <ul>
+            <li><a href="#">All Products</a></li>
+            <li><a href="#">New In</a></li>
+            <li><a href="#">Best Sellers</a></li>
+            <li><a href="#">Sale</a></li>
+          </ul>
+        </div>
+        <div class="footer-col">
+          <h4>Customer Care</h4>
+          <ul>
+            <li><a href="#">FAQs</a></li>
+            <li><a href="#">Shipping &amp; Delivery</a></li>
+            <li><a href="#">Returns &amp; Exchanges</a></li>
+            <li><a href="#">Track Order</a></li>
+          </ul>
+        </div>
+        <div class="footer-col">
+          <h4>About</h4>
+          <ul>
+            <li><a href="about.html">Our Story</a></li>
+            <li><a href="contact.html">Contact Us</a></li>
+          </ul>
+        </div>
+      </div>
+      <div class="footer-bottom">
+        <p class="footer-copy">&copy; 2026 Styled. All Rights Reserved.</p>
+        <div class="footer-legal">
+          <a href="#">Privacy Policy</a><a href="#">Terms &amp; Conditions</a>
+        </div>
+      </div>
+    </footer>
+    <button class="back-to-top" id="back-to-top" title="Back to top">↑</button>
+    <script src="js/main.js"></script>
+    <script src="js/contact.js"></script>
+  </body>
+</html>

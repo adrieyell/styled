@@ -1,0 +1,464 @@
+.checkout-wrapper {
+  display: grid;
+  grid-template-columns: 1fr 420px;
+  gap: 0;
+  min-height: calc(100vh - 108px);
+  background: var(--warm-white);
+}
+
+/* ---- LEFT: ORDER SUMMARY ---- */
+.checkout-left {
+  padding: 60px 64px;
+  border-right: 1px solid var(--border);
+}
+
+.checkout-eyebrow {
+  font-size: 10px;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  margin-bottom: 12px;
+}
+
+.checkout-title {
+  font-family: var(--serif);
+  font-size: clamp(36px, 4vw, 54px);
+  font-weight: 300;
+  line-height: 1.05;
+  margin-bottom: 40px;
+  color: var(--text-main);
+}
+
+.checkout-title em {
+  font-style: italic;
+}
+
+.style-tip {
+  overflow: hidden;
+  background: var(--cream);
+  padding: 24px;
+  margin-bottom: 40px;
+  border: 1px solid var(--border);
+}
+
+.style-tip-img {
+  float: left;
+  width: 90px;
+  height: 90px;
+  object-fit: cover;
+  object-position: top center;
+  margin-right: 20px;
+  margin-bottom: 8px;
+}
+
+.style-tip-label {
+  font-size: 9px;
+  letter-spacing: 2.5px;
+  text-transform: uppercase;
+  color: var(--taupe);
+  margin-bottom: 6px;
+}
+
+.style-tip-text {
+  font-size: 12px;
+  color: var(--text-muted);
+  line-height: 1.7;
+}
+
+.style-tip-clearfix {
+  clear: both;
+}
+
+/* ---- ORDER TABLE ---- */
+.order-table-wrap {
+  overflow-x: auto; /* CSS OVERFLOW: table scrolls horizontally on narrow screens instead of breaking layout */
+  -webkit-overflow-scrolling: touch;
+}
+
+.order-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-family: var(--sans);
+  font-size: 13px;
+}
+
+.order-table thead th {
+  font-size: 9px;
+  letter-spacing: 2.5px;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  font-weight: 500;
+  text-align: left;
+  padding: 0 16px 14px 0;
+  border-bottom: 1px solid var(--border);
+}
+
+.order-table thead th:last-child {
+  text-align: right;
+  padding-right: 0;
+}
+
+.order-table tbody tr {
+  border-bottom: 1px solid var(--border);
+}
+
+.order-table tbody td {
+  padding: 16px 16px 16px 0;
+  vertical-align: middle;
+  color: var(--text-main);
+}
+
+.order-table tbody td:last-child {
+  text-align: right;
+  padding-right: 0;
+}
+
+.item-cell {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.item-thumb {
+  width: 56px;
+  height: 64px;
+  object-fit: cover;
+  object-position: top center;
+  background: var(--cream);
+  flex-shrink: 0;
+}
+
+.item-thumb-placeholder {
+  width: 56px;
+  height: 64px;
+  background: var(--cream);
+  border: 1px solid var(--border);
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.item-name {
+  font-size: 13px;
+  color: var(--text-main);
+  margin-bottom: 3px;
+}
+
+.item-color-swatch {
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  border: 1px solid var(--border);
+  vertical-align: middle;
+  margin-right: 4px;
+}
+
+.item-meta {
+  font-size: 11px;
+  color: var(--text-muted);
+}
+
+.qty-control {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.qty-btn {
+  width: 24px;
+  height: 24px;
+  border: 1px solid var(--border);
+  background: transparent;
+  cursor: pointer;
+  font-family: var(--sans);
+  font-size: 14px;
+  color: var(--text-main);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s;
+  padding: 0;
+}
+
+.qty-btn:hover {
+  background: var(--brown-dark);
+  color: white;
+  border-color: var(--brown-dark);
+}
+
+.qty-num {
+  font-size: 13px;
+  min-width: 16px;
+  text-align: center;
+}
+
+.remove-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--text-muted);
+  font-size: 11px;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  padding: 0;
+  transition: color 0.2s;
+  font-family: var(--sans);
+}
+
+.remove-btn:hover {
+  color: #c0392b;
+}
+
+/* empty state */
+.cart-empty {
+  text-align: center;
+  padding: 60px 0;
+  color: var(--text-muted);
+}
+
+.cart-empty p {
+  font-size: 13px;
+  margin-bottom: 24px;
+}
+
+/* totals below table */
+.order-totals {
+  margin-top: 24px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 10px;
+}
+
+.total-row {
+  display: flex;
+  gap: 48px;
+  font-size: 13px;
+  color: var(--text-muted);
+}
+
+.total-row span:last-child {
+  min-width: 80px;
+  text-align: right;
+  color: var(--text-main);
+}
+
+.total-row.grand {
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--text-main);
+  padding-top: 14px;
+  border-top: 1px solid var(--border);
+}
+
+.total-row.grand span:last-child {
+  font-weight: 500;
+}
+
+/* ---- RIGHT: PAYMENT FORM ---- */
+.checkout-right {
+  padding: 60px 48px;
+  background: var(--cream);
+  border-left: 1px solid var(--border);
+}
+
+.form-section-title {
+  font-size: 10px;
+  letter-spacing: 2.5px;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  margin-bottom: 20px;
+  margin-top: 32px;
+}
+
+.form-section-title:first-child {
+  margin-top: 0;
+}
+
+.checkout-form .form-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.checkout-form .form-field {
+  margin-bottom: 12px;
+}
+
+.checkout-form input,
+.checkout-form select {
+  width: 100%;
+  padding: 13px 16px;
+  border: 1px solid var(--border);
+  background: var(--warm-white);
+  font-family: var(--sans);
+  font-size: 13px;
+  color: var(--text-main);
+  outline: none;
+  transition: border-color 0.2s;
+  appearance: none;
+  border-radius: 0;
+}
+
+.checkout-form input:focus,
+.checkout-form select:focus {
+  border-color: var(--brown-mid);
+}
+
+.checkout-form input::placeholder {
+  color: var(--text-muted);
+}
+
+.promo-row {
+  display: flex;
+  gap: 0;
+  margin-bottom: 24px;
+}
+
+.promo-row input {
+  flex: 1;
+  padding: 13px 16px;
+  border: 1px solid var(--border);
+  background: var(--warm-white);
+  font-family: var(--sans);
+  font-size: 13px;
+  color: var(--text-main);
+  outline: none;
+  border-radius: 0;
+}
+
+.promo-row input:focus {
+  border-color: var(--brown-mid);
+}
+
+.promo-row input::placeholder {
+  color: var(--text-muted);
+}
+
+.promo-btn {
+  background: var(--brown-dark);
+  color: white;
+  border: none;
+  padding: 13px 20px;
+  font-family: var(--sans);
+  font-size: 11px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: background 0.2s;
+  white-space: nowrap;
+}
+
+.promo-btn:hover {
+  background: var(--brown-mid);
+}
+
+.btn-place-order {
+  width: 100%;
+  background: var(--brown-dark);
+  color: #f5ede4;
+  border: none;
+  padding: 18px;
+  font-family: var(--sans);
+  font-size: 11px;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition:
+    background 0.2s,
+    opacity 0.2s; /* CSS OPACITY: smooth fade when disabled */
+  margin-bottom: 16px;
+  margin-top: 8px;
+  opacity: 1;
+}
+
+.btn-place-order:hover {
+  background: var(--brown-mid);
+}
+
+/* CSS OPACITY: visually signals the button is inactive when cart is empty */
+.btn-place-order.disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.secure-note {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  font-size: 11px;
+  color: var(--text-muted);
+  letter-spacing: 0.5px;
+}
+
+/* ---- ORDER SUCCESS OVERLAY ---- */
+.success-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(
+    44,
+    31,
+    20,
+    0.55
+  ); /* CSS OPACITY: dark scrim behind the card */
+  z-index: var(
+    --z-overlay
+  ); /* CSS Z-INDEX: overlay sits on top of everything including nav */
+  align-items: center;
+  justify-content: center;
+}
+
+.success-overlay.show {
+  display: flex;
+}
+
+.success-card {
+  background: var(--warm-white);
+  padding: 64px 56px;
+  text-align: center;
+  max-width: 440px;
+  width: 90%;
+}
+
+.success-icon {
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  background: var(--cream);
+  border: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 24px;
+}
+
+.success-title {
+  font-family: var(--serif);
+  font-size: 36px;
+  font-weight: 300;
+  margin-bottom: 12px;
+}
+
+.success-title em {
+  font-style: italic;
+}
+
+.success-sub {
+  font-size: 13px;
+  color: var(--text-muted);
+  line-height: 1.8;
+  margin-bottom: 32px;
+}
+
+.success-order-num {
+  font-size: 11px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  margin-bottom: 32px;
+}

@@ -1,0 +1,488 @@
+body {
+  overflow-x: hidden;
+}
+
+/* ---- HERO SLIDER ---- */
+.hero {
+  position: relative;
+  height: calc(100vh - 108px);
+  min-height: 560px;
+  max-height: 800px;
+  overflow: hidden; /* CSS OVERFLOW: clips slide images that extend beyond hero bounds */
+  background: var(--cream);
+  z-index: var(--z-base); /* CSS Z-INDEX: hero sits below sticky nav */
+}
+.slide {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  opacity: 0;
+  transition: opacity 0.8s ease;
+  pointer-events: none;
+}
+.slide.active {
+  opacity: 1;
+  pointer-events: all;
+}
+.slide-img {
+  position: absolute;
+  right: 0;
+  top: 0;
+  height: 100%;
+  width: 55%;
+  object-fit: cover;
+  object-position: top center;
+}
+.slide-content {
+  position: relative;
+  z-index: var(
+    --z-hero
+  ); /* CSS Z-INDEX: text content floats above slide image */
+  padding: 0 80px;
+  max-width: 560px;
+}
+.slide-label {
+  font-size: 11px;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  margin-bottom: 20px;
+}
+.slide-title {
+  font-family: var(--serif);
+  font-size: clamp(52px, 6vw, 80px);
+  font-weight: 300;
+  line-height: 1.05;
+  color: var(--text-main);
+  margin-bottom: 20px;
+}
+.slide-title em {
+  font-style: italic;
+}
+.slide-sub {
+  font-size: 13px;
+  color: var(--text-muted);
+  line-height: 1.8;
+  margin-bottom: 40px;
+  letter-spacing: 0.5px;
+}
+.hero-btns {
+  display: flex;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+.slide-indicators {
+  position: absolute;
+  bottom: 40px;
+  left: 80px;
+  display: flex;
+  gap: 28px;
+  z-index: var(--z-hero); /* CSS Z-INDEX: dots sit above the slide image */
+}
+.slide-dot {
+  font-size: 11px;
+  letter-spacing: 1px;
+  color: var(--text-muted);
+  cursor: pointer;
+  padding-bottom: 4px;
+  border-bottom: 1px solid transparent;
+  background: none;
+  border-top: none;
+  border-left: none;
+  border-right: none;
+  font-family: var(--sans);
+  transition: all 0.2s;
+}
+.slide-dot.active {
+  color: var(--text-main);
+  border-bottom-color: var(--text-main);
+}
+
+/* ---- CATEGORIES ---- */
+.section {
+  padding: 80px;
+}
+.section-label {
+  font-size: 10px;
+  font-weight: 500;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  color: var(--taupe);
+  text-align: center;
+  margin-bottom: 8px;
+}
+.section-title {
+  font-family: var(--sans);
+  font-size: 32px;
+  font-weight: 400;
+  text-align: center;
+  margin-bottom: 48px;
+}
+.categories {
+  display: flex;
+  justify-content: center;
+  gap: 32px;
+  flex-wrap: wrap;
+}
+.category-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 14px;
+  cursor: pointer;
+  transition: transform 0.2s;
+}
+.category-item:hover {
+  transform: translateY(-4px);
+}
+.category-item.selected .cat-circle {
+  border-color: var(--brown-dark);
+}
+.cat-circle {
+  width: 120px;
+  height: 120px;
+  border-radius: 50%;
+  overflow: hidden;
+  border: 2px solid transparent;
+  transition: border-color 0.2s;
+}
+.cat-circle img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.cat-name {
+  font-size: 10px;
+  letter-spacing: 2.5px;
+  text-transform: uppercase;
+  color: var(--text-main);
+}
+
+/* PRODUCTS GRID */
+.products-section {
+  background: var(--warm-white);
+  padding: 0 80px 60px;
+  min-height: 420px; /* prevents section from collapsing when no products match */
+  position: relative;
+  z-index: var(--z-base);
+}
+.products-grid {
+  min-height: 260px; /* keeps dropdown from being clipped under the iframe below */
+}
+.products-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 20px;
+}
+.products-cat-title {
+  font-family: var(--sans);
+  font-size: 13px;
+  font-weight: 500;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+}
+.view-all-link {
+  font-size: 11px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  text-decoration: none;
+  border-bottom: 1px solid var(--border);
+  padding-bottom: 2px;
+  transition: color 0.2s;
+}
+.view-all-link:hover {
+  color: var(--text-main);
+}
+.products-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 16px;
+}
+.product-card {
+  cursor: pointer;
+}
+.product-img-wrap {
+  position: relative;
+  overflow: hidden; /* CSS OVERFLOW: hides the parts of the image that go outside on zoom */
+  background: var(--cream);
+  height: 280px;
+  margin-bottom: 10px;
+}
+
+.product-img-wrap img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: top center;
+  transition:
+    transform 0.4s ease,
+    opacity 0.3s ease; /* CSS OPACITY: smooth fade paired with zoom */
+  opacity: 0.93; /* CSS OPACITY: images start at 93% so hover is noticeable */
+}
+.product-card:hover .product-img-wrap img {
+  transform: scale(1.04);
+  opacity: 1; /* CSS OPACITY: full brightness on hover */
+}
+.wish-btn {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  z-index: var(
+    --z-base
+  ); /* CSS Z-INDEX: wishlist heart sits above the product image */
+  padding: 3px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* CSS DROPDOWN */
+.price-filter {
+  position: relative; /* CSS Z-INDEX: establishes stacking context for the panel */
+  display: inline-block;
+}
+
+.price-filter-btn {
+  background: transparent;
+  border: 1px solid var(--border);
+  padding: 8px 16px;
+  font-family: var(--sans);
+  font-size: 10px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  transition:
+    border-color 0.2s,
+    color 0.2s;
+}
+
+.price-filter-btn:hover {
+  border-color: var(--brown-mid);
+  color: var(--text-main);
+}
+
+.price-filter-btn .pf-arrow {
+  display: inline-block;
+  transition: transform 0.25s ease;
+  font-size: 9px;
+}
+
+.price-filter.open .price-filter-btn .pf-arrow {
+  transform: rotate(180deg); /* CSS DROPDOWN: arrow flips when panel is open */
+}
+
+.price-dropdown {
+  /* CSS DROPDOWN: hidden by default */
+  display: none;
+  position: absolute; /* CSS Z-INDEX: positioned out of normal flow */
+  top: calc(100% + 6px);
+  right: 0;
+  background: var(--warm-white);
+  border: 1px solid var(--border);
+  padding: 20px 20px 16px;
+  min-width: 220px;
+  z-index: var(
+    --z-dropdown
+  ); /* CSS Z-INDEX: panel floats above product grid cards */
+  box-shadow: 0 8px 24px rgba(44, 31, 20, 0.1);
+
+  /* CSS OVERFLOW: if panel is taller than viewport, scroll rather than clip */
+  max-height: 360px;
+  overflow-y: auto;
+}
+
+.price-filter.open .price-dropdown {
+  display: block; /* CSS DROPDOWN: revealed when parent has .open class */
+}
+
+.price-dropdown-label {
+  font-size: 9px;
+  letter-spacing: 2.5px;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  margin-bottom: 14px;
+}
+
+.price-range-options {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.price-range-option {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  cursor: pointer;
+  font-size: 13px;
+  color: var(--text-muted);
+  transition: color 0.2s;
+  padding: 2px 0;
+}
+
+.price-range-option:hover {
+  color: var(--text-main);
+}
+
+.price-range-option input[type="radio"] {
+  accent-color: var(--brown-dark);
+  width: 14px;
+  height: 14px;
+  cursor: pointer;
+}
+
+.price-dropdown-apply {
+  margin-top: 16px;
+  width: 100%;
+  background: var(--brown-dark);
+  color: #f5ede4;
+  border: none;
+  padding: 10px;
+  font-family: var(--sans);
+  font-size: 10px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.price-dropdown-apply:hover {
+  background: var(--brown-mid);
+}
+.wish-btn .wish-icon {
+  width: 16px;
+  height: 16px;
+  object-fit: contain;
+  filter: brightness(0) invert(0.5);
+  transition: filter 0.2s;
+}
+.wish-btn:hover .wish-icon,
+.wish-btn.active .wish-icon {
+  filter: brightness(0) saturate(100%) invert(20%) sepia(80%) saturate(700%)
+    hue-rotate(330deg);
+}
+.product-name {
+  font-size: 13px;
+  font-weight: 400;
+  color: var(--text-main);
+  margin-bottom: 3px;
+}
+.product-price {
+  font-size: 13px;
+  font-weight: 400;
+  color: var(--text-main);
+  margin-bottom: 8px;
+}
+.color-dots {
+  display: flex;
+  gap: 5px;
+  margin-bottom: 8px;
+}
+.color-dot {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  border: 1px solid var(--border);
+  cursor: pointer;
+}
+.color-dot.active {
+  border: 2px solid var(--text-main);
+}
+.btn-cart {
+  width: 100%;
+  background: transparent;
+  border: 1px solid var(--border);
+  padding: 9px 10px;
+  font-family: var(--sans);
+  font-size: 10px;
+  letter-spacing: 1.8px;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  color: var(--text-main);
+}
+.btn-cart .cart-btn-icon {
+  width: 12px;
+  height: 12px;
+  object-fit: contain;
+  filter: brightness(0);
+  transition: filter 0.2s;
+}
+.btn-cart:hover {
+  background: var(--brown-dark);
+  color: white;
+  border-color: var(--brown-dark);
+}
+.btn-cart:hover .cart-btn-icon {
+  filter: brightness(0) invert(1);
+}
+
+/* ---- ABOUT IFRAME SECTION ---- */
+.about-section {
+  background: var(--cream);
+  padding: 80px;
+}
+.about-iframe-wrap {
+  border: none;
+  width: 100%;
+  min-height: 320px;
+}
+
+.trust-bar {
+  background: var(--cream);
+}
+
+/* ---- FOOTER — index has 5-column grid with newsletter ---- */
+.footer-top {
+  grid-template-columns: 220px 1fr 1fr 1fr 260px;
+}
+.newsletter-text {
+  font-size: 12px;
+  color: var(--text-muted);
+  margin-bottom: 16px;
+  line-height: 1.7;
+}
+.newsletter-form {
+  display: flex;
+}
+.newsletter-form input {
+  flex: 1;
+  padding: 12px 16px;
+  border: 1px solid var(--border);
+  background: transparent;
+  font-family: var(--sans);
+  font-size: 12px;
+  outline: none;
+}
+.newsletter-form input:focus {
+  border-color: var(--brown-mid);
+}
+.newsletter-form button {
+  background: var(--brown-dark);
+  color: white;
+  border: none;
+  padding: 12px 16px;
+  cursor: pointer;
+  font-size: 14px;
+  transition: background 0.2s;
+}
+.newsletter-form button:hover {
+  background: var(--brown-mid);
+}
+.footer-bottom {
+  align-items: center;
+}

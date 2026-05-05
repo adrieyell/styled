@@ -1,0 +1,541 @@
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+:root {
+  --cream: #f5f0ea;
+  --warm-white: #faf8f5;
+  --taupe: #c9b99a;
+  --brown-dark: #2c1f14;
+  --brown-mid: #5c3d2e;
+  --brown-light: #8c6d57;
+  --text-main: #1e1510;
+  --text-muted: #7a6a5a;
+  --border: #ddd5c8;
+  --serif: "Cormorant Garamond", Georgia, serif;
+  --sans: "Jost", sans-serif;
+
+  /* ── Z-INDEX SCALE ──────────────────────────────────────────
+     Centralised so every layer is predictable and documented.
+     z-index: 1   → product cards / colour dots (minor stacking)
+     z-index: 10  → sticky nav
+     z-index: 50  → dropdowns / tooltips
+     z-index: 100 → hero slide content (above slide image)
+     z-index: 200 → modals / success overlays
+     z-index: 300 → announcement bar (sits above nav on scroll)
+  ──────────────────────────────────────────────────────────── */
+  --z-base: 1;
+  --z-nav: 10;
+  --z-dropdown: 50;
+  --z-hero: 100;
+  --z-overlay: 200;
+  --z-top: 300;
+}
+
+body {
+  font-family: var(--sans);
+  background: var(--warm-white);
+  color: var(--text-main);
+}
+
+/* ---- ANNOUNCEMENT BAR ---- */
+.announcement-bar {
+  background: var(--brown-dark);
+  color: #e8ddd0;
+  text-align: center;
+  padding: 10px 20px;
+  font-size: 12px;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  position: relative; /* CSS Z-INDEX: keeps bar above page content */
+  z-index: var(--z-top);
+}
+.announcement-bar .ann-center {
+  flex: 1;
+  text-align: center;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+.ann-truck-icon {
+  width: 16px;
+  height: 16px;
+  object-fit: contain;
+  filter: invert(1) brightness(2);
+  flex-shrink: 0;
+}
+.announcement-bar .ann-right {
+  font-size: 11px;
+  display: flex;
+  gap: 16px;
+}
+.announcement-bar a,
+.ann-right a {
+  color: #e8ddd0;
+  text-decoration: none;
+}
+.announcement-bar a:hover,
+.ann-right a:hover {
+  text-decoration: underline;
+}
+
+/* ---- NAVBAR ---- */
+nav {
+  background: rgba(
+    250,
+    248,
+    245,
+    0.92
+  ); /* CSS OPACITY: semi-transparent background */
+  backdrop-filter: blur(12px); /* frosted-glass effect behind nav */
+  -webkit-backdrop-filter: blur(12px);
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 48px;
+  height: 72px;
+  position: sticky;
+  top: 0;
+  z-index: var(
+    --z-nav
+  ); /* CSS Z-INDEX: nav stays above page content while scrolling */
+}
+.nav-logo {
+  display: flex;
+  align-items: center;
+  text-decoration: none;
+  color: var(--text-main);
+}
+.nav-logo img {
+  height: 60px;
+  width: auto;
+  display: block;
+}
+.nav-links {
+  display: flex;
+  gap: 36px;
+  list-style: none;
+}
+.nav-links a {
+  text-decoration: none;
+  color: var(--text-muted);
+  font-size: 12px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  padding-bottom: 4px;
+  transition: color 0.2s;
+  position: relative;
+}
+.nav-links a:hover,
+.nav-links a.active {
+  color: var(--text-main);
+}
+.nav-links a.active::after {
+  content: "";
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: var(--text-main);
+}
+.nav-icons {
+  display: flex;
+  gap: 20px;
+  align-items: center;
+}
+.nav-icons button {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 4px;
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+/* Outline sprite icons for nav */
+.nav-icon-img {
+  width: 20px;
+  height: 20px;
+  object-fit: contain;
+  display: block;
+  filter: brightness(0); /* renders black */
+  transition: opacity 0.2s;
+}
+.nav-icons button:hover .nav-icon-img {
+  opacity: 0.6;
+}
+.cart-badge {
+  position: absolute;
+  top: -2px;
+  right: -4px;
+  background: var(--brown-dark);
+  color: white;
+  font-size: 9px;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--sans);
+}
+
+/* ---- TRUST BAR ---- */
+.trust-bar {
+  background: var(--warm-white);
+  border-top: 1px solid var(--border);
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 38px 80px;
+  gap: 0;
+}
+.trust-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 16px;
+  padding: 0 48px;
+}
+.trust-icon-img {
+  width: 40px;
+  height: 40px;
+  object-fit: contain;
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+.trust-label {
+  font-size: 15px;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  font-weight: 500;
+  margin-bottom: 4px;
+}
+.trust-sub {
+  font-size: 13px;
+  color: var(--text-muted);
+}
+.trust-divider {
+  border-left: 1px solid var(--border);
+  padding-left: 32px;
+}
+
+/* ---- FOOTER ---- */
+footer {
+  background: var(--warm-white);
+  padding: 60px 80px 32px;
+  border-top: 1px solid var(--border);
+}
+.footer-top {
+  display: grid;
+  grid-template-columns: 220px 1fr 1fr 1fr;
+  gap: 48px;
+  margin-bottom: 48px;
+}
+.footer-logo img {
+  height: 80px;
+  width: auto;
+  display: block;
+  margin-bottom: 16px;
+}
+.footer-tagline {
+  font-size: 12px;
+  color: var(--text-muted);
+  line-height: 1.7;
+  margin-bottom: 20px;
+}
+.footer-socials {
+  display: flex;
+  gap: 14px;
+  align-items: center;
+}
+.footer-socials a {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-decoration: none;
+  opacity: 0.75; /* CSS OPACITY: icons start at 75% so hover feel is clear */
+  transition: opacity 0.2s;
+}
+.footer-socials a:hover {
+  opacity: 1; /* CSS OPACITY: fully visible on hover */
+}
+.social-icon-img {
+  width: 28px !important;
+  height: 28px !important;
+  object-fit: contain;
+  display: block;
+}
+.footer-col h4 {
+  font-size: 10px;
+  letter-spacing: 2.5px;
+  text-transform: uppercase;
+  margin-bottom: 20px;
+  color: var(--text-main);
+}
+.footer-col ul {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.footer-col ul li a {
+  text-decoration: none;
+  color: var(--text-muted);
+  font-size: 13px;
+  transition: color 0.2s;
+}
+.footer-col ul li a:hover {
+  color: var(--text-main);
+}
+.footer-bottom {
+  border-top: 1px solid var(--border);
+  padding-top: 24px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.footer-copy {
+  font-size: 12px;
+  color: var(--text-muted);
+}
+.footer-legal {
+  display: flex;
+  gap: 24px;
+}
+.footer-legal a {
+  font-size: 12px;
+  color: var(--text-muted);
+  text-decoration: none;
+}
+.footer-legal a:hover {
+  color: var(--text-main);
+}
+
+html {
+  scroll-behavior: smooth; /* CSS WEBSITE LAYOUT: smooth anchor scrolling site-wide */
+}
+
+/* Back to Top button — fixed position keeps it in the layout viewport corner */
+.back-to-top {
+  position: fixed; /* CSS WEBSITE LAYOUT: removed from normal flow, always visible in corner */
+  bottom: 32px;
+  right: 32px;
+  z-index: var(
+    --z-dropdown
+  ); /* CSS Z-INDEX: sits above content but below overlays */
+  background: var(--brown-dark);
+  color: #f5ede4;
+  border: none;
+  width: 44px;
+  height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  font-size: 18px;
+  opacity: 0; /* CSS OPACITY: invisible until user scrolls down */
+  pointer-events: none;
+  transition:
+    opacity 0.3s ease,
+    background 0.2s;
+  font-family: var(--sans);
+}
+.back-to-top.visible {
+  opacity: 0.85; /* CSS OPACITY: fades in when page is scrolled */
+  pointer-events: all;
+}
+.back-to-top:hover {
+  opacity: 1; /* CSS OPACITY: full opacity on hover */
+  background: var(--brown-mid);
+}
+
+/* ── CSS WEBSITE LAYOUT: Constrain ultra-wide screens ───────────────────── */
+.site-container {
+  max-width: 1600px;
+  margin: 0 auto;
+  overflow: hidden; /* CSS OVERFLOW: clip anything that pokes past max-width */
+}
+
+/* ── CSS WEBSITE LAYOUT: Section dividers with overflow clipping ─────────── */
+.section,
+.products-section,
+.about-section,
+.trust-bar,
+footer {
+  overflow: hidden; /* CSS OVERFLOW: each section is a self-contained scroll context */
+}
+
+/* ────────────────────────────────────────────────────────────────────────── */
+.btn-primary {
+  background: var(--brown-dark);
+  color: #f5ede4;
+  border: none;
+  padding: 14px 32px;
+  font-family: var(--sans);
+  font-size: 11px;
+  letter-spacing: 2.5px;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: background 0.2s;
+  text-decoration: none;
+  display: inline-block;
+}
+.btn-primary:hover {
+  background: var(--brown-mid);
+}
+.btn-outline {
+  background: transparent;
+  color: var(--text-main);
+  border: 1px solid var(--text-main);
+  padding: 14px 32px;
+  font-family: var(--sans);
+  font-size: 11px;
+  letter-spacing: 2.5px;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: all 0.2s;
+  text-decoration: none;
+  display: inline-block;
+}
+.btn-outline:hover {
+  background: var(--text-main);
+  color: white;
+}
+
+/* SEARCH DROPDOWN STYLES */
+.search-wrapper {
+  position: relative;
+}
+
+.search-dropdown {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  width: 320px;
+  background: var(--warm-white);
+  border: 1px solid var(--border);
+  box-shadow: 0 8px 24px rgba(44, 31, 20, 0.12);
+  opacity: 0;
+  visibility: hidden;
+  transform: translateY(-8px);
+  transition: all 0.2s ease;
+  z-index: 1000;
+}
+
+.search-dropdown.open {
+  opacity: 1;
+  visibility: visible;
+  transform: translateY(0);
+}
+
+#search-input {
+  width: 100%;
+  padding: 14px 16px;
+  border: none;
+  border-bottom: 1px solid var(--border);
+  font-family: var(--sans);
+  font-size: 12px;
+  letter-spacing: 0.5px;
+  background: var(--warm-white);
+  color: var(--text-main);
+  outline: none;
+  box-sizing: border-box;
+}
+
+#search-input::placeholder {
+  color: var(--text-muted);
+  font-size: 11px;
+}
+
+#search-input:focus {
+  border-bottom-color: var(--brown-mid);
+}
+
+.search-results {
+  max-height: 400px;
+  overflow-y: auto;
+}
+
+.search-result-item {
+  padding: 12px 16px;
+  cursor: pointer;
+  transition: background 0.2s;
+  border-bottom: 1px solid #f0ebe5;
+}
+
+.search-result-item:last-child {
+  border-bottom: none;
+}
+
+.search-result-item:hover {
+  background: var(--cream);
+}
+
+.search-result-name {
+  font-family: var(--sans);
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--text-main);
+  margin-bottom: 4px;
+  letter-spacing: 0.3px;
+}
+
+.search-result-category {
+  font-size: 10px;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+.search-result-category span {
+  color: var(--brown-mid);
+  font-weight: 500;
+}
+
+.search-result-empty {
+  padding: 24px 16px;
+  text-align: center;
+  font-size: 11px;
+  letter-spacing: 1px;
+  color: var(--text-muted);
+  font-family: var(--sans);
+}
+
+.search-result-highlight {
+  background-color: rgba(201, 185, 154, 0.2);
+  font-weight: 500;
+  color: var(--brown-dark);
+}
+
+.search-result-item.category-result .search-result-name {
+  font-weight: 600;
+  color: var(--brown-dark);
+}
+
+.search-results::-webkit-scrollbar {
+  width: 4px;
+}
+
+.search-results::-webkit-scrollbar-track {
+  background: var(--cream);
+}
+
+.search-results::-webkit-scrollbar-thumb {
+  background: var(--border);
+}
+
+.search-results::-webkit-scrollbar-thumb:hover {
+  background: var(--brown-mid);
+}

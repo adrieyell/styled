@@ -1,0 +1,333 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Account – Styled</title>
+    <link
+      href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300;1,400&family=Jost:wght@300;400;500&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="css/auth.css" />
+  </head>
+  <body>
+    <div class="auth-wrapper">
+      <div class="auth-left">
+        <a href="index.html" class="auth-logo"
+          ><img
+            src="assets/images/logo_withtext.png"
+            alt="Styled"
+            class="auth-logo-img"
+        /></a>
+        <div class="auth-center">
+          <div class="tab-row">
+            <button class="tab-btn active" id="tab-signup">Sign Up</button
+            ><button class="tab-btn" id="tab-login">Log In</button>
+          </div>
+          <div class="forms-track">
+            <form class="auth-form active" id="form-signup" novalidate>
+              <h1 class="form-title">Create Account</h1>
+              <p class="form-subtitle">Effortless style starts here.</p>
+              <div class="field-group">
+                <div class="field-wrap" id="fw-name">
+                  <span class="fi"
+                    ><svg
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="1.7"
+                    >
+                      <circle cx="12" cy="8" r="4" />
+                      <path d="M4 20c0-4 3.6-7 8-7s8 3 8 7" /></svg></span
+                  ><input
+                    type="text"
+                    id="su-name"
+                    placeholder="Full Name"
+                    autocomplete="name"
+                  />
+                </div>
+                <span class="field-err" id="er-name"></span>
+              </div>
+              <div class="field-group">
+                <div class="field-wrap" id="fw-su-email">
+                  <span class="fi"
+                    ><svg
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="1.7"
+                    >
+                      <rect x="2" y="4" width="20" height="16" rx="2" />
+                      <path d="M2 8l10 7 10-7" /></svg></span
+                  ><input
+                    type="email"
+                    id="su-email"
+                    placeholder="Email Address"
+                    autocomplete="email"
+                  />
+                </div>
+                <span class="field-err" id="er-su-email"></span>
+              </div>
+              <div class="field-group">
+                <div class="field-wrap" id="fw-su-pw">
+                  <span class="fi"
+                    ><svg
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="1.7"
+                    >
+                      <rect x="3" y="11" width="18" height="11" rx="2" />
+                      <path d="M7 11V7a5 5 0 0 1 10 0v4" /></svg></span
+                  ><input
+                    type="password"
+                    id="su-pw"
+                    placeholder="Password"
+                    autocomplete="new-password"
+                  /><button
+                    type="button"
+                    class="toggle-pw"
+                    data-target="su-pw"
+                    tabindex="-1"
+                  >
+                    <svg
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="1.7"
+                    >
+                      <path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7S1 12 1 12z" />
+                      <circle cx="12" cy="12" r="3" />
+                    </svg>
+                  </button>
+                </div>
+                <div class="strength-bar">
+                  <div class="s-seg" id="s1"></div>
+                  <div class="s-seg" id="s2"></div>
+                  <div class="s-seg" id="s3"></div>
+                  <div class="s-seg" id="s4"></div>
+                </div>
+                <p class="strength-label" id="s-lbl"></p>
+                <div class="pw-reqs">
+                  <p class="pw-reqs-label">Password must have</p>
+                  <div class="pw-req" id="req-len">
+                    <span class="req-icon"
+                      ><svg
+                        viewBox="0 0 10 10"
+                        fill="none"
+                        stroke="white"
+                        stroke-width="2"
+                      >
+                        <polyline points="1.5,5 4,7.5 8.5,2.5" /></svg></span
+                    >At least 8 characters
+                  </div>
+                  <div class="pw-req" id="req-upper">
+                    <span class="req-icon"
+                      ><svg
+                        viewBox="0 0 10 10"
+                        fill="none"
+                        stroke="white"
+                        stroke-width="2"
+                      >
+                        <polyline points="1.5,5 4,7.5 8.5,2.5" /></svg></span
+                    >One uppercase letter (A–Z)
+                  </div>
+                  <div class="pw-req" id="req-num">
+                    <span class="req-icon"
+                      ><svg
+                        viewBox="0 0 10 10"
+                        fill="none"
+                        stroke="white"
+                        stroke-width="2"
+                      >
+                        <polyline points="1.5,5 4,7.5 8.5,2.5" /></svg></span
+                    >One number (0–9)
+                  </div>
+                  <div class="pw-req" id="req-sym">
+                    <span class="req-icon"
+                      ><svg
+                        viewBox="0 0 10 10"
+                        fill="none"
+                        stroke="white"
+                        stroke-width="2"
+                      >
+                        <polyline points="1.5,5 4,7.5 8.5,2.5" /></svg></span
+                    >One symbol (!@#$…)
+                    <span style="opacity: 0.9; font-size: 10px"
+                      >- optional but recommended</span
+                    >
+                  </div>
+                </div>
+                <span class="field-err" id="er-su-pw"></span>
+              </div>
+              <div class="field-group" style="margin-bottom: 10px">
+                <div class="field-wrap" id="fw-su-cpw">
+                  <span class="fi"
+                    ><svg
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="1.7"
+                    >
+                      <rect x="3" y="11" width="18" height="11" rx="2" />
+                      <path d="M7 11V7a5 5 0 0 1 10 0v4" /></svg></span
+                  ><input
+                    type="password"
+                    id="su-cpw"
+                    placeholder="Confirm Password"
+                    autocomplete="new-password"
+                  /><button
+                    type="button"
+                    class="toggle-pw"
+                    data-target="su-cpw"
+                    tabindex="-1"
+                  >
+                    <svg
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="1.7"
+                    >
+                      <path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7S1 12 1 12z" />
+                      <circle cx="12" cy="12" r="3" />
+                    </svg>
+                  </button>
+                </div>
+                <span class="field-err" id="er-su-cpw"></span>
+              </div>
+              <p class="terms-note">
+                By creating an account you agree to our
+                <a href="#">Terms &amp; Conditions</a> and
+                <a href="#">Privacy Policy</a>.
+              </p>
+              <button type="submit" class="btn-submit" id="btn-signup">
+                <span class="btn-label">Create Account</span
+                ><span class="btn-spin"><span class="spin-ring"></span></span>
+              </button>
+              <p class="switch-text">
+                Already have an account?
+                <button type="button" class="switch-btn" data-switch="login">
+                  Log In
+                </button>
+              </p>
+            </form>
+            <form class="auth-form" id="form-login" novalidate>
+              <h1 class="form-title">Welcome Back</h1>
+              <p class="form-subtitle">Good to see you again.</p>
+              <div class="field-group">
+                <div class="field-wrap" id="fw-li-email">
+                  <span class="fi"
+                    ><svg
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="1.7"
+                    >
+                      <rect x="2" y="4" width="20" height="16" rx="2" />
+                      <path d="M2 8l10 7 10-7" /></svg></span
+                  ><input
+                    type="email"
+                    id="li-email"
+                    placeholder="Email Address"
+                    autocomplete="email"
+                  />
+                </div>
+                <span class="field-err" id="er-li-email"></span>
+              </div>
+              <div class="field-group" style="margin-bottom: 10px">
+                <div class="field-wrap" id="fw-li-pw">
+                  <span class="fi"
+                    ><svg
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="1.7"
+                    >
+                      <rect x="3" y="11" width="18" height="11" rx="2" />
+                      <path d="M7 11V7a5 5 0 0 1 10 0v4" /></svg></span
+                  ><input
+                    type="password"
+                    id="li-pw"
+                    placeholder="Password"
+                    autocomplete="current-password"
+                  /><button
+                    type="button"
+                    class="toggle-pw"
+                    data-target="li-pw"
+                    tabindex="-1"
+                  >
+                    <svg
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="1.7"
+                    >
+                      <path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7S1 12 1 12z" />
+                      <circle cx="12" cy="12" r="3" />
+                    </svg>
+                  </button>
+                </div>
+                <span class="field-err" id="er-li-pw"></span>
+              </div>
+              <div class="check-row">
+                <label class="check-label"
+                  ><input type="checkbox" id="remember" />Remember me</label
+                ><a href="#" class="forgot-link">Forgot Password?</a>
+              </div>
+              <button type="submit" class="btn-submit" id="btn-login">
+                <span class="btn-label">Log In</span
+                ><span class="btn-spin"><span class="spin-ring"></span></span>
+              </button>
+              <p class="switch-text">
+                Don't have an account?
+                <button type="button" class="switch-btn" data-switch="signup">
+                  Sign Up
+                </button>
+              </p>
+            </form>
+          </div>
+        </div>
+      </div>
+      <div class="auth-right">
+        <img
+          class="r-img active"
+          id="img-signup"
+          src="assets/images/sign up.jpg"
+          alt="Sign up"
+        /><img
+          class="r-img"
+          id="img-login"
+          src="assets/images/login.jpg"
+          alt="Log in"
+        />
+        <div class="r-overlay"></div>
+      </div>
+    </div>
+    <div class="modal-backdrop" id="success-modal">
+      <div class="modal-box">
+        <button class="modal-close" id="close-modal">✕</button>
+        <div class="modal-icon">
+          <svg
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="white"
+            stroke-width="2.5"
+          >
+            <polyline points="20 6 9 17 4 12" />
+          </svg>
+        </div>
+        <h2 class="modal-title">Account Created!</h2>
+        <p class="modal-sub">Welcome to Styled.</p>
+        <p class="modal-body">
+          Your account has been successfully created.<br />You may now log in to
+          start shopping.
+        </p>
+        <button class="modal-btn" id="modal-login-btn">
+          Log In to Your Account
+        </button>
+      </div>
+    </div>
+    <div class="toast" id="toast"></div>
+    <script src="js/auth.js"></script>
+  </body>
+</html>

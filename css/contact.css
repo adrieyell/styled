@@ -1,0 +1,205 @@
+.contact-section {
+  display: grid;
+  grid-template-columns: 1fr 1.4fr;
+  gap: 0;
+  min-height: 600px;
+  background: var(--cream);
+  position: relative;
+}
+.contact-left {
+  padding: 80px;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
+  overflow: hidden;
+}
+.contact-eyebrow {
+  font-size: 10px;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  margin-bottom: 20px;
+}
+.contact-title {
+  font-family: var(--serif);
+  font-size: clamp(40px, 4.5vw, 64px);
+  font-weight: 300;
+  line-height: 1.05;
+  margin-bottom: 24px;
+}
+.contact-title em {
+  font-style: italic;
+}
+.contact-desc {
+  font-size: 13px;
+  color: var(--text-muted);
+  line-height: 1.8;
+  margin-bottom: 40px;
+}
+.contact-info-list {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+.contact-info-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 16px;
+  opacity: 0.8;
+  transition: opacity 0.25s;
+}
+.contact-info-item:hover {
+  opacity: 1;
+}
+.contact-info-icon {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: var(--warm-white);
+  border: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+.contact-info-icon img {
+  width: 18px;
+  height: 18px;
+  object-fit: contain;
+}
+.contact-info-label {
+  font-size: 12px;
+  font-weight: 500;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  margin-bottom: 4px;
+}
+.contact-info-val {
+  font-size: 13px;
+  color: var(--text-muted);
+  line-height: 1.6;
+}
+.contact-map iframe {
+  border-radius: 2px;
+  opacity: 0.92;
+  transition: opacity 0.2s;
+}
+.contact-map iframe:hover {
+  opacity: 1;
+}
+
+/* ---- FORM ---- */
+.contact-right {
+  padding: 60px 80px;
+  background: var(--warm-white);
+  overflow: hidden;
+  position: relative;
+  z-index: var(--z-base);
+  display: flex;
+  flex-direction: column;
+  justify-content: center; /* vertically centers the form group */
+}
+
+/* Wrap all form elements in a single block that doesn't stretch */
+.contact-right > *:not(.success-msg) {
+  flex-shrink: 0; /* prevents any child from growing/stretching */
+}
+
+.form-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  margin-bottom: 16px;
+}
+.form-field {
+  margin-bottom: 16px;
+}
+.form-field input,
+.form-field textarea {
+  width: 100%;
+  padding: 14px 18px;
+  border: 1px solid var(--border);
+  background: var(--cream);
+  font-family: var(--sans);
+  font-size: 13px;
+  color: var(--text-main);
+  outline: none;
+  transition: border-color 0.2s;
+  border-radius: 0;
+}
+.form-field input:focus,
+.form-field textarea:focus {
+  border-color: var(--brown-mid);
+}
+.form-field input::placeholder,
+.form-field textarea::placeholder {
+  color: var(--text-muted);
+}
+.form-field textarea {
+  resize: vertical;
+  min-height: 140px;
+  max-height: 260px;
+  overflow-y: auto;
+}
+.btn-send {
+  width: 100%;
+  background: var(--brown-dark);
+  color: #f5ede4;
+  border: none;
+  padding: 16px;
+  font-family: var(--sans);
+  font-size: 11px;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition:
+    background 0.2s,
+    opacity 0.2s;
+  margin-bottom: 24px;
+  opacity: 1;
+}
+.btn-send:hover {
+  background: var(--brown-mid);
+  opacity: 0.9;
+}
+
+/* ---- HOURS + SUCCESS ---- */
+.contact-hours {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+}
+.hours-icon img {
+  width: 18px;
+  height: 18px;
+  object-fit: contain;
+  margin-top: 2px;
+}
+.hours-label {
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  margin-bottom: 4px;
+}
+.hours-val {
+  font-size: 12px;
+  color: var(--text-muted);
+}
+.success-msg {
+  display: none;
+  background: #e8f5e9;
+  border: 1px solid #a5d6a7;
+  color: #2e7d32;
+  padding: 16px 20px;
+  font-size: 13px;
+  margin-bottom: 16px;
+  letter-spacing: 0.5px;
+  position: relative;
+  z-index: var(--z-base);
+  opacity: 0;
+  transition: opacity 0.4s ease;
+}
+.success-msg.visible {
+  opacity: 1;
+}

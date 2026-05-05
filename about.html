@@ -1,0 +1,224 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>About Us - Styled</title>
+    <link
+      href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300;1,400&family=Jost:wght@300;400;500&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="css/shared.css" />
+    <link rel="stylesheet" href="css/about.css" />
+  </head>
+  <body>
+    <div class="announcement-bar">
+      <span></span>
+      <div class="ann-center">
+        <img
+          src="assets/images/shipping.png"
+          alt=""
+          class="ann-truck-icon"
+        />FREE SHIPPING ON ORDERS OVER ₱1000
+      </div>
+      <div class="ann-right">
+        <a href="#">Help</a><span>|</span><a href="#">Track Order</a>
+      </div>
+    </div>
+    <nav>
+      <a href="index.html" class="nav-logo"
+        ><img src="assets/images/logo_styled.png" alt="Styled"
+      /></a>
+      <ul class="nav-links">
+        <li><a href="index.html">Home</a></li>
+        <li><a href="#">Shop</a></li>
+        <li><a href="about.html" class="active">About Us</a></li>
+        <li><a href="contact.html">Contact</a></li>
+      </ul>
+      <div class="nav-icons">
+        <div class="search-wrapper" style="position: relative">
+          <button title="Search" id="search-btn">
+            <svg
+              class="nav-icon-img"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="1.7"
+            >
+              <circle cx="11" cy="11" r="7" />
+              <line x1="16.5" y1="16.5" x2="22" y2="22" />
+            </svg>
+          </button>
+          <div class="search-dropdown" id="search-dropdown">
+            <input
+              type="text"
+              id="search-input"
+              placeholder="Search products or categories..."
+              autocomplete="off"
+            />
+            <div class="search-results" id="search-results"></div>
+          </div>
+        </div>
+        <button title="Account">
+          <svg
+            class="nav-icon-img"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="1.7"
+          >
+            <circle cx="12" cy="8" r="4" />
+            <path d="M4 20c0-4 3.6-7 8-7s8 3 8 7" />
+          </svg>
+        </button>
+        <button title="Wishlist">
+          <svg
+            class="nav-icon-img"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="1.7"
+          >
+            <path
+              d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.6l-1-1a5.5 5.5 0 0 0-7.8 7.8l1 1L12 21l7.8-7.8 1-1a5.5 5.5 0 0 0 0-7.6z"
+            />
+          </svg>
+        </button>
+        <button title="Cart" style="position: relative" id="cart-btn">
+          <svg
+            class="nav-icon-img"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="1.7"
+          >
+            <path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z" />
+            <line x1="3" y1="6" x2="21" y2="6" />
+            <path d="M16 10a4 4 0 0 1-8 0" /></svg
+          ><span class="cart-badge">0</span>
+        </button>
+      </div>
+    </nav>
+    <section class="about-hero">
+      <div class="about-hero-text">
+        <p class="section-eyebrow">Our Story</p>
+        <h1 class="about-hero-title">
+          Timeless style,<br /><em>Made for real life.</em>
+        </h1>
+        <p class="about-body">
+          Styled was created out of a desire for clothing that feels
+          intentional, refined, and easy to live in. We wanted to build a space
+          where modern women can find elevated essentials shaped by muted tones,
+          clean silhouettes, and thoughtful design — pieces that simplify
+          getting dressed without sacrificing style.
+        </p>
+        <p class="about-body">
+          At its core, Styled is about curating a wardrobe that feels effortless
+          yet considered, made for everyday wear but designed to feel timeless.
+        </p>
+        <p class="about-tagline">Minimal. Refined. Intentional.</p>
+      </div>
+      <div class="about-hero-img">
+        <img src="assets/images/styled_story.png" alt="Our Story" />
+      </div>
+    </section>
+    <div class="trust-bar">
+      <div class="trust-item">
+        <img src="assets/images/shipping.png" alt="" class="trust-icon-img" />
+        <div>
+          <p class="trust-label">Free Shipping</p>
+          <p class="trust-sub">On orders over ₱1000</p>
+        </div>
+      </div>
+      <div class="trust-item trust-divider">
+        <img src="assets/images/returns.png" alt="" class="trust-icon-img" />
+        <div>
+          <p class="trust-label">Easy Returns</p>
+          <p class="trust-sub">30-day return policy</p>
+        </div>
+      </div>
+      <div class="trust-item trust-divider">
+        <img src="assets/images/quality.png" alt="" class="trust-icon-img" />
+        <div>
+          <p class="trust-label">Quality Guarantee</p>
+          <p class="trust-sub">Made from premium materials</p>
+        </div>
+      </div>
+      <div class="trust-item trust-divider">
+        <img src="assets/images/secure.png" alt="" class="trust-icon-img" />
+        <div>
+          <p class="trust-label">Secure Payment</p>
+          <p class="trust-sub">100% secure checkout</p>
+        </div>
+      </div>
+    </div>
+    <footer>
+      <div class="footer-top">
+        <div class="footer-logo">
+          <img src="assets/images/logo_withtext.png" alt="Styled" />
+          <p class="footer-tagline">
+            Minimal. Modern. Timeless.<br />Clothing that empowers you<br />to
+            be your best self.
+          </p>
+          <div class="footer-socials">
+            <a href="#"
+              ><img
+                src="assets/images/instagram.png"
+                alt="Instagram"
+                class="social-icon-img" /></a
+            ><a href="#"
+              ><img
+                src="assets/images/facebook.png"
+                alt="Facebook"
+                class="social-icon-img" /></a
+            ><a href="#"
+              ><img
+                src="assets/images/pinterest.png"
+                alt="Pinterest"
+                class="social-icon-img" /></a
+            ><a href="#"
+              ><img
+                src="assets/images/tiktok.png"
+                alt="TikTok"
+                class="social-icon-img"
+            /></a>
+          </div>
+        </div>
+        <div class="footer-col">
+          <h4>Shop</h4>
+          <ul>
+            <li><a href="#">All Products</a></li>
+            <li><a href="#">New In</a></li>
+            <li><a href="#">Best Sellers</a></li>
+            <li><a href="#">Sale</a></li>
+          </ul>
+        </div>
+        <div class="footer-col">
+          <h4>Customer Care</h4>
+          <ul>
+            <li><a href="#">FAQs</a></li>
+            <li><a href="#">Shipping &amp; Delivery</a></li>
+            <li><a href="#">Returns &amp; Exchanges</a></li>
+            <li><a href="#">Track Order</a></li>
+          </ul>
+        </div>
+        <div class="footer-col">
+          <h4>About</h4>
+          <ul>
+            <li><a href="about.html">Our Story</a></li>
+            <li><a href="contact.html">Contact Us</a></li>
+          </ul>
+        </div>
+      </div>
+      <div class="footer-bottom">
+        <p class="footer-copy">&copy; 2026 Styled. All Rights Reserved.</p>
+        <div class="footer-legal">
+          <a href="#">Privacy Policy</a><a href="#">Terms &amp; Conditions</a>
+        </div>
+      </div>
+    </footer>
+    <button class="back-to-top" id="back-to-top" title="Back to top">↑</button>
+    <script src="js/main.js"></script>
+    <script src="js/about.js"></script>
+  </body>
+</html>
