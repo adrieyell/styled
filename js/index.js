@@ -204,39 +204,31 @@ async function renderProducts(cat) {
       e.stopPropagation();
       const product = JSON.parse(btn.dataset.product.replace(/&#39;/g, "'"));
 
-      // If this category has sizing, open the modal instead of adding directly
+      // If this category has sizing, open the modal so the user picks a size first
       if (!NO_SIZE_CATEGORIES.has(cat)) {
         const card = btn.closest(".product-card");
         const productName = card.dataset.productName;
-        const found = findCachedProduct(productName, cat);
+        // findCachedProduct covers both the API cache and static fallback data,
+        // but static products lack product_id; fall back to the btn's own data-product
+        const found = findCachedProduct(productName, cat) || product;
         if (found) openProductModal(found, cat);
         return;
       }
 
       // Accessories: add directly (no size needed)
-      const card = btn.closest(".product-card");
-      const imgEl = card.querySelector(".product-img-wrap img");
-      const img = imgEl ? imgEl.src : "";
-      const catTitle =
-        document.getElementById("products-cat-title").textContent;
-
-      const cart = getCart();
-      const existing = cart.find((i) => i.name === product.name);
-      if (existing) {
-        existing.qty = (existing.qty || 1) + 1;
-      } else {
-        cart.push({
-          name: product.name,
-          price: product.price,
-          color: "#2c1f14",
-          img,
-          size: null,
-          category: catTitle,
-          qty: 1,
-        });
+      const user = getCurrentUser();
+      if (!user) {
+        showToast("Please login to add to cart");
+        return;
       }
-      saveCart(cart);
-      updateBadge();
+      if (!product.product_id) {
+        showToast("Could not add item — please try again.");
+        return;
+      }
+      (async () => {
+        await saveCart({ product_id: product.product_id, size: "", qty: 1 });
+        await getCart();
+      })();
 
       btn.innerHTML = `<svg style="width:14px;height:14px;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>Added!`;
       btn.style.background = "#2c1f14";

@@ -5,6 +5,13 @@
 // GET params: category (slug), min_price, max_price, search
 // Returns JSON matching the CATEGORIES structure in main.js
 
+// Capture any stray output (PHP notices/warnings) so they never corrupt JSON
+ob_start();
+
+// Turn off display_errors so warnings go to the log, not the response body
+ini_set('display_errors', '0');
+error_reporting(E_ALL);
+
 header('Content-Type: application/json');
 header('Access-Control-Allow-Origin: *');
 header('Access-Control-Allow-Methods: GET, OPTIONS');
@@ -23,6 +30,8 @@ if ($_SERVER['REQUEST_METHOD'] !== 'GET') {
 }
 
 require_once __DIR__ . '/db.php';
+
+try {
 
 $pdo = getPDO();
 
@@ -63,15 +72,18 @@ if ($search !== '') {
 $whereSQL = 'WHERE ' . implode(' AND ', $where);
 
 // ── 3. Fetch products (with category join) ────────────────────────────────────
+// Use a subquery to grab the first image from product_images for each product.
 $sql = "
     SELECT
         p.product_id,
         p.name,
         p.description,
         p.price,
-        p.image_path,
         c.slug        AS category,
-        c.name        AS category_name
+        c.name        AS category_name,
+(SELECT pi.image_url FROM product_images pi
+ WHERE pi.product_id = p.product_id
+ ORDER BY pi.image_id ASC LIMIT 1) AS image_url
     FROM products p
     JOIN categories c ON p.category_id = c.category_id
     $whereSQL
@@ -92,10 +104,10 @@ $productIds   = array_column($rows, 'product_id');
 $placeholders = implode(',', array_fill(0, count($productIds), '?'));
 
 $sizeSql  = "
-    SELECT product_id, size_label, stock_qty
+    SELECT product_id, size, stock_qty
     FROM product_sizes
     WHERE product_id IN ($placeholders)
-    ORDER BY FIELD(size_label, 'XS', 'S', 'M', 'L', 'XL', 'XXL')
+    ORDER BY FIELD(size, 'XS', 'S', 'M', 'L', 'XL', 'XXL')
 ";
 $sizeStmt = $pdo->prepare($sizeSql);
 $sizeStmt->execute($productIds);
@@ -107,8 +119,8 @@ $stockMap = [];  // product_id => ['S' => 10, 'M' => 15, …]
 
 foreach ($sizeRows as $sr) {
     $pid = (int) $sr['product_id'];
-    $sizeMap[$pid][]              = $sr['size_label'];
-    $stockMap[$pid][$sr['size_label']] = (int) $sr['stock_qty'];
+    $sizeMap[$pid][]         = $sr['size'];
+    $stockMap[$pid][$sr['size']] = (int) $sr['stock_qty'];
 }
 
 // ── 5. Category colour map (matches main.js CATEGORIES) ──────────────────────
@@ -132,8 +144,8 @@ foreach ($rows as $row) {
 
     // Build image path — use DB value if set, otherwise derive from product name
     // matching the Assets/Images/<Category>/<Product Name>.png convention in main.js
-    if (!empty($row['image_path'])) {
-        $imagePath = $row['image_path'];
+if (!empty($row['image_url'])) {
+    $imagePath = $row['image_url'];
     } else {
         $catFolder = ucfirst(strtolower($slug));
         $imagePath = 'Assets/Images/' . $catFolder . '/' . $row['name'] . '.png';
@@ -155,4 +167,17 @@ foreach ($rows as $row) {
     ];
 }
 
+// Discard any warnings that leaked into the buffer, then send clean JSON
+ob_end_clean();
 echo json_encode(['products' => $products], JSON_UNESCAPED_UNICODE);
+
+} catch (Throwable $e) {
+    ob_end_clean();
+    http_response_code(500);
+    echo json_encode([
+        'error' => $e->getMessage(),
+        'file'  => $e->getFile(),
+        'line'  => $e->getLine()
+    ]);
+    exit;
+}

@@ -2,8 +2,8 @@
 // CHECKOUT PAGE - Cart, quantities, payment
 // ============================================
 
-function renderCart() {
-  const cart = getCart();
+async function renderCart() {
+  const cart = await getCart();
   const tbody = document.getElementById("cart-table-body");
   const emptyEl = document.getElementById("cart-empty");
   const totalsEl = document.getElementById("order-totals");
@@ -67,22 +67,32 @@ function renderCart() {
 
   // Add event listeners
   document.querySelectorAll(".qty-btn").forEach((btn) => {
-    btn.addEventListener("click", () => {
+    btn.addEventListener("click", async () => {
       const idx = parseInt(btn.dataset.idx);
       const delta = parseInt(btn.dataset.delta);
-      const cart = getCart();
+      const cart = await getCart();
       cart[idx].qty = Math.max(1, (cart[idx].qty || 1) + delta);
-      saveCart(cart);
+      await saveCart(cart);
       renderCart();
     });
   });
 
   document.querySelectorAll(".remove-btn").forEach((btn) => {
-    btn.addEventListener("click", () => {
+    btn.addEventListener("click", async () => {
       const idx = parseInt(btn.dataset.idx);
-      const cart = getCart();
-      cart.splice(idx, 1);
-      saveCart(cart);
+      const cart = await getCart();
+      const removed = cart.splice(idx, 1)[0];
+      // Delete the item explicitly via the API
+      await fetch(`${API_BASE}/php/cart.php`, {
+        method: "DELETE",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          product_id: removed.product_id,
+          size: removed.size || "",
+        }),
+      });
+      await getCart(); // refresh cache
       renderCart();
     });
   });
@@ -129,8 +139,8 @@ function applyPromo() {
   }
 }
 
-function placeOrder() {
-  const cart = getCart();
+async function placeOrder() {
+  const cart = await getCart();
   if (cart.length === 0) {
     alert("Your cart is empty!");
     return;
@@ -189,7 +199,7 @@ function placeOrder() {
     }
   }
 
-  saveCart([]);
+  await saveCart([]);
   const orderNum = "STY-" + Math.floor(100000 + Math.random() * 900000);
   document.getElementById("success-order-num").textContent =
     "Order #" + orderNum;

@@ -463,24 +463,179 @@ function findCachedProduct(name, categoryKey) {
 }
 
 // ============================================
-// CART FUNCTIONS
+// CART FUNCTIONS  (API-backed)
 // ============================================
-function getCart() {
+
+// In-memory cart cache so sync callers (renderCart etc.) still work.
+let _cartCache = [];
+
+/**
+ * Returns the in-memory cart cache synchronously.
+ * The cache is populated by getCart() and saveCart().
+ */
+function getCartSync() {
+  return _cartCache;
+}
+
+/**
+ * Fetch the cart from the server.
+ * Falls back to the in-memory cache on network / auth errors.
+ * @returns {Promise<Array>}
+ */
+async function getCart() {
   try {
-    return JSON.parse(sessionStorage.getItem("styled_cart")) || [];
+    const res = await fetch(`${API_BASE}/php/cart.php`, {
+      credentials: "include",
+      cache: "no-store",
+    });
+    if (res.status === 401) {
+      // Not logged in — return empty and let callers show a toast if needed
+      _cartCache = [];
+      return [];
+    }
+    if (!res.ok) throw new Error(`Cart API ${res.status}`);
+    const data = await res.json();
+    _cartCache = Array.isArray(data.items) ? data.items : [];
+    updateBadgeCount(_cartCache);
+    return _cartCache;
   } catch (e) {
-    return [];
+    console.warn("getCart() fell back to cache:", e);
+    return _cartCache;
   }
 }
-function saveCart(cart) {
-  sessionStorage.setItem("styled_cart", JSON.stringify(cart));
+
+/**
+ * POST a cart item (or full cart array) to the server.
+ *  - If `cart` is an Array  → replaces the server cart by diffing against the
+ *    current cache (handles saveCart([])) which clears the cart on order).
+ *  - If `cart` is an Object → treated as a single { product_id, size, qty } add/update.
+ *
+ * Always keeps _cartCache in sync and refreshes the badge.
+ * @param {Array|Object} cart
+ * @returns {Promise<Array>} updated cart items
+ */
+async function saveCart(cart) {
+  try {
+    // ── Clearing the cart (e.g. after placeOrder) ─────────────────────────
+    if (Array.isArray(cart) && cart.length === 0) {
+      // Delete every item currently in the cache
+      await Promise.all(
+        _cartCache.map((item) =>
+          fetch(`${API_BASE}/php/cart.php`, {
+            method: "DELETE",
+            credentials: "include",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              product_id: item.product_id,
+              size: item.size || "",
+            }),
+          }),
+        ),
+      );
+      _cartCache = [];
+      updateBadgeCount([]);
+      return [];
+    }
+
+    // ── Saving a full updated cart array (qty change / remove) ────────────
+    if (Array.isArray(cart)) {
+      // Items that were removed from the array vs. the old cache
+      const removed = _cartCache.filter(
+        (old) =>
+          !cart.find(
+            (n) => n.product_id === old.product_id && n.size === old.size,
+          ),
+      );
+      await Promise.all(
+        removed.map((item) =>
+          fetch(`${API_BASE}/php/cart.php`, {
+            method: "DELETE",
+            credentials: "include",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              product_id: item.product_id,
+              size: item.size || "",
+            }),
+          }),
+        ),
+      );
+
+      // Upsert every remaining item (handles qty changes)
+      const results = await Promise.all(
+        cart.map((item) =>
+          fetch(`${API_BASE}/php/cart.php`, {
+            method: "POST",
+            credentials: "include",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              product_id: item.product_id,
+              size: item.size || "",
+              qty: item.qty || 1,
+            }),
+          }).then((r) => r.json()),
+        ),
+      );
+
+      // Use the last successful response to refresh the cache
+      const last = results.filter(Boolean).pop();
+      _cartCache = last?.items ?? cart;
+      updateBadgeCount(_cartCache);
+      return _cartCache;
+    }
+
+    // ── Single-item add/update object (legacy path) ───────────────────────
+    const res = await fetch(`${API_BASE}/php/cart.php`, {
+      method: "POST",
+      credentials: "include",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(cart),
+    });
+    if (res.status === 401) {
+      showToast("Please login to add to cart");
+      return _cartCache;
+    }
+    if (!res.ok) throw new Error(`Cart API ${res.status}`);
+    const data = await res.json();
+    _cartCache = data.items ?? _cartCache;
+    updateBadgeCount(_cartCache);
+    return _cartCache;
+  } catch (e) {
+    console.warn("saveCart() error:", e);
+    return _cartCache;
+  }
 }
-function updateBadge() {
-  const cart = getCart();
-  const total = cart.reduce((s, i) => s + (i.qty || 1), 0);
+
+/**
+ * Add a single product to the cart.
+ * Checks login first and shows a toast if the user is not authenticated.
+ * @param {{ product_id, name, price, img, color, size, category, qty }} item
+ */
+async function addToCart(item) {
+  const user = getCurrentUser();
+  if (!user) {
+    showToast("Please login to add to cart");
+    return;
+  }
+  await saveCart({
+    product_id: item.product_id,
+    size: item.size || "",
+    qty: item.qty || 1,
+  });
+  // Refresh local badge with a full GET so the cache is accurate
+  await getCart();
+  showToast("Added to cart!");
+}
+
+function updateBadgeCount(items) {
+  const total = items.reduce((s, i) => s + (i.qty || 1), 0);
   document.querySelectorAll(".cart-badge").forEach((b) => {
     if (b) b.textContent = total;
   });
+}
+
+async function updateBadge() {
+  const cart = await getCart();
+  updateBadgeCount(cart);
 }
 function parsePrice(str) {
   return parseFloat(str.replace(/[^0-9.]/g, "")) || 0;
@@ -885,23 +1040,18 @@ function refreshWishlistPanel() {
   });
 }
 
-function addWishlistItemToCart(product) {
-  const cart = getCart();
-  const existing = cart.find((i) => i.name === product.name);
-  if (existing) {
-    existing.qty = (existing.qty || 1) + 1;
-  } else {
-    cart.push({
-      name: product.name,
-      price: product.price,
-      color: "#2c1f14",
-      img: product.img,
-      category: "Wishlist",
-      qty: 1,
-    });
+async function addWishlistItemToCart(product) {
+  const user = getCurrentUser();
+  if (!user) {
+    showToast("Please login to add to cart");
+    return;
   }
-  saveCart(cart);
-  updateBadge();
+  await saveCart({
+    product_id: product.product_id,
+    size: product.size || "",
+    qty: 1,
+  });
+  await getCart();
   showToast("Added to cart!");
 }
 
@@ -1000,32 +1150,70 @@ function buildProductModal() {
     });
   });
 
-  document.getElementById("pm-add-cart").addEventListener("click", () => {
-    const name = document.getElementById("pm-name").textContent;
-    const price = document.getElementById("pm-price").textContent;
-    const img = document.getElementById("pm-img").src;
+  document.getElementById("pm-add-cart").addEventListener("click", async () => {
+    const user = getCurrentUser();
+    if (!user) {
+      showToast("Please login to add to cart");
+      return;
+    }
+
     const modalEl = document.getElementById("product-modal");
     const hasSize = modalEl.dataset.hasSize !== "0";
     const size = hasSize
       ? modal.querySelector(".pm-size.active")?.dataset.size || "M"
-      : null;
-    const activeDot = modal.querySelector(".pm-color-dot.active");
-    const color = activeDot ? activeDot.style.background : "#2c1f14";
+      : "";
     const qtyNum =
       parseInt(document.getElementById("pm-qty-num").textContent) || 1;
-    const category = document.getElementById("pm-category").textContent;
 
-    const cart = getCart();
-    const existing = cart.find(
-      (i) => i.name === name && i.color === color && i.size === size,
+    // Read the product stored on the modal when it was opened
+    let currentProduct = {};
+    try {
+      currentProduct = JSON.parse(modalEl.dataset.product || "{}");
+    } catch (_) {}
+
+    let productId = currentProduct.product_id || 0;
+    console.log(
+      "[cart] product from modal:",
+      currentProduct.name,
+      "| product_id:",
+      productId,
     );
-    if (existing) {
-      existing.qty = (existing.qty || 1) + qtyNum;
-    } else {
-      cart.push({ name, price, color, img, size, category, qty: qtyNum });
+
+    // If product_id is missing (static fallback path), fetch it from the API by name
+    if (!productId) {
+      const productName =
+        currentProduct.name || document.getElementById("pm-name").textContent;
+      const categoryKey = modalEl.dataset.categoryKey || "";
+      try {
+        const raw = await fetchProducts(
+          categoryKey ? { category: categoryKey } : {},
+        );
+        const norm = raw.map(normaliseProduct);
+        _updateProductCache(norm);
+        const match = norm.find(
+          (p) =>
+            p.name.trim().toLowerCase() === productName.trim().toLowerCase(),
+        );
+        if (match) {
+          productId = match.product_id;
+          // Update the stored product so future clicks are instant
+          modalEl.dataset.product = JSON.stringify({
+            ...currentProduct,
+            ...match,
+          });
+        }
+      } catch (fetchErr) {
+        console.error("Failed to fetch product_id:", fetchErr);
+      }
     }
-    saveCart(cart);
-    updateBadge();
+
+    if (!productId) {
+      showToast("Could not add to cart — product not found in database.");
+      return;
+    }
+
+    await saveCart({ product_id: productId, size, qty: qtyNum });
+    await getCart();
 
     const addBtn = document.getElementById("pm-add-cart");
     addBtn.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg> Added!`;
@@ -1098,10 +1286,11 @@ function openProductModal(product, categoryKey) {
     document.querySelector(".pm-size[data-size='M']")?.classList.add("active");
   }
 
-  // Store whether this product uses sizing so pm-add-cart can read it
-  document.getElementById("product-modal").dataset.hasSize = hasSize
-    ? "1"
-    : "0";
+  // Store context so pm-add-cart can resolve product_id in all cases
+  const _modalEl = document.getElementById("product-modal");
+  _modalEl.dataset.hasSize = hasSize ? "1" : "0";
+  _modalEl.dataset.categoryKey = categoryKey || "";
+  _modalEl.dataset.product = JSON.stringify(product);
 
   document.getElementById("product-modal").classList.add("open");
   document.body.style.overflow = "hidden";
