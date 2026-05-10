@@ -393,10 +393,8 @@ body {
   height: 12px;
   border-radius: 50%;
   border: 1px solid var(--border);
-  cursor: pointer;
-}
-.color-dot.active {
-  border: 2px solid var(--text-main);
+  cursor: default;
+  pointer-events: none;
 }
 .btn-cart {
   width: 100%;

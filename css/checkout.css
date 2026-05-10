@@ -385,6 +385,79 @@
   cursor: not-allowed;
 }
 
+/* ---- PAYMENT METHOD TABS ---- */
+.payment-tabs {
+  display: flex;
+  gap: 0;
+  margin-bottom: 20px;
+  border: 1px solid var(--border);
+}
+
+.payment-tab {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  padding: 14px 8px;
+  background: var(--warm-white);
+  border: none;
+  border-right: 1px solid var(--border);
+  font-family: var(--sans);
+  font-size: 10px;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  cursor: pointer;
+  transition:
+    background 0.2s,
+    color 0.2s;
+}
+
+.payment-tab:last-child {
+  border-right: none;
+}
+
+.payment-tab:hover {
+  background: var(--cream);
+  color: var(--text-main);
+}
+
+.payment-tab.active {
+  background: var(--brown-dark);
+  color: #f5ede4;
+}
+
+.payment-tab.active svg {
+  stroke: #f5ede4;
+}
+
+/* ---- GCASH / COD INFO BOXES ---- */
+.gcash-info,
+.cod-info {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  background: var(--cream);
+  border: 1px solid var(--border);
+  padding: 16px;
+  margin-bottom: 16px;
+}
+
+.gcash-info svg,
+.cod-info svg {
+  flex-shrink: 0;
+  margin-top: 1px;
+  color: var(--text-muted);
+}
+
+.gcash-info p,
+.cod-info p {
+  font-size: 12px;
+  color: var(--text-muted);
+  line-height: 1.7;
+}
+
 .secure-note {
   display: flex;
   align-items: center;

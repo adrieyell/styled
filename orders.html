@@ -1,0 +1,410 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>My Orders - Styled</title>
+    <link
+      href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300;1,400&family=Jost:wght@300;400;500&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="css/shared.css" />
+    <link rel="stylesheet" href="css/orders.css" />
+    <style>
+      /* Prevent shared.css overflow:hidden from clipping the sticky sidebar */
+      .orders-page {
+        overflow: visible;
+      }
+      .orders-sidebar {
+        overflow-y: auto;
+      }
+    </style>
+  </head>
+  <body>
+    <!-- ANNOUNCEMENT BAR -->
+    <div class="announcement-bar">
+      <span></span>
+      <div class="ann-center">
+        <img src="assets/images/shipping.png" alt="" class="ann-truck-icon" />
+        FREE SHIPPING ON ORDERS OVER ₱1000
+      </div>
+      <div class="ann-right">
+        <a href="contact.html">Help</a>
+        <span>|</span>
+        <a href="orders.html">Track Order</a>
+      </div>
+    </div>
+
+    <!-- NAVBAR -->
+    <nav>
+      <a href="index.html" class="nav-logo">
+        <img src="assets/images/logo_styled.png" alt="Styled" />
+      </a>
+      <ul class="nav-links">
+        <li><a href="index.html">Home</a></li>
+        <li><a href="#">Shop</a></li>
+        <li><a href="about.html">About Us</a></li>
+        <li><a href="contact.html">Contact</a></li>
+      </ul>
+      <div class="nav-icons">
+        <div class="search-wrapper" style="position: relative">
+          <button title="Search" id="search-btn">
+            <svg
+              class="nav-icon-img"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="1.7"
+            >
+              <circle cx="11" cy="11" r="7" />
+              <line x1="16.5" y1="16.5" x2="22" y2="22" />
+            </svg>
+          </button>
+          <div class="search-dropdown" id="search-dropdown">
+            <input
+              type="text"
+              id="search-input"
+              placeholder="Search products or categories..."
+              autocomplete="off"
+            />
+            <div class="search-results" id="search-results"></div>
+          </div>
+        </div>
+        <button title="Account">
+          <svg
+            class="nav-icon-img"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="1.7"
+          >
+            <circle cx="12" cy="8" r="4" />
+            <path d="M4 20c0-4 3.6-7 8-7s8 3 8 7" />
+          </svg>
+        </button>
+        <button title="Wishlist">
+          <svg
+            class="nav-icon-img"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="1.7"
+          >
+            <path
+              d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.6l-1-1a5.5 5.5 0 0 0-7.8 7.8l1 1L12 21l7.8-7.8 1-1a5.5 5.5 0 0 0 0-7.6z"
+            />
+          </svg>
+        </button>
+        <button title="Cart" style="position: relative" id="cart-btn">
+          <svg
+            class="nav-icon-img"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="1.7"
+          >
+            <path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z" />
+            <line x1="3" y1="6" x2="21" y2="6" />
+            <path d="M16 10a4 4 0 0 1-8 0" />
+          </svg>
+          <span class="cart-badge">0</span>
+        </button>
+      </div>
+    </nav>
+
+    <!-- PAGE CONTENT -->
+    <div class="orders-page">
+      <!-- SIDEBAR -->
+      <aside class="orders-sidebar">
+        <div class="os-user" id="os-user">
+          <div class="os-avatar" id="os-avatar">?</div>
+          <div>
+            <p class="os-hello">Hello,</p>
+            <p class="os-name" id="os-name"><em>[Name]</em></p>
+          </div>
+        </div>
+        <nav class="os-nav">
+          <a class="os-nav-item" id="tab-orders" href="#">
+            <svg
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="1.7"
+            >
+              <path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z" />
+              <line x1="3" y1="6" x2="21" y2="6" />
+              <path d="M16 10a4 4 0 0 1-8 0" />
+            </svg>
+            My Orders
+          </a>
+          <a class="os-nav-item" href="#" id="tab-wishlist">
+            <svg
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="1.7"
+            >
+              <path
+                d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.6l-1-1a5.5 5.5 0 0 0-7.8 7.8l1 1L12 21l7.8-7.8 1-1a5.5 5.5 0 0 0 0-7.6z"
+              />
+            </svg>
+            My Wishlist
+          </a>
+          <a class="os-nav-item" href="index.html">
+            <svg
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="1.7"
+            >
+              <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
+              <polyline points="9 22 9 12 15 12 15 22" />
+            </svg>
+            Continue Shopping
+          </a>
+        </nav>
+        <button class="os-signout" id="os-signout">Sign Out</button>
+      </aside>
+
+      <!-- MAIN CONTENT -->
+      <main class="orders-main">
+        <!-- ── ORDER LIST VIEW ── -->
+        <div id="view-list">
+          <div class="om-header">
+            <p class="om-eyebrow">Account</p>
+            <h1 class="om-title">My <em>Orders</em></h1>
+          </div>
+
+          <!-- Orders with items -->
+          <div id="orders-container"></div>
+
+          <!-- Empty state -->
+          <div class="orders-empty" id="orders-empty" style="display: none">
+            <div class="oe-icon">
+              <svg
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="1.2"
+              >
+                <path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z" />
+                <line x1="3" y1="6" x2="21" y2="6" />
+                <path d="M16 10a4 4 0 0 1-8 0" />
+              </svg>
+            </div>
+            <p class="oe-title">You haven't placed any orders yet.</p>
+            <a href="index.html" class="oe-cta">Start Shopping</a>
+          </div>
+
+          <button class="btn-signout-bottom" id="signout-btn-list">
+            Sign Out
+          </button>
+        </div>
+
+        <!-- ── ORDER DETAIL VIEW ── -->
+        <div id="view-detail" style="display: none">
+          <button class="back-btn" id="back-btn">
+            <svg
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="1.7"
+            >
+              <polyline points="15 18 9 12 15 6" />
+            </svg>
+            Back to Orders
+          </button>
+
+          <div class="od-header">
+            <div>
+              <p class="om-eyebrow">Order Details</p>
+              <h1 class="om-title">Order <em id="od-num">#STY-000000</em></h1>
+            </div>
+            <span class="od-status-badge" id="od-status-badge">Delivered</span>
+          </div>
+
+          <div class="od-meta-row">
+            <div class="od-meta-item">
+              <p class="od-meta-label">Order Date</p>
+              <p class="od-meta-val" id="od-date">—</p>
+            </div>
+            <div class="od-meta-item">
+              <p class="od-meta-label">Items</p>
+              <p class="od-meta-val" id="od-items-count">—</p>
+            </div>
+            <div class="od-meta-item">
+              <p class="od-meta-label">Total</p>
+              <p class="od-meta-val" id="od-total">—</p>
+            </div>
+            <div class="od-meta-item">
+              <p class="od-meta-label">Payment</p>
+              <p class="od-meta-val">Credit Card</p>
+            </div>
+          </div>
+
+          <!-- TRACKING STEPPER -->
+          <div class="od-section">
+            <p class="od-section-title">Tracking</p>
+            <div class="tracking-stepper" id="tracking-stepper">
+              <!-- JS renders steps -->
+            </div>
+          </div>
+
+          <!-- ITEMS -->
+          <div class="od-section">
+            <p class="od-section-title">Items in this Order</p>
+            <div class="od-items-list" id="od-items-list"></div>
+          </div>
+
+          <!-- ADDRESS + TOTALS -->
+          <div class="od-bottom-grid">
+            <div class="od-section">
+              <p class="od-section-title">Shipping Address</p>
+              <p class="od-address" id="od-address">—</p>
+            </div>
+            <div class="od-section od-totals">
+              <p class="od-section-title">Order Summary</p>
+              <div class="od-total-row">
+                <span>Subtotal</span><span id="od-subtotal">—</span>
+              </div>
+              <div class="od-total-row">
+                <span>Shipping</span><span id="od-shipping">—</span>
+              </div>
+              <div class="od-total-row od-total-grand">
+                <span>Total</span><span id="od-grand">—</span>
+              </div>
+            </div>
+          </div>
+        </div>
+        <!-- end view-detail -->
+      </main>
+    </div>
+
+    <!-- FOOTER -->
+    <footer>
+      <div class="footer-top">
+        <div class="footer-logo">
+          <img src="assets/images/logo_withtext.png" alt="Styled" />
+          <p class="footer-tagline">
+            Minimal. Modern. Timeless.<br />Clothing that empowers you<br />to
+            be your best self.
+          </p>
+          <div class="footer-socials">
+            <a href="https://www.instagram.com/" target="_blank"
+              ><img
+                src="assets/images/instagram.png"
+                alt="Instagram"
+                class="social-icon-img"
+            /></a>
+            <a href="https://www.facebook.com/" target="_blank"
+              ><img
+                src="assets/images/facebook.png"
+                alt="Facebook"
+                class="social-icon-img"
+            /></a>
+            <a href="https://www.pinterest.com/" target="_blank"
+              ><img
+                src="assets/images/pinterest.png"
+                alt="Pinterest"
+                class="social-icon-img"
+            /></a>
+            <a href="https://www.tiktok.com/" target="_blank"
+              ><img
+                src="assets/images/tiktok.png"
+                alt="TikTok"
+                class="social-icon-img"
+            /></a>
+          </div>
+        </div>
+        <div class="footer-col">
+          <h4>Shop</h4>
+          <ul>
+            <li><a href="#">All Products</a></li>
+            <li><a href="#">New In</a></li>
+            <li><a href="#">Best Sellers</a></li>
+            <li><a href="#">Sale</a></li>
+          </ul>
+        </div>
+        <div class="footer-col">
+          <h4>Customer Care</h4>
+          <ul>
+            <li><a href="#">FAQs</a></li>
+            <li><a href="#">Shipping &amp; Delivery</a></li>
+            <li><a href="#">Returns &amp; Exchanges</a></li>
+            <li><a href="orders.html">Track Order</a></li>
+          </ul>
+        </div>
+        <div class="footer-col">
+          <h4>About</h4>
+          <ul>
+            <li><a href="about.html">Our Story</a></li>
+            <li><a href="contact.html">Contact Us</a></li>
+          </ul>
+        </div>
+      </div>
+      <div class="footer-bottom">
+        <p class="footer-copy">&copy; 2026 Styled. All Rights Reserved.</p>
+        <div class="footer-legal">
+          <a href="#">Privacy Policy</a><a href="#">Terms &amp; Conditions</a>
+        </div>
+      </div>
+    </footer>
+
+    <button class="back-to-top" id="back-to-top" title="Back to top">↑</button>
+
+    <script src="js/main.js"></script>
+    <script src="js/orders.js"></script>
+
+    <!-- ══════════════════════════════════════════════════
+     AUTH GUARD + SESSION SIGN-OUT for orders.html
+    ═══════════════════════════════════════════════════ -->
+    <script>
+      // ── 1. Guard: redirect guests to login ────────────────────────────────
+      // checkAuthStatus() is defined in main.js (loaded above).
+      // We call it with redirectIfGuest:true so unauthenticated visitors
+      // are sent straight to auth.html.
+      document.addEventListener("DOMContentLoaded", function () {
+        checkAuthStatus({ redirectIfGuest: true }).then(function (loggedIn) {
+          if (!loggedIn) return; // redirect already triggered
+
+          // ── 2. Populate sidebar user info from the live session ──────────
+          // checkAuthStatus() updated localStorage; getCurrentUser() reads it.
+          var user = getCurrentUser();
+          if (user) {
+            var nameEl = document.getElementById("os-name");
+            var avatarEl = document.getElementById("os-avatar");
+            if (nameEl) nameEl.textContent = user.name || user.email;
+            if (avatarEl) {
+              avatarEl.textContent = user.name
+                ? user.name
+                    .split(" ")
+                    .map(function (w) {
+                      return w[0];
+                    })
+                    .join("")
+                    .toUpperCase()
+                    .slice(0, 2)
+                : "?";
+            }
+          }
+        });
+
+        // ── 3. Wire both "Sign Out" buttons to the PHP logout endpoint ─────
+        function doSignOut() {
+          fetch("/styled/php/auth/logout.php", {
+            method: "GET",
+            credentials: "include",
+          }).finally(function () {
+            localStorage.removeItem("styled_user");
+            window.location.href = "auth.html";
+          });
+        }
+
+        var btnSidebar = document.getElementById("os-signout");
+        var btnList = document.getElementById("signout-btn-list");
+        if (btnSidebar) btnSidebar.addEventListener("click", doSignOut);
+        if (btnList) btnList.addEventListener("click", doSignOut);
+      });
+    </script>
+  </body>
+</html>

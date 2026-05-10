@@ -40,9 +40,12 @@ function renderCart() {
     subtotal += lineTotal;
     totalQty += qty;
 
+    const sizeLabel = item.size
+      ? `<span style="margin-left:6px;font-size:11px;color:var(--text-muted);">Size: ${item.size}</span>`
+      : "";
     const tr = document.createElement("tr");
     tr.innerHTML = `
-      <td><div class="item-cell"><div class="item-thumb-placeholder"><img class="item-thumb" src="${item.img}" alt="${item.name}" onerror="this.style.display='none'" style="width:56px;height:64px;object-fit:cover;" /></div><div><p class="item-name">${item.name}</p><p class="item-meta"><span class="item-color-swatch" style="background:${item.color}"></span>${item.category || ""}</p></div></div></td>
+      <td><div class="item-cell"><div class="item-thumb-placeholder"><img class="item-thumb" src="${item.img}" alt="${item.name}" onerror="this.style.display='none'" style="width:56px;height:64px;object-fit:cover;" /></div><div><p class="item-name">${item.name}</p><p class="item-meta"><span class="item-color-swatch" style="background:${item.color}"></span>${item.category || ""}${sizeLabel}</p></div></div></td>
       <td><div class="qty-control"><button class="qty-btn" data-idx="${idx}" data-delta="-1">−</button><span class="qty-num">${qty}</span><button class="qty-btn" data-idx="${idx}" data-delta="1">+</button></div></td>
       <td>${formatPrice(unitPrice)}</td>
       <td>${formatPrice(lineTotal)}</td>
@@ -51,7 +54,8 @@ function renderCart() {
     tbody.appendChild(tr);
   });
 
-  document.getElementById("nav-cart-badge").textContent = totalQty;
+  const badge = document.getElementById("nav-cart-badge");
+  if (badge) badge.textContent = totalQty;
 
   const shipping = subtotal >= 1000 ? 0 : 99;
   const grand = subtotal + shipping;
@@ -84,6 +88,25 @@ function renderCart() {
   });
 }
 
+// ── PAYMENT METHOD TABS ──────────────────────
+let activePaymentMethod = "card";
+
+document.querySelectorAll(".payment-tab").forEach((tab) => {
+  tab.addEventListener("click", () => {
+    document
+      .querySelectorAll(".payment-tab")
+      .forEach((t) => t.classList.remove("active"));
+    tab.classList.add("active");
+    activePaymentMethod = tab.dataset.method;
+    document.getElementById("payment-panel-card").style.display =
+      activePaymentMethod === "card" ? "block" : "none";
+    document.getElementById("payment-panel-gcash").style.display =
+      activePaymentMethod === "gcash" ? "block" : "none";
+    document.getElementById("payment-panel-cod").style.display =
+      activePaymentMethod === "cod" ? "block" : "none";
+  });
+});
+
 function formatCard(input) {
   let val = input.value.replace(/\D/g, "").substring(0, 16);
   input.value = val.replace(/(.{4})/g, "$1 ").trim();
@@ -113,7 +136,8 @@ function placeOrder() {
     return;
   }
 
-  const required = [
+  // Contact + address fields required for all methods
+  const baseRequired = [
     { id: "co-name", label: "Full Name" },
     { id: "co-email", label: "Email Address" },
     { id: "co-phone", label: "Phone Number" },
@@ -121,17 +145,31 @@ function placeOrder() {
     { id: "co-city", label: "City" },
     { id: "co-zip", label: "ZIP Code" },
     { id: "co-province", label: "Province / Region" },
-    { id: "co-card", label: "Card Number" },
-    { id: "co-expiry", label: "Expiry Date" },
-    { id: "co-cvv", label: "CVV" },
-    { id: "co-cardholder", label: "Name on Card" },
+  ];
+
+  // Payment-specific required fields
+  const paymentRequired = {
+    card: [
+      { id: "co-card", label: "Card Number" },
+      { id: "co-expiry", label: "Expiry Date" },
+      { id: "co-cvv", label: "CVV" },
+      { id: "co-cardholder", label: "Name on Card" },
+    ],
+    gcash: [{ id: "co-gcash", label: "GCash Mobile Number" }],
+    cod: [],
+  };
+
+  const required = [
+    ...baseRequired,
+    ...(paymentRequired[activePaymentMethod] || []),
   ];
 
   for (const field of required) {
-    const val = document.getElementById(field.id).value.trim();
-    if (!val) {
+    const el = document.getElementById(field.id);
+    if (!el) continue;
+    if (!el.value.trim()) {
       alert(`Please fill in: ${field.label}`);
-      document.getElementById(field.id).focus();
+      el.focus();
       return;
     }
   }
@@ -140,6 +178,15 @@ function placeOrder() {
   if (!email.includes("@") || !email.includes(".")) {
     alert("Please enter a valid email address.");
     return;
+  }
+
+  if (activePaymentMethod === "gcash") {
+    const gcash = document.getElementById("co-gcash").value.replace(/\s/g, "");
+    if (!/^09\d{9}$/.test(gcash)) {
+      alert("Please enter a valid GCash number (e.g. 09XX XXX XXXX).");
+      document.getElementById("co-gcash").focus();
+      return;
+    }
   }
 
   saveCart([]);

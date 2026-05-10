@@ -1,10 +1,14 @@
 // ============================================
-// AUTH PAGE - Sign up, Login, Password validation
+// AUTH PAGE — js/auth.js
+// Sign up, Login, Password validation
+// Now backed by real PHP session API.
 // ============================================
+
+const API_BASE = "/styled";
 
 let active = "signup";
 
-// Tab switching
+// ── Tab switching ─────────────────────────────────────────────────────────────
 function switchTab(tab) {
   if (tab === active) return;
 
@@ -27,7 +31,7 @@ function switchTab(tab) {
   resetAll();
 }
 
-// Validation helpers
+// ── Validation helpers ────────────────────────────────────────────────────────
 const FM = {
   name: { w: "fw-name", e: "er-name" },
   "su-email": { w: "fw-su-email", e: "er-su-email" },
@@ -67,7 +71,7 @@ function validEmail(v) {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v);
 }
 
-// Password strength
+// ── Password strength ─────────────────────────────────────────────────────────
 function strength(pw) {
   let s = 0;
   if (pw.length >= 8) s++;
@@ -103,7 +107,7 @@ function setReq(id, met) {
   if (el) el.classList.toggle("met", met);
 }
 
-// Modal functions
+// ── Modal helpers ─────────────────────────────────────────────────────────────
 function showModal() {
   document.getElementById("success-modal").classList.add("show");
 }
@@ -117,7 +121,7 @@ function goToLogin() {
   setTimeout(() => switchTab("login"), 200);
 }
 
-// Password reveal
+// ── Password reveal ───────────────────────────────────────────────────────────
 function revealPw(inputId, btn) {
   const inp = document.getElementById(inputId);
   const isPassword = inp.type === "password";
@@ -130,21 +134,20 @@ function revealPw(inputId, btn) {
   }
 }
 
-// Submit with loading
-function submit(btnId) {
+// ── Loading button helper ─────────────────────────────────────────────────────
+function setLoading(btnId, loading) {
   const btn = document.getElementById(btnId);
-  btn.classList.add("loading");
-  btn.disabled = true;
-  return new Promise((r) =>
-    setTimeout(() => {
-      btn.classList.remove("loading");
-      btn.disabled = false;
-      r();
-    }, 1200),
-  );
+  if (!btn) return;
+  if (loading) {
+    btn.classList.add("loading");
+    btn.disabled = true;
+  } else {
+    btn.classList.remove("loading");
+    btn.disabled = false;
+  }
 }
 
-// Toast
+// ── Toast ─────────────────────────────────────────────────────────────────────
 let toastT;
 function toast(msg, type = "") {
   const el = document.getElementById("toast");
@@ -155,9 +158,22 @@ function toast(msg, type = "") {
   toastT = setTimeout(() => el.classList.remove("show"), 3200);
 }
 
-// Signup handler
+// ── API helper ────────────────────────────────────────────────────────────────
+async function apiPost(url, body) {
+  const res = await fetch(url, {
+    method: "POST",
+    credentials: "include", // send/receive PHP session cookie
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(body),
+  });
+  const data = await res.json();
+  return { ok: res.ok, status: res.status, data };
+}
+
+// ── SIGNUP HANDLER ────────────────────────────────────────────────────────────
 async function handleSignup(e) {
   e.preventDefault();
+
   const name = document.getElementById("su-name").value.trim();
   const email = document.getElementById("su-email").value.trim();
   const pw = document.getElementById("su-pw").value;
@@ -201,13 +217,46 @@ async function handleSignup(e) {
 
   if (!ok) return;
 
-  await submit("btn-signup");
-  showModal();
+  setLoading("btn-signup", true);
+
+  try {
+    const { ok: success, data } = await apiPost(
+      API_BASE + "/php/auth/register.php",
+      {
+        full_name: name,
+        email,
+        password: pw,
+      },
+    );
+
+    if (success && data.success) {
+      showModal();
+    } else {
+      const msg = data.error || "Registration failed. Please try again.";
+      if (msg.toLowerCase().includes("email")) {
+        setErr("su-email", msg);
+      } else if (msg.toLowerCase().includes("name")) {
+        setErr("name", msg);
+      } else if (msg.toLowerCase().includes("password")) {
+        setErr("su-pw", msg);
+      } else {
+        toast(msg, "error");
+      }
+    }
+  } catch (err) {
+    toast(
+      "Network error. Please check your connection and try again.",
+      "error",
+    );
+  } finally {
+    setLoading("btn-signup", false);
+  }
 }
 
-// Login handler
+// ── LOGIN HANDLER ─────────────────────────────────────────────────────────────
 async function handleLogin(e) {
   e.preventDefault();
+
   const email = document.getElementById("li-email").value.trim();
   const pw = document.getElementById("li-pw").value;
   let ok = true;
@@ -230,12 +279,60 @@ async function handleLogin(e) {
 
   if (!ok) return;
 
-  await submit("btn-login");
-  toast("Welcome back! Redirecting…", "ok");
-  setTimeout(() => (window.location.href = "index.html"), 1600);
+  setLoading("btn-login", true);
+
+  try {
+    const { ok: success, data } = await apiPost(
+      API_BASE + "/php/auth/login.php",
+      {
+        email,
+        password: pw,
+      },
+    );
+
+    if (success && data.success) {
+      const user = data.user;
+
+      // Save to localStorage for navbar UI (name, email, role).
+      // Map full_name → name so getCurrentUser().name works correctly
+      // in main.js (profile dropdown initials, greeting, admin badge).
+      localStorage.setItem(
+        "styled_user",
+        JSON.stringify({
+          name: user.full_name,
+          email: user.email,
+          role: user.role,
+        }),
+      );
+
+      toast("Welcome back! Redirecting…", "ok");
+
+      // Role-based redirect
+      setTimeout(() => {
+        if (user.role === "admin") {
+          window.location.href = "admin.html";
+        } else if (user.role === "staff") {
+          window.location.href = "staff.html";
+        } else {
+          window.location.href = "index.html";
+        }
+      }, 1200);
+    } else {
+      const msg = data.error || "Invalid credentials.";
+      setErr("li-email", " "); // marks the email field red without extra text
+      setErr("li-pw", msg);
+    }
+  } catch (err) {
+    toast(
+      "Network error. Please check your connection and try again.",
+      "error",
+    );
+  } finally {
+    setLoading("btn-login", false);
+  }
 }
 
-// Event listeners
+// ── Event listeners ───────────────────────────────────────────────────────────
 document
   .getElementById("tab-signup")
   ?.addEventListener("click", () => switchTab("signup"));
@@ -261,7 +358,7 @@ document
   .getElementById("modal-login-btn")
   ?.addEventListener("click", goToLogin);
 
-// Password validation on input
+// Password strength meter
 const suPw = document.getElementById("su-pw");
 if (suPw) {
   suPw.addEventListener("input", () => {
@@ -271,7 +368,7 @@ if (suPw) {
   });
 }
 
-// Clear fields on input
+// Clear field errors on input
 ["su-name", "su-email", "su-cpw", "li-email", "li-pw"].forEach((id) => {
   const el = document.getElementById(id);
   if (el) el.addEventListener("input", () => clr(id));

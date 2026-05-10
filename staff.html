@@ -1,0 +1,1853 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Styled — Staff Dashboard</title>
+
+    <link rel="stylesheet" href="css/admin.css" />
+    <style>
+      /* ── Logout button (sidebar footer) ── */
+      .logout-btn {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        width: 100%;
+        padding: 8px 10px;
+        margin-top: 8px;
+        background: transparent;
+        border: 1px solid var(--border, #e6ddd2);
+        border-radius: 8px;
+        color: var(--brown-200, #9c826a);
+        font-size: 13px;
+        font-family: inherit;
+        cursor: pointer;
+        transition: background 0.15s, color 0.15s, border-color 0.15s;
+      }
+      .logout-btn:hover {
+        background: #fdf7f3;
+        color: var(--red, #c0392b);
+        border-color: var(--red, #c0392b);
+      }
+      /* ── Toast ── */
+      .toast { position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%) translateY(10px);
+        background: #1c120a; color: #fff; padding: 10px 18px; border-radius: 8px;
+        font-size: 13px; opacity: 0; pointer-events: none; transition: opacity .25s, transform .25s;
+        white-space: nowrap; z-index: 9999; }
+      .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+      .toast.ok   { background: #3a6b4a; }
+      .toast.error{ background: #c0392b; }
+    </style>
+  </head>
+  <body>
+    <script>
+      (function () {
+        // Hide the page while we verify — prevents a flash of staff content
+        document.documentElement.style.visibility = "hidden";
+
+        fetch("/styled/php/auth/check.php", {
+          method: "GET",
+          credentials: "include",
+          cache: "no-store",
+        })
+          .then(function (res) {
+            return res.json();
+          })
+          .then(function (data) {
+            if (!data.logged_in) {
+              window.location.replace("auth.html");
+            } else if (data.user.role === "admin") {
+              window.location.replace("admin.html");
+            } else if (data.user.role !== "staff") {
+              window.location.replace("index.html");
+            } else {
+              document.documentElement.style.visibility = "";
+            }
+          })
+          .catch(function () {
+            window.location.replace("auth.html");
+          });
+      })();
+    </script>
+
+    <!-- Add Product Modal -->
+    <div class="modal-overlay" id="modal-add-product">
+      <div class="modal">
+        <div class="modal-header">
+          <div class="modal-title">Add New Product</div>
+          <button
+            class="btn btn-ghost btn-icon"
+            onclick="closeModal('modal-add-product')"
+          >
+            <svg
+              width="16"
+              height="16"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+            >
+              <line x1="18" y1="6" x2="6" y2="18" />
+              <line x1="6" y1="6" x2="18" y2="18" />
+            </svg>
+          </button>
+        </div>
+        <div class="modal-body">
+          <div class="form-grid">
+            <div class="form-field full">
+              <label class="form-label">Product Name</label>
+              <input
+                class="form-input"
+                type="text"
+                placeholder="e.g. Black Lace Tank"
+              />
+            </div>
+            <div class="form-field">
+              <label class="form-label">Price (₱)</label>
+              <input class="form-input" type="number" placeholder="0.00" />
+            </div>
+            <div class="form-field">
+              <label class="form-label">Compare Price (₱)</label>
+              <input class="form-input" type="number" placeholder="0.00" />
+            </div>
+            <div class="form-field">
+              <label class="form-label">Category</label>
+              <select class="form-select">
+                <option>Outerwear</option>
+                <option>Knitwear</option>
+                <option>Bottoms</option>
+                <option>Dresses</option>
+                <option>Accessories</option>
+              </select>
+            </div>
+            <div class="form-field">
+              <label class="form-label">Status</label>
+              <select class="form-select">
+                <option>Active</option>
+                <option>Draft</option>
+              </select>
+            </div>
+            <div class="form-field full">
+              <label class="form-label">Description</label>
+              <textarea
+                class="form-textarea"
+                rows="3"
+                placeholder="Product description..."
+              ></textarea>
+            </div>
+            <div class="form-field full">
+              <label class="form-label">Images</label>
+              <div class="upload-area">
+                <svg
+                  width="24"
+                  height="24"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="1.5"
+                  style="color: var(--brown-100); margin: 0 auto 8px"
+                >
+                  <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                  <polyline points="17 8 12 3 7 8" />
+                  <line x1="12" y1="3" x2="12" y2="15" />
+                </svg>
+                <div style="font-size: 13px; color: var(--brown-200)">
+                  Drag & drop or click to upload
+                </div>
+                <div class="text-sm text-muted mt-4">PNG, JPG up to 10MB</div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button
+            class="btn btn-outline"
+            onclick="closeModal('modal-add-product')"
+          >
+            Cancel
+          </button>
+          <button class="btn btn-primary">Save Product</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Add Discount Modal -->
+    <div class="modal-overlay" id="modal-add-promo">
+      <div class="modal">
+        <div class="modal-header">
+          <div class="modal-title">Create Promotion</div>
+          <button
+            class="btn btn-ghost btn-icon"
+            onclick="closeModal('modal-add-promo')"
+          >
+            <svg
+              width="16"
+              height="16"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+            >
+              <line x1="18" y1="6" x2="6" y2="18" />
+              <line x1="6" y1="6" x2="18" y2="18" />
+            </svg>
+          </button>
+        </div>
+        <div class="modal-body">
+          <div class="form-grid">
+            <div class="form-field">
+              <label class="form-label">Code</label>
+              <input
+                class="form-input"
+                type="text"
+                placeholder="e.g. SUMMER25"
+              />
+            </div>
+            <div class="form-field">
+              <label class="form-label">Type</label>
+              <select class="form-select">
+                <option>Percentage (%)</option>
+                <option>Fixed Amount (₱)</option>
+                <option>Free Shipping</option>
+              </select>
+            </div>
+            <div class="form-field">
+              <label class="form-label">Discount Value</label>
+              <input class="form-input" type="number" placeholder="e.g. 20" />
+            </div>
+            <div class="form-field">
+              <label class="form-label">Min. Spend (₱)</label>
+              <input class="form-input" type="number" placeholder="0.00" />
+            </div>
+            <div class="form-field">
+              <label class="form-label">Expiry Date</label>
+              <input class="form-input" type="date" />
+            </div>
+            <div class="form-field">
+              <label class="form-label">Usage Limit</label>
+              <input class="form-input" type="number" placeholder="Unlimited" />
+            </div>
+            <div class="form-field full">
+              <label class="toggle-wrap" style="gap: 12px">
+                <span class="toggle"
+                  ><input type="checkbox" checked /><span
+                    class="toggle-slider"
+                  ></span
+                ></span>
+                <span style="font-size: 13.5px; color: var(--brown-300)"
+                  >Auto-apply at checkout</span
+                >
+              </label>
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button
+            class="btn btn-outline"
+            onclick="closeModal('modal-add-promo')"
+          >
+            Cancel
+          </button>
+          <button class="btn btn-primary">Create Promotion</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Add User Modal -->
+    <div class="modal-overlay" id="modal-add-user">
+      <div class="modal">
+        <div class="modal-header">
+          <div class="modal-title">Add Staff Member</div>
+          <button
+            class="btn btn-ghost btn-icon"
+            onclick="closeModal('modal-add-user')"
+          >
+            <svg
+              width="16"
+              height="16"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+            >
+              <line x1="18" y1="6" x2="6" y2="18" />
+              <line x1="6" y1="6" x2="18" y2="18" />
+            </svg>
+          </button>
+        </div>
+        <div class="modal-body">
+          <div class="form-grid">
+            <div class="form-field">
+              <label class="form-label">First Name</label>
+              <input class="form-input" type="text" placeholder="First name" />
+            </div>
+            <div class="form-field">
+              <label class="form-label">Last Name</label>
+              <input class="form-input" type="text" placeholder="Last name" />
+            </div>
+            <div class="form-field full">
+              <label class="form-label">Email</label>
+              <input
+                class="form-input"
+                type="email"
+                placeholder="staff@styled.com"
+              />
+            </div>
+            <div class="form-field">
+              <label class="form-label">Role</label>
+              <select class="form-select">
+                <option>Admin</option>
+                <option>Staff</option>
+              </select>
+            </div>
+            <div class="form-field">
+              <label class="form-label">Status</label>
+              <select class="form-select">
+                <option>Active</option>
+                <option>Inactive</option>
+              </select>
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button
+            class="btn btn-outline"
+            onclick="closeModal('modal-add-user')"
+          >
+            Cancel
+          </button>
+          <button class="btn btn-primary">Send Invite</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="app-shell">
+      <!-- ── SIDEBAR ── -->
+      <aside class="sidebar">
+        <div class="sidebar-logo">
+          <img
+            src="assets/images/logo_styled.png"
+            alt="Styled"
+            class="sidebar-logo-img"
+          />
+          <span class="brand">Styled</span>
+        </div>
+
+        <div class="nav-section">
+          <div class="nav-label">Overview</div>
+          <button class="nav-item active" onclick="navigate('dashboard', this)">
+            <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+              <rect x="3" y="3" width="7" height="7" rx="1.5" />
+              <rect x="14" y="3" width="7" height="7" rx="1.5" />
+              <rect x="3" y="14" width="7" height="7" rx="1.5" />
+              <rect x="14" y="14" width="7" height="7" rx="1.5" />
+            </svg>
+            Dashboard
+          </button>
+        </div>
+
+        <div class="nav-section">
+          <div class="nav-label">Store</div>
+          <button class="nav-item" onclick="navigate('orders', this)">
+            <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+              <path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z" />
+              <line x1="3" y1="6" x2="21" y2="6" />
+              <path d="M16 10a4 4 0 0 1-8 0" />
+            </svg>
+            Orders
+            <span class="notification-dot"></span>
+          </button>
+          <button class="nav-item" onclick="navigate('products', this)">
+            <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+              <path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z" />
+              <line x1="7" y1="7" x2="7.01" y2="7" />
+            </svg>
+            Products
+          </button>
+          <button class="nav-item" onclick="navigate('customers', this)">
+            <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+              <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
+              <circle cx="9" cy="7" r="4" />
+              <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
+              <path d="M16 3.13a4 4 0 0 1 0 7.75" />
+            </svg>
+            Customers
+          </button>
+          <button class="nav-item" onclick="navigate('inventory', this)">
+            <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+              <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z" />
+              <polyline points="3.27 6.96 12 12.01 20.73 6.96" />
+              <line x1="12" y1="22.08" x2="12" y2="12" />
+            </svg>
+            Inventory
+          </button>
+        </div>
+
+        <div class="nav-section">
+          <div class="nav-label">Marketing</div>
+          <button class="nav-item" onclick="navigate('promotions', this)">
+            <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+              <path d="M20 12V22H4V12" />
+              <path d="M22 7H2v5h20V7z" />
+              <path d="M12 22V7" />
+              <path d="M12 7H7.5a2.5 2.5 0 0 1 0-5C11 2 12 7 12 7z" />
+              <path d="M12 7h4.5a2.5 2.5 0 0 0 0-5C13 2 12 7 12 7z" />
+            </svg>
+            Promotions
+          </button>
+        </div>
+
+        <div class="sidebar-divider"></div>
+        <div class="sidebar-footer">
+          <div class="user-chip">
+            <div class="user-avatar" id="sidebar-avatar">S</div>
+            <div class="user-info">
+              <div class="user-name" id="sidebar-name">Staff</div>
+              <div class="user-email" id="sidebar-email">staff@styled.com</div>
+            </div>
+          </div>
+          <button class="logout-btn" id="logout-btn" title="Log out">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
+              <polyline points="16 17 21 12 16 7"/>
+              <line x1="21" y1="12" x2="9" y2="12"/>
+            </svg>
+            Log Out
+          </button>
+        </div>
+      </aside>
+      <div class="main-content">
+        <div class="topbar">
+          <div class="topbar-title" id="page-title">
+            Welcome back, <span>Admin</span>
+          </div>
+          <div class="topbar-actions">
+            <div
+              id="topbar-date-filter"
+              style="display: flex; align-items: center; gap: 8px"
+            >
+              <select
+                class="filter-select"
+                style="height: 36px; font-size: 13px"
+              >
+                <option>Last 7 days</option>
+                <option>Last 30 days</option>
+                <option>This month</option>
+                <option>Custom range</option>
+              </select>
+            </div>
+            <button
+              class="btn btn-outline btn-sm"
+              onclick="openModal('modal-add-product')"
+            >
+              <svg
+                width="13"
+                height="13"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+              >
+                <line x1="12" y1="5" x2="12" y2="19" />
+                <line x1="5" y1="12" x2="19" y2="12" />
+              </svg>
+              Add Product
+            </button>
+            <button
+              class="btn btn-primary btn-sm"
+              onclick="openModal('modal-add-promo')"
+            >
+              <svg
+                width="13"
+                height="13"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+              >
+                <line x1="12" y1="5" x2="12" y2="19" />
+                <line x1="5" y1="12" x2="19" y2="12" />
+              </svg>
+              Create Discount
+            </button>
+          </div>
+        </div>
+
+          <div class="page active" id="page-dashboard">
+            <!-- Alert -->
+            <div class="alert alert-warning" style="margin-bottom: 20px">
+              <svg
+                width="16"
+                height="16"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                style="flex-shrink: 0; margin-top: 1px"
+              >
+                <circle cx="12" cy="12" r="10" />
+                <line x1="12" y1="8" x2="12" y2="12" />
+                <line x1="12" y1="16" x2="12.01" y2="16" />
+              </svg>
+              <span
+                ><strong>5 orders</strong> need fulfillment.
+                <button
+                  onclick="
+                    navigate(
+                      'orders',
+                      document.querySelector('[onclick*=orders]'),
+                    )
+                  "
+                  style="
+                    background: none;
+                    border: none;
+                    cursor: pointer;
+                    color: var(--gold);
+                    font-weight: 500;
+                    font-size: 13.5px;
+                    padding: 0;
+                  "
+                >
+                  View orders →
+                </button></span
+              >
+            </div>
+
+            <!-- Stats -->
+            <div class="stats-grid">
+              <div class="stat-card">
+                <div class="stat-icon">
+                  <svg
+                    width="16"
+                    height="16"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                  >
+                    <line x1="12" y1="1" x2="12" y2="23" />
+                    <path
+                      d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"
+                    />
+                  </svg>
+                </div>
+                <div class="stat-label">Total Revenue</div>
+                <div class="stat-value">₱1,248,900</div>
+                <div class="stat-change up">
+                  <svg
+                    width="12"
+                    height="12"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2.5"
+                  >
+                    <polyline points="18 15 12 9 6 15" />
+                  </svg>
+                  +18.4% vs last 7 days
+                </div>
+              </div>
+              <div class="stat-card">
+                <div class="stat-icon">
+                  <svg
+                    width="16"
+                    height="16"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                  >
+                    <path
+                      d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"
+                    />
+                    <line x1="3" y1="6" x2="21" y2="6" />
+                  </svg>
+                </div>
+                <div class="stat-label">Orders</div>
+                <div class="stat-value">312</div>
+                <div class="stat-change up">
+                  <svg
+                    width="12"
+                    height="12"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2.5"
+                  >
+                    <polyline points="18 15 12 9 6 15" />
+                  </svg>
+                  +12.4% vs last 7 days
+                </div>
+              </div>
+              <div class="stat-card">
+                <div class="stat-icon">
+                  <svg
+                    width="16"
+                    height="16"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                  >
+                    <rect x="1" y="4" width="22" height="16" rx="2" />
+                    <line x1="1" y1="10" x2="23" y2="10" />
+                  </svg>
+                </div>
+                <div class="stat-label">Avg. Order Value</div>
+                <div class="stat-value">₱4,003</div>
+                <div class="stat-change up">
+                  <svg
+                    width="12"
+                    height="12"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2.5"
+                  >
+                    <polyline points="18 15 12 9 6 15" />
+                  </svg>
+                  +8.7% vs last 7 days
+                </div>
+              </div>
+              <div class="stat-card">
+                <div class="stat-icon">
+                  <svg
+                    width="16"
+                    height="16"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                  >
+                    <polyline points="22 12 18 12 15 21 9 3 6 12 2 12" />
+                  </svg>
+                </div>
+                <div class="stat-label">Conversion Rate</div>
+                <div class="stat-value">2.31%</div>
+                <div class="stat-change down">
+                  <svg
+                    width="12"
+                    height="12"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2.5"
+                  >
+                    <polyline points="6 9 12 15 18 9" />
+                  </svg>
+                  -0.3% vs last 7 days
+                </div>
+              </div>
+            </div>
+
+            <!-- Charts Row -->
+            <div class="dashboard-grid">
+              <div class="card">
+                <div class="card-header">
+                  <div class="card-title">Revenue Over Time</div>
+                  <select
+                    class="filter-select"
+                    style="height: 32px; font-size: 12px"
+                  >
+                    <option>By Day</option>
+                    <option>By Week</option>
+                  </select>
+                </div>
+                <div class="chart-wrap">
+                  <canvas id="revenueChart"></canvas>
+                </div>
+              </div>
+              <div class="card">
+                <div class="card-header">
+                  <div class="card-title">Order by Status</div>
+                  <button class="btn btn-ghost btn-sm">View Report</button>
+                </div>
+                <div
+                  style="
+                    height: 160px;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                  "
+                >
+                  <canvas id="statusChart" style="max-height: 160px"></canvas>
+                </div>
+                <div class="donut-legend">
+                  <div class="legend-item">
+                    <div class="legend-dot" style="background: #3a6b4a"></div>
+                    <span class="text-sm" style="flex: 1">Paid</span
+                    ><span class="text-sm text-bold">100</span>
+                  </div>
+                  <div class="legend-item">
+                    <div class="legend-dot" style="background: #2d4f7a"></div>
+                    <span class="text-sm" style="flex: 1">Shipped</span
+                    ><span class="text-sm text-bold">50</span>
+                  </div>
+                  <div class="legend-item">
+                    <div class="legend-dot" style="background: #5c4433"></div>
+                    <span class="text-sm" style="flex: 1">Delivered</span
+                    ><span class="text-sm text-bold">30</span>
+                  </div>
+                  <div class="legend-item">
+                    <div class="legend-dot" style="background: #c4b5a0"></div>
+                    <span class="text-sm" style="flex: 1">Processing</span
+                    ><span class="text-sm text-bold">30</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Recent Orders + Top Products + Low Stock -->
+            <div class="card mb-20" style="margin-bottom: 20px">
+              <div class="card-header">
+                <div class="card-title">Recent Orders</div>
+                <button
+                  class="btn btn-ghost btn-sm"
+                  onclick="
+                    navigate(
+                      'orders',
+                      document.querySelector('[onclick*=orders]'),
+                    )
+                  "
+                >
+                  View all
+                </button>
+              </div>
+              <div class="table-wrap">
+                <table>
+                  <thead>
+                    <tr>
+                      <th>Order</th>
+                      <th>Customer</th>
+                      <th>Date</th>
+                      <th>Status</th>
+                      <th>Payment</th>
+                      <th>Total</th>
+                      <th></th>
+                    </tr>
+                  </thead>
+                  <tbody id="dashboard-orders-body"></tbody>
+                </table>
+              </div>
+            </div>
+
+            <div class="dashboard-grid">
+              <div class="card">
+                <div class="card-header">
+                  <div class="card-title">Top Selling Products</div>
+                  <button
+                    class="btn btn-ghost btn-sm"
+                    onclick="
+                      navigate(
+                        'products',
+                        document.querySelector('[onclick*=products]'),
+                      )
+                    "
+                  >
+                    View all
+                  </button>
+                </div>
+                <div id="top-products-list"></div>
+              </div>
+              <div class="card">
+                <div class="card-header">
+                  <div class="card-title">Low Stock Alerts</div>
+                  <button
+                    class="btn btn-ghost btn-sm"
+                    onclick="
+                      navigate(
+                        'inventory',
+                        document.querySelector('[onclick*=inventory]'),
+                      )
+                    "
+                  >
+                    View all
+                  </button>
+                </div>
+                <div id="low-stock-list"></div>
+              </div>
+            </div>
+          </div>
+          <!-- /dashboard -->
+
+          <div class="page" id="page-orders">
+            <div id="orders-list-view">
+              <div class="filter-bar">
+                <div class="search-wrap">
+                  <svg
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                  >
+                    <circle cx="11" cy="11" r="8" />
+                    <line x1="21" y1="21" x2="16.65" y2="16.65" />
+                  </svg>
+                  <input
+                    class="search-input"
+                    type="text"
+                    placeholder="Search by order ID or customer…"
+                    oninput="filterOrders(this.value)"
+                  />
+                </div>
+                <select
+                  class="filter-select"
+                  onchange="filterOrdersByStatus(this.value)"
+                >
+                  <option value="">All Status</option>
+                  <option>Pending</option>
+                  <option>Paid</option>
+                  <option>Processing</option>
+                  <option>Shipped</option>
+                  <option>Delivered</option>
+                  <option>Refunded</option>
+                  <option>Cancelled</option>
+                </select>
+                <select class="filter-select">
+                  <option>All Payment Status</option>
+                  <option>Paid</option>
+                  <option>Unpaid</option>
+                  <option>Refunded</option>
+                </select>
+                <input type="date" class="filter-select" style="width: auto" />
+                <input type="date" class="filter-select" style="width: auto" />
+              </div>
+
+              <div class="card">
+                <div class="table-wrap">
+                  <table>
+                    <thead>
+                      <tr>
+                        <th>Order</th>
+                        <th>Customer</th>
+                        <th>Date</th>
+                        <th>Status</th>
+                        <th>Payment</th>
+                        <th>Total</th>
+                        <th></th>
+                      </tr>
+                    </thead>
+                    <tbody id="orders-body"></tbody>
+                  </table>
+                </div>
+                <div class="pagination" id="orders-pagination"></div>
+              </div>
+            </div>
+
+            <!-- Order Detail view -->
+            <div id="orders-detail-view" style="display: none">
+              <button class="back-link" onclick="showOrdersList()">
+                <svg
+                  width="14"
+                  height="14"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                >
+                  <polyline points="15 18 9 12 15 6" />
+                </svg>
+                Back to orders
+              </button>
+              <div
+                style="
+                  display: flex;
+                  align-items: center;
+                  gap: 12px;
+                  margin-bottom: 20px;
+                "
+              >
+                <div
+                  class="text-display"
+                  style="font-size: 22px; font-weight: 500"
+                  id="detail-order-id"
+                >
+                  Order #STY-001
+                </div>
+                <span id="detail-status-badge" class="badge"></span>
+                <span id="detail-payment-badge" class="badge"></span>
+                <div style="margin-left: auto; display: flex; gap: 8px">
+                  <button class="btn btn-outline btn-sm">Print Invoice</button>
+                  <button class="btn btn-outline btn-sm">Resend Email</button>
+                  <button class="btn btn-danger btn-sm">Refund</button>
+                  <button class="btn btn-primary btn-sm">Mark Fulfilled</button>
+                </div>
+              </div>
+              <div class="order-detail-grid">
+                <div style="display: flex; flex-direction: column; gap: 16px">
+                  <div class="card">
+                    <div class="card-title mb-16">Order Items</div>
+                    <div id="detail-items"></div>
+                    <div
+                      style="
+                        border-top: 1px solid var(--beige-200);
+                        margin-top: 12px;
+                        padding-top: 12px;
+                      "
+                    >
+                      <div class="metric-row">
+                        <span class="text-muted">Subtotal</span
+                        ><span id="detail-subtotal"></span>
+                      </div>
+                      <div class="metric-row">
+                        <span class="text-muted">Shipping</span
+                        ><span>₱150.00</span>
+                      </div>
+                      <div class="metric-row">
+                        <span class="text-muted">Discount</span
+                        ><span style="color: var(--green)">—</span>
+                      </div>
+                      <div
+                        class="metric-row"
+                        style="font-weight: 600; font-size: 15px"
+                      >
+                        <span>Total</span><span id="detail-total-price"></span>
+                      </div>
+                    </div>
+                  </div>
+                  <div class="card">
+                    <div class="card-title mb-16">Fulfillment</div>
+                    <div class="form-field mb-16">
+                      <label class="form-label">Tracking Number</label>
+                      <div style="display: flex; gap: 8px">
+                        <input
+                          class="form-input"
+                          type="text"
+                          placeholder="Enter tracking number"
+                          id="tracking-input"
+                        />
+                        <button class="btn btn-primary" style="flex-shrink: 0">
+                          Update
+                        </button>
+                      </div>
+                    </div>
+                    <div class="form-field">
+                      <label class="form-label">Internal Notes</label>
+                      <textarea
+                        class="form-textarea"
+                        placeholder="Add internal note…"
+                        rows="2"
+                      ></textarea>
+                    </div>
+                  </div>
+                </div>
+                <div style="display: flex; flex-direction: column; gap: 16px">
+                  <div class="card">
+                    <div class="card-title mb-16">Customer</div>
+                    <div id="detail-customer"></div>
+                  </div>
+                  <div class="card">
+                    <div class="card-title mb-16">Shipping Address</div>
+                    <div
+                      id="detail-address"
+                      style="
+                        font-size: 13.5px;
+                        color: var(--brown-300);
+                        line-height: 1.8;
+                      "
+                    ></div>
+                  </div>
+                  <div class="card">
+                    <div class="card-title mb-16">Timeline</div>
+                    <div class="timeline" id="detail-timeline"></div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <!-- /orders -->
+
+          <div class="page" id="page-products">
+            <div id="products-list-view">
+              <div class="filter-bar">
+                <div class="search-wrap">
+                  <svg
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                  >
+                    <circle cx="11" cy="11" r="8" />
+                    <line x1="21" y1="21" x2="16.65" y2="16.65" />
+                  </svg>
+                  <input
+                    class="search-input"
+                    type="text"
+                    placeholder="Search products…"
+                    oninput="filterProducts(this.value)"
+                  />
+                </div>
+                <select
+                  class="filter-select"
+                  onchange="filterProductsByStatus(this.value)"
+                >
+                  <option value="">All Status</option>
+                  <option>Active</option>
+                  <option>Draft</option>
+                  <option>Low Stock</option>
+                </select>
+                <select
+                  class="filter-select"
+                  onchange="filterProductsByCategory(this.value)"
+                >
+                  <option value="">All Categories</option>
+                  <option>Outerwear</option>
+                  <option>Knitwear</option>
+                  <option>Bottoms</option>
+                  <option>Dresses</option>
+                  <option>Accessories</option>
+                </select>
+                <button
+                  class="btn btn-primary btn-sm"
+                  onclick="openModal('modal-add-product')"
+                >
+                  <svg
+                    width="13"
+                    height="13"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                  >
+                    <line x1="12" y1="5" x2="12" y2="19" />
+                    <line x1="5" y1="12" x2="19" y2="12" />
+                  </svg>
+                  Add Product
+                </button>
+              </div>
+              <div class="card">
+                <div class="table-wrap">
+                  <table>
+                    <thead>
+                      <tr>
+                        <th>Product</th>
+                        <th>Category</th>
+                        <th>Price</th>
+                        <th>Stock</th>
+                        <th>Status</th>
+                        <th>Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody id="products-body"></tbody>
+                  </table>
+                </div>
+                <div class="pagination" id="products-pagination"></div>
+              </div>
+            </div>
+
+            <!-- Product Editor -->
+            <div id="products-editor-view" style="display: none">
+              <button class="back-link" onclick="showProductsList()">
+                <svg
+                  width="14"
+                  height="14"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                >
+                  <polyline points="15 18 9 12 15 6" />
+                </svg>
+                Back to products
+              </button>
+              <div
+                style="
+                  display: flex;
+                  align-items: center;
+                  gap: 12px;
+                  margin-bottom: 20px;
+                "
+              >
+                <div
+                  class="text-display"
+                  style="font-size: 22px; font-weight: 500"
+                  id="editor-product-name"
+                >
+                  Edit Product
+                </div>
+                <div style="margin-left: auto; display: flex; gap: 8px">
+                  <button class="btn btn-danger btn-sm">Delete Product</button>
+                  <button class="btn btn-outline btn-sm">Cancel</button>
+                  <button class="btn btn-primary btn-sm">Save Changes</button>
+                </div>
+              </div>
+
+              <div class="pill-tabs" id="product-editor-tabs">
+                <button
+                  class="pill-tab active"
+                  onclick="switchProductTab('general', this)"
+                >
+                  General
+                </button>
+                <button
+                  class="pill-tab"
+                  onclick="switchProductTab('variants', this)"
+                >
+                  Variants
+                </button>
+                <button
+                  class="pill-tab"
+                  onclick="switchProductTab('inventory', this)"
+                >
+                  Inventory
+                </button>
+                <button
+                  class="pill-tab"
+                  onclick="switchProductTab('seo', this)"
+                >
+                  SEO
+                </button>
+              </div>
+
+              <!-- General tab -->
+              <div id="tab-general">
+                <div
+                  style="
+                    display: grid;
+                    grid-template-columns: 1fr 340px;
+                    gap: 20px;
+                    align-items: start;
+                  "
+                >
+                  <div style="display: flex; flex-direction: column; gap: 16px">
+                    <div class="card">
+                      <div class="form-field mb-16">
+                        <label class="form-label">Product Name</label>
+                        <input
+                          class="form-input"
+                          type="text"
+                          id="edit-product-name"
+                          value="Oversized Wool Coat"
+                        />
+                      </div>
+                      <div class="form-field mb-16">
+                        <label class="form-label">Description</label>
+                        <textarea
+                          class="form-textarea"
+                          rows="4"
+                          id="edit-product-desc"
+                        >
+A timeless oversized wool coat crafted from premium blended wool. Designed for elegance, warmth, and versatility.</textarea
+                        >
+                      </div>
+                      <div class="form-grid">
+                        <div class="form-field">
+                          <label class="form-label">Price (₱)</label>
+                          <input
+                            class="form-input"
+                            type="number"
+                            value="24500"
+                            id="edit-price"
+                          />
+                        </div>
+                        <div class="form-field">
+                          <label class="form-label">Compare Price (₱)</label>
+                          <input
+                            class="form-input"
+                            type="number"
+                            value="30000"
+                            id="edit-compare-price"
+                          />
+                        </div>
+                        <div class="form-field">
+                          <label class="form-label">Category</label>
+                          <select class="form-select">
+                            <option selected>Outerwear</option>
+                            <option>Knitwear</option>
+                            <option>Bottoms</option>
+                            <option>Dresses</option>
+                            <option>Accessories</option>
+                          </select>
+                        </div>
+                        <div class="form-field">
+                          <label class="form-label">Status</label>
+                          <select class="form-select">
+                            <option selected>Active</option>
+                            <option>Draft</option>
+                          </select>
+                        </div>
+                      </div>
+                    </div>
+                    <div class="card">
+                      <div class="card-title mb-16">Images</div>
+                      <div class="upload-area">
+                        <svg
+                          width="24"
+                          height="24"
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          stroke="currentColor"
+                          stroke-width="1.5"
+                          style="color: var(--brown-100); margin: 0 auto 8px"
+                        >
+                          <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                          <polyline points="17 8 12 3 7 8" />
+                          <line x1="12" y1="3" x2="12" y2="15" />
+                        </svg>
+                        <div style="font-size: 13px; color: var(--brown-200)">
+                          Add more images — drag & drop or click to upload
+                        </div>
+                      </div>
+                      <div
+                        style="
+                          display: flex;
+                          gap: 8px;
+                          margin-top: 12px;
+                          flex-wrap: wrap;
+                        "
+                        id="product-image-previews"
+                      >
+                        <div
+                          style="
+                            width: 60px;
+                            height: 72px;
+                            border-radius: 4px;
+                            background: var(--beige-200);
+                            display: flex;
+                            align-items: center;
+                            justify-content: center;
+                            font-size: 10px;
+                            color: var(--brown-100);
+                            text-align: center;
+                          "
+                        >
+                          Image 1
+                        </div>
+                        <div
+                          style="
+                            width: 60px;
+                            height: 72px;
+                            border-radius: 4px;
+                            background: var(--beige-200);
+                            display: flex;
+                            align-items: center;
+                            justify-content: center;
+                            font-size: 10px;
+                            color: var(--brown-100);
+                            text-align: center;
+                          "
+                        >
+                          Image 2
+                        </div>
+                        <div
+                          style="
+                            width: 60px;
+                            height: 72px;
+                            border-radius: 4px;
+                            background: var(--beige-200);
+                            display: flex;
+                            align-items: center;
+                            justify-content: center;
+                            font-size: 10px;
+                            color: var(--brown-100);
+                            text-align: center;
+                          "
+                        >
+                          Image 3
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                  <div style="display: flex; flex-direction: column; gap: 16px">
+                    <div class="card">
+                      <div class="card-title mb-16">Toggles</div>
+                      <div
+                        style="display: flex; flex-direction: column; gap: 12px"
+                      >
+                        <label class="toggle-wrap">
+                          <span class="toggle"
+                            ><input type="checkbox" checked /><span
+                              class="toggle-slider"
+                            ></span
+                          ></span>
+                          <span
+                            style="font-size: 13.5px; color: var(--brown-300)"
+                            >Active / Published</span
+                          >
+                        </label>
+                        <label class="toggle-wrap">
+                          <span class="toggle"
+                            ><input type="checkbox" /><span
+                              class="toggle-slider"
+                            ></span
+                          ></span>
+                          <span
+                            style="font-size: 13.5px; color: var(--brown-300)"
+                            >Featured product</span
+                          >
+                        </label>
+                        <label class="toggle-wrap">
+                          <span class="toggle"
+                            ><input type="checkbox" checked /><span
+                              class="toggle-slider"
+                            ></span
+                          ></span>
+                          <span
+                            style="font-size: 13.5px; color: var(--brown-300)"
+                            >Track inventory</span
+                          >
+                        </label>
+                      </div>
+                    </div>
+                    <div class="card">
+                      <div class="card-title mb-16">Summary</div>
+                      <div class="metric-row">
+                        <span class="text-muted text-sm">Price</span
+                        ><span class="text-bold">₱24,500</span>
+                      </div>
+                      <div class="metric-row">
+                        <span class="text-muted text-sm">Compare</span
+                        ><span
+                          class="text-sm"
+                          style="
+                            text-decoration: line-through;
+                            color: var(--brown-100);
+                          "
+                          >₱30,000</span
+                        >
+                      </div>
+                      <div class="metric-row">
+                        <span class="text-muted text-sm">Total Stock</span
+                        ><span class="text-bold">18</span>
+                      </div>
+                      <div class="metric-row">
+                        <span class="text-muted text-sm">Category</span
+                        ><span class="text-sm">Outerwear</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Variants tab -->
+              <div id="tab-variants" style="display: none">
+                <div class="card">
+                  <div class="card-title mb-16">Size Variants</div>
+                  <table>
+                    <thead>
+                      <tr>
+                        <th>Size</th>
+                        <th>Color</th>
+                        <th>SKU</th>
+                        <th>Stock</th>
+                        <th>Price</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <tr>
+                        <td>XS</td>
+                        <td>Camel</td>
+                        <td>OWC-XS-CAM</td>
+                        <td>
+                          <input
+                            class="form-input"
+                            style="width: 70px; height: 30px; padding: 0 8px"
+                            value="3"
+                          />
+                        </td>
+                        <td>₱24,500</td>
+                      </tr>
+                      <tr>
+                        <td>S</td>
+                        <td>Camel</td>
+                        <td>OWC-S-CAM</td>
+                        <td>
+                          <input
+                            class="form-input"
+                            style="width: 70px; height: 30px; padding: 0 8px"
+                            value="4"
+                          />
+                        </td>
+                        <td>₱24,500</td>
+                      </tr>
+                      <tr>
+                        <td>M</td>
+                        <td>Camel</td>
+                        <td>OWC-M-CAM</td>
+                        <td>
+                          <input
+                            class="form-input"
+                            style="width: 70px; height: 30px; padding: 0 8px"
+                            value="6"
+                          />
+                        </td>
+                        <td>₱24,500</td>
+                      </tr>
+                      <tr>
+                        <td>L</td>
+                        <td>Camel</td>
+                        <td>OWC-L-CAM</td>
+                        <td>
+                          <input
+                            class="form-input"
+                            style="width: 70px; height: 30px; padding: 0 8px"
+                            value="4"
+                          />
+                        </td>
+                        <td>₱24,500</td>
+                      </tr>
+                      <tr>
+                        <td>XL</td>
+                        <td>Camel</td>
+                        <td>OWC-XL-CAM</td>
+                        <td>
+                          <input
+                            class="form-input"
+                            style="width: 70px; height: 30px; padding: 0 8px"
+                            value="1"
+                          />
+                        </td>
+                        <td>₱24,500</td>
+                      </tr>
+                    </tbody>
+                  </table>
+                  <button
+                    class="btn btn-outline btn-sm mt-16"
+                    style="margin-top: 16px"
+                  >
+                    <svg
+                      width="13"
+                      height="13"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="2"
+                    >
+                      <line x1="12" y1="5" x2="12" y2="19" />
+                      <line x1="5" y1="12" x2="19" y2="12" />
+                    </svg>
+                    Add Variant
+                  </button>
+                </div>
+              </div>
+
+              <!-- Inventory tab -->
+              <div id="tab-inventory" style="display: none">
+                <div class="card">
+                  <div class="card-title mb-16">Inventory Settings</div>
+                  <div class="form-grid">
+                    <div class="form-field">
+                      <label class="form-label">Low Stock Threshold</label>
+                      <input class="form-input" type="number" value="3" />
+                    </div>
+                    <div class="form-field">
+                      <label class="form-label">Total Stock</label>
+                      <input class="form-input" type="number" value="18" />
+                    </div>
+                    <div class="form-field full">
+                      <label class="toggle-wrap">
+                        <span class="toggle"
+                          ><input type="checkbox" checked /><span
+                            class="toggle-slider"
+                          ></span
+                        ></span>
+                        <span style="font-size: 13.5px; color: var(--brown-300)"
+                          >Continue selling when out of stock</span
+                        >
+                      </label>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- SEO tab -->
+              <div id="tab-seo" style="display: none">
+                <div class="card">
+                  <div class="card-title mb-16">SEO Settings</div>
+                  <div style="display: flex; flex-direction: column; gap: 14px">
+                    <div class="form-field">
+                      <label class="form-label">SEO Title</label>
+                      <input
+                        class="form-input"
+                        type="text"
+                        value="Oversized Wool Coat — Styled"
+                      />
+                    </div>
+                    <div class="form-field">
+                      <label class="form-label">Meta Description</label>
+                      <textarea class="form-textarea" rows="3">
+Shop the Oversized Wool Coat at Styled — timeless luxury fashion for every moment.</textarea
+                      >
+                    </div>
+                    <div class="form-field">
+                      <label class="form-label">URL Handle</label>
+                      <input
+                        class="form-input"
+                        type="text"
+                        value="oversized-wool-coat"
+                      />
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <!-- /products -->
+          <div class="page" id="page-customers">
+            <div id="customers-list-view">
+              <div class="filter-bar">
+                <div class="search-wrap">
+                  <svg
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                  >
+                    <circle cx="11" cy="11" r="8" />
+                    <line x1="21" y1="21" x2="16.65" y2="16.65" />
+                  </svg>
+                  <input
+                    class="search-input"
+                    type="text"
+                    placeholder="Search customers…"
+                    oninput="filterCustomers(this.value)"
+                  />
+                </div>
+                <select class="filter-select">
+                  <option value="">All Tags</option>
+                  <option>VIP</option>
+                  <option>Repeat Buyer</option>
+                  <option>New</option>
+                </select>
+                <button class="btn btn-outline btn-sm">
+                  <svg
+                    width="13"
+                    height="13"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                  >
+                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                    <polyline points="7 10 12 15 17 10" />
+                    <line x1="12" y1="15" x2="12" y2="3" />
+                  </svg>
+                  Export CSV
+                </button>
+              </div>
+              <div class="card">
+                <div class="table-wrap">
+                  <table>
+                    <thead>
+                      <tr>
+                        <th>Customer</th>
+                        <th>Email</th>
+                        <th>Orders</th>
+                        <th>Total Spent</th>
+                        <th>Tags</th>
+                        <th>Since</th>
+                        <th></th>
+                      </tr>
+                    </thead>
+                    <tbody id="customers-body"></tbody>
+                  </table>
+                </div>
+                <div class="pagination" id="customers-pagination"></div>
+              </div>
+            </div>
+
+            <!-- Customer Profile -->
+            <div id="customer-profile-view" style="display: none">
+              <button class="back-link" onclick="showCustomersList()">
+                <svg
+                  width="14"
+                  height="14"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                >
+                  <polyline points="15 18 9 12 15 6" />
+                </svg>
+                Back to customers
+              </button>
+              <div
+                style="
+                  display: grid;
+                  grid-template-columns: 1fr 280px;
+                  gap: 20px;
+                  align-items: start;
+                "
+              >
+                <div style="display: flex; flex-direction: column; gap: 16px">
+                  <div class="card">
+                    <div
+                      style="
+                        display: flex;
+                        align-items: center;
+                        gap: 14px;
+                        margin-bottom: 16px;
+                      "
+                    >
+                      <div
+                        class="customer-avatar"
+                        style="width: 48px; height: 48px; font-size: 18px"
+                        id="profile-avatar"
+                      >
+                        B
+                      </div>
+                      <div>
+                        <div
+                          id="profile-name"
+                          style="
+                            font-size: 17px;
+                            font-weight: 500;
+                            color: var(--brown-400);
+                          "
+                        >
+                          Bea Santiago
+                        </div>
+                        <div id="profile-email" class="text-sm text-muted">
+                          bea.santiago@gmail.com
+                        </div>
+                      </div>
+                      <div style="margin-left: auto; display: flex; gap: 6px">
+                        <span class="badge badge-vip">VIP</span>
+                        <button class="btn btn-outline btn-sm">Add Tag</button>
+                      </div>
+                    </div>
+                    <div class="form-field">
+                      <label class="form-label">Internal Notes</label>
+                      <textarea
+                        class="form-textarea"
+                        placeholder="Add internal note…"
+                        rows="2"
+                      ></textarea>
+                    </div>
+                  </div>
+                  <div class="card">
+                    <div class="card-title mb-16">Order History</div>
+                    <div class="table-wrap">
+                      <table>
+                        <thead>
+                          <tr>
+                            <th>Order</th>
+                            <th>Date</th>
+                            <th>Status</th>
+                            <th>Total</th>
+                          </tr>
+                        </thead>
+                        <tbody id="profile-orders"></tbody>
+                      </table>
+                    </div>
+                  </div>
+                </div>
+                <div style="display: flex; flex-direction: column; gap: 16px">
+                  <div class="card">
+                    <div class="card-title mb-16">Summary</div>
+                    <div class="metric-row">
+                      <span class="text-muted text-sm">Total Orders</span
+                      ><span class="text-bold" id="profile-total-orders"
+                        >12</span
+                      >
+                    </div>
+                    <div class="metric-row">
+                      <span class="text-muted text-sm">Total Spent</span
+                      ><span class="text-bold" id="profile-total-spent"
+                        >₱62,340</span
+                      >
+                    </div>
+                    <div class="metric-row">
+                      <span class="text-muted text-sm">Avg. Order</span
+                      ><span class="text-sm">₱5,195</span>
+                    </div>
+                    <div class="metric-row">
+                      <span class="text-muted text-sm">Customer Since</span
+                      ><span class="text-sm">Jan 2024</span>
+                    </div>
+                  </div>
+                  <div class="card">
+                    <div class="card-title mb-16">Shipping Address</div>
+                    <div
+                      style="
+                        font-size: 13px;
+                        color: var(--brown-300);
+                        line-height: 1.8;
+                      "
+                    >
+                      123 Ayala Avenue<br />Makati City, Metro Manila<br />Philippines
+                      1226
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <!-- /customers -->
+          <div class="page" id="page-promotions">
+            <div class="promo-stats">
+              <div class="stat-card">
+                <div class="stat-label">Active Codes</div>
+                <div class="stat-value">5</div>
+              </div>
+              <div class="stat-card">
+                <div class="stat-label">Total Uses</div>
+                <div class="stat-value">342</div>
+              </div>
+              <div class="stat-card">
+                <div class="stat-label">Revenue from Promos</div>
+                <div class="stat-value">₱84,200</div>
+              </div>
+            </div>
+            <div class="filter-bar">
+              <div class="search-wrap">
+                <svg
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                >
+                  <circle cx="11" cy="11" r="8" />
+                  <line x1="21" y1="21" x2="16.65" y2="16.65" />
+                </svg>
+                <input
+                  class="search-input"
+                  type="text"
+                  placeholder="Search promotions…"
+                />
+              </div>
+              <button
+                class="btn btn-primary btn-sm"
+                onclick="openModal('modal-add-promo')"
+              >
+                <svg
+                  width="13"
+                  height="13"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                >
+                  <line x1="12" y1="5" x2="12" y2="19" />
+                  <line x1="5" y1="12" x2="19" y2="12" />
+                </svg>
+                Create Promotion
+              </button>
+            </div>
+            <div class="card">
+              <div class="table-wrap">
+                <table>
+                  <thead>
+                    <tr>
+                      <th>Code</th>
+                      <th>Type</th>
+                      <th>Discount</th>
+                      <th>Conditions</th>
+                      <th>Uses</th>
+                      <th>Expiry</th>
+                      <th>Status</th>
+                      <th></th>
+                    </tr>
+                  </thead>
+                  <tbody id="promotions-body"></tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+          <!-- /promotions -->
+          <div class="page" id="page-inventory">
+            <div class="filter-bar">
+              <div class="search-wrap">
+                <svg
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                >
+                  <circle cx="11" cy="11" r="8" />
+                  <line x1="21" y1="21" x2="16.65" y2="16.65" />
+                </svg>
+                <input
+                  class="search-input"
+                  type="text"
+                  placeholder="Search inventory…"
+                  oninput="filterInventory(this.value)"
+                />
+              </div>
+              <select
+                class="filter-select"
+                onchange="filterInventoryByStatus(this.value)"
+              >
+                <option value="">All Stock Status</option>
+                <option value="in">In Stock</option>
+                <option value="low">Low Stock</option>
+                <option value="out">Out of Stock</option>
+              </select>
+              <select class="filter-select">
+                <option value="">All Categories</option>
+                <option>Outerwear</option>
+                <option>Knitwear</option>
+                <option>Bottoms</option>
+                <option>Accessories</option>
+              </select>
+              <button class="btn btn-outline btn-sm">Bulk Update</button>
+            </div>
+
+            <div
+              style="
+                display: flex;
+                gap: 16px;
+                margin-bottom: 20px;
+                flex-wrap: wrap;
+              "
+            >
+              <div class="stat-card" style="flex: 1; min-width: 120px">
+                <div class="stat-label">In Stock</div>
+                <div class="stat-value" style="font-size: 22px">18</div>
+              </div>
+              <div class="stat-card" style="flex: 1; min-width: 120px">
+                <div class="stat-label">Low Stock</div>
+                <div
+                  class="stat-value"
+                  style="font-size: 22px; color: var(--gold)"
+                >
+                  5
+                </div>
+              </div>
+              <div class="stat-card" style="flex: 1; min-width: 120px">
+                <div class="stat-label">Out of Stock</div>
+                <div
+                  class="stat-value"
+                  style="font-size: 22px; color: var(--red)"
+                >
+                  1
+                </div>
+              </div>
+              <div class="stat-card" style="flex: 1; min-width: 120px">
+                <div class="stat-label">SKUs Total</div>
+                <div class="stat-value" style="font-size: 22px">24</div>
+              </div>
+            </div>
+
+            <div class="card">
+              <div class="table-wrap">
+                <table>
+                  <thead>
+                    <tr>
+                      <th>Product</th>
+                      <th>Variant</th>
+                      <th>SKU</th>
+                      <th>Category</th>
+                      <th>Stock</th>
+                      <th>Status</th>
+                      <th>Update</th>
+                    </tr>
+                  </thead>
+                  <tbody id="inventory-body"></tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+          <!-- /inventory -->
+
+        </div>
+        <!-- /page-body -->
+      </div>
+      <!-- /main-content -->
+    </div>
+    <!-- /app-shell -->
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    <script src="js/staff.js"></script>
+  </body>
+</html>

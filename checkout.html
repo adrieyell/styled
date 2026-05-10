@@ -22,7 +22,8 @@
         />FREE SHIPPING ON ORDERS OVER ₱1000
       </div>
       <div class="ann-right">
-        <a href="#">Help</a><span>|</span><a href="#">Track Order</a>
+        <a href="contact.html">Help</a><span>|</span
+        ><a href="orders.html">Track Order</a>
       </div>
     </div>
     <nav>
@@ -185,30 +186,139 @@
               placeholder="Province / Region"
             />
           </div>
-          <p class="form-section-title">Payment Details</p>
-          <div class="form-field">
-            <input
-              type="text"
-              id="co-card"
-              placeholder="Card Number"
-              maxlength="19"
-            />
+          <p class="form-section-title">Payment Method</p>
+          <div class="payment-tabs">
+            <button class="payment-tab active" data-method="card" type="button">
+              <svg
+                width="16"
+                height="16"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="1.7"
+              >
+                <rect x="1" y="4" width="22" height="16" rx="2" />
+                <line x1="1" y1="10" x2="23" y2="10" />
+              </svg>
+              Credit / Debit Card
+            </button>
+            <button class="payment-tab" data-method="gcash" type="button">
+              <svg
+                width="16"
+                height="16"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="1.7"
+              >
+                <rect x="5" y="2" width="14" height="20" rx="2" />
+                <line x1="12" y1="18" x2="12.01" y2="18" />
+              </svg>
+              GCash
+            </button>
+            <button class="payment-tab" data-method="cod" type="button">
+              <svg
+                width="16"
+                height="16"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="1.7"
+              >
+                <path d="M17 9V7a5 5 0 0 0-10 0v2" />
+                <rect x="3" y="9" width="18" height="13" rx="2" />
+                <circle cx="12" cy="15" r="1.5" />
+              </svg>
+              Cash on Delivery
+            </button>
           </div>
-          <div class="form-row">
+
+          <!-- Card fields -->
+          <div id="payment-panel-card">
             <div class="form-field">
               <input
                 type="text"
-                id="co-expiry"
-                placeholder="MM / YY"
-                maxlength="7"
+                id="co-card"
+                placeholder="Card Number"
+                maxlength="19"
               />
             </div>
+            <div class="form-row">
+              <div class="form-field">
+                <input
+                  type="text"
+                  id="co-expiry"
+                  placeholder="MM / YY"
+                  maxlength="7"
+                />
+              </div>
+              <div class="form-field">
+                <input
+                  type="text"
+                  id="co-cvv"
+                  placeholder="CVV"
+                  maxlength="3"
+                />
+              </div>
+            </div>
             <div class="form-field">
-              <input type="text" id="co-cvv" placeholder="CVV" maxlength="3" />
+              <input
+                type="text"
+                id="co-cardholder"
+                placeholder="Name on Card"
+              />
             </div>
           </div>
-          <div class="form-field">
-            <input type="text" id="co-cardholder" placeholder="Name on Card" />
+
+          <!-- GCash fields -->
+          <div id="payment-panel-gcash" style="display: none">
+            <div class="gcash-info">
+              <svg
+                width="18"
+                height="18"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="1.7"
+              >
+                <rect x="5" y="2" width="14" height="20" rx="2" />
+                <line x1="12" y1="18" x2="12.01" y2="18" />
+              </svg>
+              <p>
+                Enter your registered GCash mobile number. You will receive a
+                payment prompt on your phone to complete the transaction.
+              </p>
+            </div>
+            <div class="form-field">
+              <input
+                type="tel"
+                id="co-gcash"
+                placeholder="GCash Mobile Number (e.g. 09XX XXX XXXX)"
+                maxlength="13"
+              />
+            </div>
+          </div>
+
+          <!-- COD fields -->
+          <div id="payment-panel-cod" style="display: none">
+            <div class="cod-info">
+              <svg
+                width="18"
+                height="18"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="1.7"
+              >
+                <path d="M17 9V7a5 5 0 0 0-10 0v2" />
+                <rect x="3" y="9" width="18" height="13" rx="2" />
+                <circle cx="12" cy="15" r="1.5" />
+              </svg>
+              <p>
+                Pay in cash when your order arrives. Available for Metro Manila
+                deliveries only. Please prepare the exact amount.
+              </p>
+            </div>
           </div>
           <p class="form-section-title">Promo Code</p>
           <div class="promo-row">
