@@ -647,28 +647,106 @@ function formatPrice(num) {
 // ============================================
 // WISHLIST FUNCTIONS
 // ============================================
-function getWishlist() {
+
+// In-memory cache so sync callers (isInWishlist, badge) still work instantly.
+let _wishlistCache = null;
+
+function _wishlistFromStorage() {
   try {
     return JSON.parse(localStorage.getItem("styled_wishlist")) || [];
   } catch (e) {
     return [];
   }
 }
-function saveWishlist(list) {
-  localStorage.setItem("styled_wishlist", JSON.stringify(list));
+function _saveWishlistToStorage(list) {
+  try {
+    localStorage.setItem("styled_wishlist", JSON.stringify(list));
+  } catch (e) {}
 }
+
+/** Synchronous read — in-memory cache or localStorage fallback. */
+function getWishlist() {
+  if (_wishlistCache !== null) return _wishlistCache;
+  return _wishlistFromStorage();
+}
+
+/** Fetch from server, update cache + localStorage. Falls back silently. */
+async function fetchWishlist() {
+  try {
+    const res = await fetch(`${API_BASE}/php/wishlist.php`, {
+      credentials: "include",
+      cache: "no-store",
+    });
+    if (res.status === 401) {
+      _wishlistCache = _wishlistFromStorage();
+      return _wishlistCache;
+    }
+    if (!res.ok) throw new Error(`Wishlist API ${res.status}`);
+    const data = await res.json();
+    const items = Array.isArray(data.items) ? data.items : [];
+    _wishlistCache = items;
+    _saveWishlistToStorage(items);
+    return items;
+  } catch (e) {
+    console.warn("fetchWishlist() fell back to localStorage:", e);
+    _wishlistCache = _wishlistFromStorage();
+    return _wishlistCache;
+  }
+}
+
+/** Sync local cache + localStorage immediately. */
+async function saveWishlist(list) {
+  _wishlistCache = list;
+  _saveWishlistToStorage(list);
+}
+
 function isInWishlist(name) {
   return getWishlist().some((i) => i.name === name);
 }
-function toggleWishlistItem(product) {
-  let list = getWishlist();
+
+/** Toggle a product in/out of the wishlist; hits the API in background. */
+async function toggleWishlistItem(product) {
+  const list = getWishlist();
   const idx = list.findIndex((i) => i.name === product.name);
-  if (idx >= 0) {
-    list.splice(idx, 1);
-  } else {
-    list.push(product);
+  const removing = idx >= 0;
+
+  // Optimistic local update
+  if (removing) list.splice(idx, 1);
+  else list.push(product);
+  await saveWishlist(list);
+  updateWishlistBadge();
+
+  // Resolve product_id for API if missing
+  let productId = product.product_id || 0;
+  if (!productId) {
+    try {
+      const categoryKey = product.category || "";
+      const raw = await fetchProducts(
+        categoryKey ? { category: categoryKey } : {},
+      );
+      const norm = raw.map(normaliseProduct);
+      _updateProductCache(norm);
+      const match = norm.find(
+        (p) =>
+          p.name.trim().toLowerCase() === product.name.trim().toLowerCase(),
+      );
+      if (match) productId = match.product_id;
+    } catch (_) {}
   }
-  saveWishlist(list);
+
+  if (productId) {
+    try {
+      await fetch(`${API_BASE}/php/wishlist.php`, {
+        method: removing ? "DELETE" : "POST",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ product_id: productId }),
+      });
+    } catch (e) {
+      console.warn("toggleWishlistItem API call failed:", e);
+    }
+  }
+
   updateWishlistBadge();
   refreshWishlistPanel();
   syncWishButtons();
@@ -969,9 +1047,14 @@ function buildWishlistPanel() {
 
 function openWishlistPanel() {
   buildWishlistPanel();
-  refreshWishlistPanel();
+  refreshWishlistPanel(); // render immediately from cache
   document.getElementById("wishlist-panel")?.classList.add("open");
   document.body.style.overflow = "hidden";
+  // Then fetch fresh data from server and re-render
+  fetchWishlist().then(() => {
+    refreshWishlistPanel();
+    updateWishlistBadge();
+  });
 }
 
 function closeWishlistPanel() {
@@ -1046,11 +1129,35 @@ async function addWishlistItemToCart(product) {
     showToast("Please login to add to cart");
     return;
   }
-  await saveCart({
-    product_id: product.product_id,
-    size: product.size || "",
-    qty: 1,
-  });
+
+  let productId = product.product_id || 0;
+
+  // Wishlist items saved from localStorage may not carry product_id —
+  // resolve it from the API by matching on name, same as the product modal does.
+  if (!productId) {
+    try {
+      const categoryKey = product.category || "";
+      const raw = await fetchProducts(
+        categoryKey ? { category: categoryKey } : {},
+      );
+      const norm = raw.map(normaliseProduct);
+      _updateProductCache(norm);
+      const match = norm.find(
+        (p) =>
+          p.name.trim().toLowerCase() === product.name.trim().toLowerCase(),
+      );
+      if (match) productId = match.product_id;
+    } catch (err) {
+      console.error("addWishlistItemToCart: failed to resolve product_id", err);
+    }
+  }
+
+  if (!productId) {
+    showToast("Could not add to cart — product not found.");
+    return;
+  }
+
+  await saveCart({ product_id: productId, size: product.size || "", qty: 1 });
   await getCart();
   showToast("Added to cart!");
 }
@@ -1549,4 +1656,10 @@ document.addEventListener("DOMContentLoaded", () => {
   // Pass no options here — individual pages (orders, admin) handle their own
   // redirect logic via their own inline auth-guard scripts.
   checkAuthStatus();
+
+  // Seed the wishlist cache from the server so the badge and panel are accurate.
+  fetchWishlist().then(() => {
+    updateWishlistBadge();
+    syncWishButtons();
+  });
 });

@@ -1,122 +1,3 @@
-// ============================================
-// ORDERS PAGE
-// ============================================
-
-// ── MOCK ORDER DATA ─────────────────────────
-// Replace this with real backend data when ready.
-// Orders are keyed by user email in localStorage
-// so each user sees their own orders.
-// When a real order is placed via checkout.js,
-// saveOrder() below should be called.
-
-const MOCK_ORDERS = [
-  {
-    id: "STY-876787",
-    date: "May 02, 2026",
-    dateISO: "2026-05-02",
-    status: "Delivered",
-    total: "₱460.00",
-    totalNum: 460,
-    items: [
-      {
-        name: "Beaded Ocean Necklace",
-        price: "₱160.00",
-        qty: 1,
-        color: "#8c6d57",
-        size: "—",
-        img: "Assets/Images/Accessories/Beaded Ocean Necklace.png",
-      },
-      {
-        name: "Gold Arm Cuff",
-        price: "₱130.00",
-        qty: 2,
-        color: "#2c1f14",
-        size: "—",
-        img: "Assets/Images/Accessories/Gold Arm Cuff.png",
-      },
-    ],
-    shipping: {
-      address: "123 Ayala Avenue, Makati City\nMetro Manila, 1226\nPhilippines",
-      cost: 0,
-    },
-    tracking: [
-      { label: "Order Placed", date: "May 02, 2026", done: true },
-      { label: "Processing", date: "May 02, 2026", done: true },
-      { label: "Shipped", date: "May 03, 2026", done: true },
-      { label: "Out for Delivery", date: "May 04, 2026", done: true },
-      { label: "Delivered", date: "May 05, 2026", done: true },
-    ],
-  },
-  {
-    id: "STY-123455",
-    date: "May 02, 2026",
-    dateISO: "2026-05-02",
-    status: "Processing",
-    total: "₱650.00",
-    totalNum: 650,
-    items: [
-      {
-        name: "Tie-Strap Dress",
-        price: "₱650.00",
-        qty: 1,
-        color: "#5c3d2e",
-        size: "M",
-        img: "Assets/Images/Dresses/Tie-Strap Dress.png",
-      },
-    ],
-    shipping: {
-      address:
-        "456 BGC High Street, Taguig City\nMetro Manila, 1634\nPhilippines",
-      cost: 0,
-    },
-    tracking: [
-      { label: "Order Placed", date: "May 02, 2026", done: true },
-      { label: "Processing", date: "May 02, 2026", done: true, active: true },
-      { label: "Shipped", date: "—", done: false },
-      { label: "Out for Delivery", date: "—", done: false },
-      { label: "Delivered", date: "—", done: false },
-    ],
-  },
-  {
-    id: "STY-123498",
-    date: "April 30, 2026",
-    dateISO: "2026-04-30",
-    status: "Delivered",
-    total: "₱460.00",
-    totalNum: 460,
-    items: [
-      {
-        name: "Midnight Lounge Shorts",
-        price: "₱350.00",
-        qty: 1,
-        color: "#3d2b1f",
-        size: "S",
-        img: "Assets/Images/Bottoms/Midnight Lounge Shorts.png",
-      },
-      {
-        name: "Sand Tailored Shorts",
-        price: "₱110.00",
-        qty: 1,
-        color: "#8c6d57",
-        size: "M",
-        img: "Assets/Images/Bottoms/Sand Tailored Shorts.png",
-      },
-    ],
-    shipping: {
-      address: "789 Ortigas Ave, Pasig City\nMetro Manila, 1605\nPhilippines",
-      cost: 99,
-    },
-    tracking: [
-      { label: "Order Placed", date: "April 30, 2026", done: true },
-      { label: "Processing", date: "April 30, 2026", done: true },
-      { label: "Shipped", date: "May 01, 2026", done: true },
-      { label: "Out for Delivery", date: "May 02, 2026", done: true },
-      { label: "Delivered", date: "May 03, 2026", done: true },
-    ],
-  },
-];
-
-// ── HELPERS ─────────────────────────────────
 function getStatusClass(status) {
   const map = {
     Delivered: "status-delivered",
@@ -127,31 +8,10 @@ function getStatusClass(status) {
   return map[status] || "status-processing";
 }
 
-function getOrders() {
-  // Merge mock orders with any real orders saved from checkout
-  try {
-    const saved = JSON.parse(localStorage.getItem("styled_orders")) || [];
-    // Prepend saved (newest first), then mock
-    return [...saved, ...MOCK_ORDERS];
-  } catch (e) {
-    return MOCK_ORDERS;
-  }
-}
-
-// Call this from checkout.js when an order is placed
-function saveOrder(order) {
-  try {
-    const existing = JSON.parse(localStorage.getItem("styled_orders")) || [];
-    existing.unshift(order);
-    localStorage.setItem("styled_orders", JSON.stringify(existing));
-  } catch (e) {}
-}
-
 // ── INIT USER INFO ───────────────────────────
 function initUserInfo() {
   const user = getCurrentUser();
   if (!user) {
-    // Not logged in — redirect to auth
     window.location.href = "auth.html";
     return;
   }
@@ -172,12 +32,56 @@ function initUserInfo() {
   }
 }
 
+// ── FETCH ORDERS FROM API ────────────────────
+async function fetchOrders() {
+  const res = await fetch("php/orders.php", { credentials: "include" });
+
+  if (res.status === 401) {
+    window.location.href = "auth.html";
+    return [];
+  }
+
+  if (!res.ok) {
+    console.error("Orders API error:", res.status);
+    return [];
+  }
+
+  const data = await res.json();
+  return data.orders || [];
+}
+
+// ── FETCH SINGLE ORDER FROM API ──────────────
+async function fetchOrder(orderId) {
+  const res = await fetch(`php/orders.php?id=${encodeURIComponent(orderId)}`, {
+    credentials: "include",
+  });
+
+  if (res.status === 401) {
+    window.location.href = "auth.html";
+    return null;
+  }
+
+  if (!res.ok) {
+    console.error("Order detail API error:", res.status);
+    return null;
+  }
+
+  const data = await res.json();
+  return data.order || null;
+}
+
 // ── RENDER ORDER LIST ────────────────────────
-function renderOrderList() {
-  const orders = getOrders();
+async function renderOrderList() {
   const container = document.getElementById("orders-container");
   const emptyEl = document.getElementById("orders-empty");
-  const signoutBtn = document.getElementById("signout-btn-list");
+
+  // Show a loading state while fetching
+  if (container) {
+    container.style.display = "flex";
+    container.innerHTML = `<p style="color:#8c6d57;padding:2rem 0;text-align:center;width:100%">Loading orders…</p>`;
+  }
+
+  const orders = await fetchOrders();
 
   if (!orders || orders.length === 0) {
     container.style.display = "none";
@@ -218,11 +122,15 @@ function renderOrderList() {
     })
     .join("");
 
-  // Click handlers
+  // Click handlers — fetch fresh detail from API on click
   container.querySelectorAll(".order-row").forEach((row) => {
-    row.addEventListener("click", () => {
+    row.addEventListener("click", async () => {
       const orderId = row.dataset.orderId;
-      const order = orders.find((o) => o.id === orderId);
+      // Try to find in already-fetched list first (avoids extra round-trip)
+      let order = orders.find((o) => o.id === orderId);
+      if (!order) {
+        order = await fetchOrder(orderId);
+      }
       if (order) openOrderDetail(order);
     });
   });
@@ -271,7 +179,6 @@ function renderTrackingStepper(steps) {
   const stepper = document.getElementById("tracking-stepper");
   if (!stepper) return;
 
-  // Find the active step index (last done, or explicitly active)
   let activeIdx = -1;
   steps.forEach((s, i) => {
     if (s.done || s.active) activeIdx = i;
@@ -349,7 +256,6 @@ const tabOrders = document.getElementById("tab-orders");
 const tabWishlist = document.getElementById("tab-wishlist");
 
 function setActiveTab(activeEl) {
-  // Use inline styles — beats CSS classes, attributes, and external stylesheets
   [tabOrders, tabWishlist].forEach((el) => {
     if (!el) return;
     el.style.background = "";
@@ -381,7 +287,8 @@ tabWishlist?.addEventListener("click", (e) => {
 initUserInfo();
 renderOrderList();
 
-// Set My Orders active using inline styles — runs immediately and after DOM ready
 setActiveTab(tabOrders);
-document.addEventListener("DOMContentLoaded", () => setActiveTab(document.getElementById("tab-orders")));
+document.addEventListener("DOMContentLoaded", () =>
+  setActiveTab(document.getElementById("tab-orders")),
+);
 setTimeout(() => setActiveTab(document.getElementById("tab-orders")), 300);

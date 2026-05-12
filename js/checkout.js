@@ -2,6 +2,9 @@
 // CHECKOUT PAGE - Cart, quantities, payment
 // ============================================
 
+// Tracks the currently applied promo for order placement
+let appliedPromo = null; // { code, discount_type, discount_value }
+
 async function renderCart() {
   const cart = await getCart();
   const tbody = document.getElementById("cart-table-body");
@@ -57,13 +60,7 @@ async function renderCart() {
   const badge = document.getElementById("nav-cart-badge");
   if (badge) badge.textContent = totalQty;
 
-  const shipping = subtotal >= 1000 ? 0 : 99;
-  const grand = subtotal + shipping;
-
-  document.getElementById("subtotal-val").textContent = formatPrice(subtotal);
-  document.getElementById("shipping-val").textContent =
-    shipping === 0 ? "FREE" : formatPrice(shipping);
-  document.getElementById("grand-total-val").textContent = formatPrice(grand);
+  updateTotals(subtotal);
 
   // Add event listeners
   document.querySelectorAll(".qty-btn").forEach((btn) => {
@@ -82,7 +79,6 @@ async function renderCart() {
       const idx = parseInt(btn.dataset.idx);
       const cart = await getCart();
       const removed = cart.splice(idx, 1)[0];
-      // Delete the item explicitly via the API
       await fetch(`${API_BASE}/php/cart.php`, {
         method: "DELETE",
         credentials: "include",
@@ -92,13 +88,97 @@ async function renderCart() {
           size: removed.size || "",
         }),
       });
-      await getCart(); // refresh cache
+      await getCart();
       renderCart();
     });
   });
 }
 
-// ── PAYMENT METHOD TABS ──────────────────────
+// ── TOTALS (subtotal + discount + shipping + grand) ───────────────────────────
+function updateTotals(subtotal) {
+  const shipping = subtotal >= 1000 ? 0 : 150;
+
+  let discount = 0;
+  if (appliedPromo) {
+    if (appliedPromo.discount_type === "percent") {
+      discount = subtotal * (appliedPromo.discount_value / 100);
+    } else {
+      discount = appliedPromo.discount_value;
+    }
+    discount = Math.min(discount, subtotal); // never exceed subtotal
+  }
+
+  const grand = subtotal - discount + shipping;
+
+  document.getElementById("subtotal-val").textContent = formatPrice(subtotal);
+  document.getElementById("shipping-val").textContent =
+    shipping === 0 ? "FREE" : formatPrice(shipping);
+  document.getElementById("grand-total-val").textContent = formatPrice(grand);
+
+  // Show/hide discount row
+  let discountRow = document.getElementById("discount-row");
+  if (appliedPromo && discount > 0) {
+    if (!discountRow) {
+      // Inject discount row if not already in HTML
+      const subtotalRow =
+        document.getElementById("subtotal-val")?.closest("tr") ||
+        document.getElementById("subtotal-val")?.parentElement;
+      if (subtotalRow) {
+        discountRow = document.createElement(subtotalRow.tagName);
+        discountRow.id = "discount-row";
+        discountRow.style.color = "var(--accent, #27ae60)";
+        discountRow.innerHTML = `<span>Discount (${appliedPromo.code})</span><span id="discount-val"></span>`;
+        subtotalRow.insertAdjacentElement("afterend", discountRow);
+      }
+    }
+    const discountVal = document.getElementById("discount-val");
+    if (discountVal) discountVal.textContent = `−${formatPrice(discount)}`;
+  } else if (discountRow) {
+    discountRow.remove();
+  }
+}
+
+// ── PROMO CODE ────────────────────────────────────────────────────────────────
+async function applyPromo() {
+  const code = document.getElementById("co-promo").value.trim().toUpperCase();
+
+  if (!code) {
+    alert("Please enter a promo code.");
+    return;
+  }
+
+  // Get current subtotal
+  const cart = await getCart();
+  let subtotal = 0;
+  cart.forEach((item) => {
+    subtotal += parsePrice(item.price) * (item.qty || 1);
+  });
+
+  try {
+    const res = await fetch(
+      `${API_BASE}/php/promotions.php?code=${encodeURIComponent(code)}&subtotal=${subtotal}`,
+    );
+    const data = await res.json();
+
+    if (data.valid) {
+      appliedPromo = {
+        code: data.code,
+        discount_type: data.discount_type,
+        discount_value: data.discount_value,
+      };
+      updateTotals(subtotal);
+      alert(data.message);
+    } else {
+      appliedPromo = null;
+      updateTotals(subtotal);
+      alert(data.message);
+    }
+  } catch (err) {
+    alert("Could not validate promo code. Please try again.");
+  }
+}
+
+// ── PAYMENT METHOD TABS ───────────────────────────────────────────────────────
 let activePaymentMethod = "card";
 
 document.querySelectorAll(".payment-tab").forEach((tab) => {
@@ -128,17 +208,7 @@ function formatExpiry(input) {
   input.value = val;
 }
 
-function applyPromo() {
-  const code = document.getElementById("co-promo").value.trim().toUpperCase();
-  if (code === "STYLED10") {
-    alert("Promo code applied! 10% off your order.");
-  } else if (code === "") {
-    alert("Please enter a promo code.");
-  } else {
-    alert("Invalid promo code. Try STYLED10!");
-  }
-}
-
+// ── PLACE ORDER ───────────────────────────────────────────────────────────────
 async function placeOrder() {
   const cart = await getCart();
   if (cart.length === 0) {
@@ -146,7 +216,6 @@ async function placeOrder() {
     return;
   }
 
-  // Contact + address fields required for all methods
   const baseRequired = [
     { id: "co-name", label: "Full Name" },
     { id: "co-email", label: "Email Address" },
@@ -157,7 +226,6 @@ async function placeOrder() {
     { id: "co-province", label: "Province / Region" },
   ];
 
-  // Payment-specific required fields
   const paymentRequired = {
     card: [
       { id: "co-card", label: "Card Number" },
@@ -199,14 +267,67 @@ async function placeOrder() {
     }
   }
 
-  await saveCart([]);
-  const orderNum = "STY-" + Math.floor(100000 + Math.random() * 900000);
-  document.getElementById("success-order-num").textContent =
-    "Order #" + orderNum;
-  document.getElementById("success-overlay").classList.add("show");
+  const items = cart.map((item) => ({
+    product_id: item.product_id,
+    size: item.size || "",
+    qty: item.qty || 1,
+    unit_price: parsePrice(item.price),
+  }));
+
+  const shipping_address = {
+    street: document.getElementById("co-address").value.trim(),
+    city: document.getElementById("co-city").value.trim(),
+    province: document.getElementById("co-province").value.trim(),
+    zip_code: document.getElementById("co-zip").value.trim(),
+  };
+
+  const btn = document.getElementById("place-order-btn");
+  if (btn) {
+    btn.disabled = true;
+    btn.textContent = "Placing order…";
+  }
+
+  try {
+    const res = await fetch(`${API_BASE}/php/checkout.php`, {
+      method: "POST",
+      credentials: "include",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        items,
+        shipping_address,
+        payment_method: activePaymentMethod,
+        promo_code: appliedPromo?.code || "",
+      }),
+    });
+
+    const data = await res.json();
+
+    if (!res.ok || !data.success) {
+      alert(data.error || "Something went wrong. Please try again.");
+      return;
+    }
+
+    document.getElementById("success-order-num").textContent =
+      "Order #" + data.order_number;
+    document.getElementById("success-overlay").classList.add("show");
+
+    appliedPromo = null;
+    await saveCart([]);
+    renderCart();
+  } catch (err) {
+    console.error("placeOrder error:", err);
+    alert(
+      "A network error occurred. Please check your connection and try again.",
+    );
+  } finally {
+    if (btn) {
+      btn.disabled = false;
+      btn.textContent = "Place Order";
+    }
+  }
 }
 
-// Card formatting
+// ── EVENT LISTENERS ───────────────────────────────────────────────────────────
 const cardInput = document.getElementById("co-card");
 if (cardInput) cardInput.addEventListener("input", () => formatCard(cardInput));
 
@@ -220,7 +341,6 @@ if (promoBtn) promoBtn.addEventListener("click", applyPromo);
 const placeOrderBtn = document.getElementById("place-order-btn");
 if (placeOrderBtn) placeOrderBtn.addEventListener("click", placeOrder);
 
-// Close success overlay
 document.querySelector(".success-overlay")?.addEventListener("click", (e) => {
   if (e.target.classList.contains("success-overlay")) {
     e.target.classList.remove("show");
