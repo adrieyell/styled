@@ -384,25 +384,28 @@ async function openOrderDetail(orderNumber) {
     if (payBadgeEl)
       payBadgeEl.outerHTML = `<span id="detail-payment-badge">${statusBadge(o.payment_method === "cod" ? "Pending" : "Paid")}</span>`;
 
-    // Items
+    // Items — API returns `quantity` and `unit_price` from order_items
     document.getElementById("detail-items").innerHTML = (o.items || [])
-      .map(
-        (item) => `
+      .map((item) => {
+        const qty = item.quantity ?? item.qty ?? 1;
+        const price = item.unit_price ?? item.price ?? 0;
+        return `
       <div class="order-item">
         <div class="order-item-img" style="display:flex;align-items:center;justify-content:center;font-size:24px">👗</div>
         <div style="flex:1">
           <div style="font-weight:500;font-size:13.5px;color:var(--brown-400)">${item.product_name}</div>
-          <div class="text-sm text-muted">${item.size || ""} × ${item.qty}</div>
+          <div class="text-sm text-muted">${item.size || ""} × ${qty}</div>
         </div>
-        <div style="font-weight:500">${formatPrice(item.unit_price * item.qty)}</div>
-      </div>`,
-      )
+        <div style="font-weight:500">${formatPrice(price * qty)}</div>
+      </div>`;
+      })
       .join("");
 
-    const subtotal = (o.items || []).reduce(
-      (s, i) => s + i.unit_price * i.qty,
-      0,
-    );
+    const subtotal = (o.items || []).reduce((s, i) => {
+      const qty = i.quantity ?? i.qty ?? 1;
+      const price = i.unit_price ?? i.price ?? 0;
+      return s + price * qty;
+    }, 0);
     const elSub = document.getElementById("detail-subtotal");
     if (elSub) elSub.textContent = formatPrice(subtotal);
     const elTotal = document.getElementById("detail-total-price");
@@ -422,16 +425,20 @@ async function openOrderDetail(orderNumber) {
       .filter(Boolean)
       .join(", ");
     const elAddr = document.getElementById("detail-address");
-    if (elAddr) elAddr.innerHTML = addr.replace(/,\s*/g, "<br>");
+    if (elAddr) elAddr.innerHTML = addr || "—";
 
-    // Tracking number
-    const elTrack = document.getElementById("detail-tracking");
+    // Tracking number — HTML uses id="tracking-input"
+    const elTrack = document.getElementById("tracking-input");
     if (elTrack) elTrack.value = o.tracking_number || "";
 
-    // Status update controls
-    const actionsEl = document.getElementById("detail-actions");
-    if (actionsEl) {
-      actionsEl.innerHTML = `
+    // Status update controls — inject into the header action buttons area
+    // (HTML has static buttons; replace with live controls)
+    const headerActions = document.querySelector(
+      "#orders-detail-view .btn.btn-primary.btn-sm",
+    );
+    const actionsContainer = headerActions?.closest("div[style*='gap: 8px']");
+    if (actionsContainer) {
+      actionsContainer.innerHTML = `
         <select class="filter-select" id="status-select" style="height:36px;font-size:13px">
           ${[
             "pending",
@@ -447,7 +454,31 @@ async function openOrderDetail(orderNumber) {
             )
             .join("")}
         </select>
-        <button class="btn btn-primary btn-sm" onclick="updateOrderStatus(${o.order_id})">Update Status</button>`;
+        <button class="btn btn-primary btn-sm" onclick="updateOrderStatus(${o.order_id})">Update Status</button>
+        <button class="btn btn-outline btn-sm" onclick="showOrdersList()">← Back</button>`;
+    }
+
+    // Timeline — API returns order.timeline with {step_label, occurred_at, note}
+    const timelineEl = document.getElementById("detail-timeline");
+    if (timelineEl) {
+      const tl = o.timeline || [];
+      if (tl.length === 0) {
+        timelineEl.innerHTML = `<div class="text-sm text-muted">No timeline events yet.</div>`;
+      } else {
+        timelineEl.innerHTML = tl
+          .map(
+            (t) => `
+          <div class="timeline-item">
+            <div class="timeline-dot"></div>
+            <div class="timeline-content">
+              <div style="font-weight:500;font-size:13.5px;color:var(--brown-400)">${t.step_label}</div>
+              <div class="text-sm text-muted">${t.occurred_at ? new Date(t.occurred_at).toLocaleString("en-PH", { month: "short", day: "numeric", year: "numeric", hour: "2-digit", minute: "2-digit" }) : ""}</div>
+              ${t.note ? `<div class="text-sm text-muted" style="margin-top:2px">${t.note}</div>` : ""}
+            </div>
+          </div>`,
+          )
+          .join("");
+      }
     }
   } catch (err) {
     console.error("[admin]", err);
@@ -456,7 +487,7 @@ async function openOrderDetail(orderNumber) {
 
 async function updateOrderStatus(orderId) {
   const status = document.getElementById("status-select")?.value;
-  const tracking = document.getElementById("detail-tracking")?.value || "";
+  const tracking = document.getElementById("tracking-input")?.value || "";
   if (!status) return;
 
   try {

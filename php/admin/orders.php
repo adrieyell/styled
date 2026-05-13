@@ -40,10 +40,9 @@ if ($method === 'GET') {
 
         // Items
         $items = $pdo->prepare("
-            SELECT oi.*, p.name AS product_name, ps.size, p.color
+            SELECT oi.*, p.name AS product_name, oi.size
             FROM order_items oi
-            JOIN products      p  ON p.product_id  = oi.product_id
-            LEFT JOIN product_sizes ps ON ps.size_id = oi.size_id
+            JOIN products p ON p.product_id = oi.product_id
             WHERE oi.order_id = ?
         ");
         $items->execute([$order['order_id']]);
