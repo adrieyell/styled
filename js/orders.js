@@ -75,7 +75,6 @@ async function renderOrderList() {
   const container = document.getElementById("orders-container");
   const emptyEl = document.getElementById("orders-empty");
 
-  // Show a loading state while fetching
   if (container) {
     container.style.display = "flex";
     container.innerHTML = `<p style="color:#8c6d57;padding:2rem 0;text-align:center;width:100%">Loading orders…</p>`;
@@ -122,11 +121,10 @@ async function renderOrderList() {
     })
     .join("");
 
-  // Click handlers — fetch fresh detail from API on click
   container.querySelectorAll(".order-row").forEach((row) => {
     row.addEventListener("click", async () => {
       const orderId = row.dataset.orderId;
-      // Try to find in already-fetched list first (avoids extra round-trip)
+      // Try already-fetched list first; fall back to individual API call
       let order = orders.find((o) => o.id === orderId);
       if (!order) {
         order = await fetchOrder(orderId);
@@ -156,10 +154,17 @@ function openOrderDetail(order) {
   document.getElementById("od-total").textContent = order.total;
 
   // Tracking stepper
-  renderTrackingStepper(order.tracking || []);
+  // order.tracking is now { steps: [...], tracking_number, estimated_delivery }
+  // Keep backward compat: if it's still a plain array (mock data), wrap it.
+  const trackingData = normaliseTracking(order.tracking);
+  renderTrackingStepper(trackingData);
 
   // Items list
   renderOrderItems(order.items || []);
+
+  // Payment method
+  const paymentEl = document.getElementById("od-payment");
+  if (paymentEl) paymentEl.textContent = order.payment || "—";
 
   // Address
   const addressEl = document.getElementById("od-address");
@@ -175,16 +180,74 @@ function openOrderDetail(order) {
   document.getElementById("od-grand").textContent = order.total;
 }
 
-function renderTrackingStepper(steps) {
+// ── Normalise tracking payload ───────────────
+// API returns: { steps: [...], tracking_number, estimated_delivery }
+// Old mock data / legacy: plain array of step objects
+// Returns a unified object: { steps, tracking_number, estimated_delivery }
+function normaliseTracking(raw) {
+  if (!raw) {
+    return {
+      steps: buildFallbackSteps("pending"),
+      tracking_number: null,
+      estimated_delivery: null,
+    };
+  }
+  if (Array.isArray(raw)) {
+    // Legacy plain array — wrap it
+    return { steps: raw, tracking_number: null, estimated_delivery: null };
+  }
+  if (raw.steps && Array.isArray(raw.steps)) {
+    return raw;
+  }
+  // Unexpected shape — fall back
+  return {
+    steps: buildFallbackSteps("pending"),
+    tracking_number: null,
+    estimated_delivery: null,
+  };
+}
+
+// ── Fallback stepper data (mock) used only when API is unavailable ────────────
+function buildFallbackSteps(status) {
+  const statusMap = {
+    pending: 1,
+    processing: 2,
+    shipped: 3,
+    delivered: 5,
+    cancelled: 1,
+  };
+  const doneCount = statusMap[(status || "pending").toLowerCase()] ?? 1;
+  const labels = [
+    "Order Placed",
+    "Processing",
+    "Shipped",
+    "Out for Delivery",
+    "Delivered",
+  ];
+  return labels.map((label, i) => ({
+    label,
+    date: "—",
+    done: i + 1 <= doneCount,
+    active: i + 1 === doneCount && doneCount !== 5,
+  }));
+}
+
+// ── RENDER TRACKING STEPPER ──────────────────
+function renderTrackingStepper(trackingData) {
   const stepper = document.getElementById("tracking-stepper");
   if (!stepper) return;
 
+  const steps = trackingData.steps || [];
+  const trackingNumber = trackingData.tracking_number;
+  const estimatedDelivery = trackingData.estimated_delivery;
+
+  // Determine the last done/active index
   let activeIdx = -1;
   steps.forEach((s, i) => {
     if (s.done || s.active) activeIdx = i;
   });
 
-  stepper.innerHTML = steps
+  const stepsHTML = steps
     .map((step, i) => {
       const isDone = i < activeIdx;
       const isActive = i === activeIdx;
@@ -207,6 +270,20 @@ function renderTrackingStepper(steps) {
     `;
     })
     .join("");
+
+  // Tracking number + estimated delivery bar (shown only when data exists)
+  let metaHTML = "";
+  if (trackingNumber || estimatedDelivery) {
+    const tnPart = trackingNumber
+      ? `<span class="ts-meta-item"><span class="ts-meta-label">Tracking #</span><strong>${trackingNumber}</strong></span>`
+      : "";
+    const edPart = estimatedDelivery
+      ? `<span class="ts-meta-item"><span class="ts-meta-label">Est. Delivery</span><strong>${estimatedDelivery}</strong></span>`
+      : "";
+    metaHTML = `<div class="ts-meta-bar">${tnPart}${edPart}</div>`;
+  }
+
+  stepper.innerHTML = metaHTML + stepsHTML;
 }
 
 function renderOrderItems(items) {
@@ -284,11 +361,13 @@ tabWishlist?.addEventListener("click", (e) => {
 });
 
 // ── INIT ─────────────────────────────────────
-initUserInfo();
-renderOrderList();
+// renderOrderList() is intentionally NOT called here.
+// orders.html calls window.initOrdersPage() after checkAuthStatus() confirms
+// a valid session, so the orders API request is never made unauthenticated.
+window.initOrdersPage = function () {
+  initUserInfo();
+  renderOrderList();
 
-setActiveTab(tabOrders);
-document.addEventListener("DOMContentLoaded", () =>
-  setActiveTab(document.getElementById("tab-orders")),
-);
-setTimeout(() => setActiveTab(document.getElementById("tab-orders")), 300);
+  setActiveTab(tabOrders);
+  setTimeout(() => setActiveTab(document.getElementById("tab-orders")), 300);
+};

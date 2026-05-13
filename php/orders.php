@@ -32,89 +32,160 @@ if ($method !== 'GET') {
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
-/**
- * Format a decimal amount as ₱1,234.00
- */
 function format_price(float $amount): string {
     return '₱' . number_format($amount, 2);
 }
 
-/**
- * Format a MySQL timestamp/date into "Month DD, YYYY"
- */
 function format_date(string $date): string {
     if (!$date || $date === '0000-00-00 00:00:00') return '—';
     $ts = strtotime($date);
     return $ts ? date('F d, Y', $ts) : '—';
 }
 
-/**
- * Map DB status string to display label (capitalised).
- * DB enum: pending | processing | shipped | delivered | cancelled
- */
 function display_status(string $status): string {
     return ucfirst(strtolower($status));
 }
 
+// ── The 5 canonical stepper steps ────────────────────────────────────────────
+const TIMELINE_STEPS = [
+    'Order Placed',
+    'Processing',
+    'Shipped',
+    'Out for Delivery',
+    'Delivered',
+];
+
+// Map DB status → how many steps are "done" (used only as fallback)
+const STATUS_DONE_MAP = [
+    'pending'    => 1,
+    'processing' => 2,
+    'shipped'    => 3,
+    'delivered'  => 5,
+    'cancelled'  => 1,
+];
+
 /**
- * Build the 5-step tracking timeline from an order row.
- * Steps: Order Placed → Processing → Shipped → Out for Delivery → Delivered
+ * Build the tracking timeline for an order.
  *
- * We derive dates from created_at plus rough offsets;
- * a real app would store per-event timestamps in a separate table.
+ * Strategy (DB-first):
+ *   1. Query order_timeline for rows matching this order_id, ordered by
+ *      created_at ASC.  Each row is expected to have:
+ *        - step_label  VARCHAR  (must match one of TIMELINE_STEPS exactly, or
+ *                               we try to match by status name)
+ *        - occurred_at DATETIME
+ *        - note        VARCHAR  (optional)
+ *   2. For every canonical step, mark it done/active based on whether a
+ *      matching row exists in the DB timeline.
+ *   3. If the DB timeline is empty (legacy orders), fall back to the old
+ *      offset-based derivation from created_at + status.
+ *
+ * Also attaches tracking_number and estimated_delivery to the result so the
+ * front-end can display them alongside the stepper.
  */
-function build_tracking(array $order): array {
-    $created  = $order['created_at'];
+function build_tracking(PDO $pdo, array $order): array {
+    $orderId   = (int) $order['order_id'];
     $statusRaw = strtolower($order['status']);
+    $created   = $order['created_at'];
 
-    // Map status → how many steps are "done"
-    $doneMap = [
-        'pending'    => 1,
-        'processing' => 2,
-        'shipped'    => 3,
-        'delivered'  => 5,
-        'cancelled'  => 1,
-    ];
-    $doneCount = $doneMap[$statusRaw] ?? 1;
-
-    // Rough date offsets (days after created_at) for each step
-    $offsets = [0, 0, 1, 2, 3];
-
-    $steps = [
-        'Order Placed',
-        'Processing',
-        'Shipped',
-        'Out for Delivery',
-        'Delivered',
-    ];
-
-    $timeline = [];
-    foreach ($steps as $i => $label) {
-        $stepDone = ($i + 1) <= $doneCount;
-        $isActive = ($i + 1) === $doneCount;
-
-        if ($stepDone && $created) {
-            $ts   = strtotime($created) + ($offsets[$i] * 86400);
-            $date = date('F d, Y', $ts);
-        } else {
-            $date = '—';
-        }
-
-        $step = [
-            'label' => $label,
-            'date'  => $date,
-            'done'  => $stepDone,
-        ];
-        if ($isActive && $statusRaw !== 'delivered') {
-            $step['active'] = true;
-        }
-        $timeline[] = $step;
+    // ── 1. Try to load real timeline rows ────────────────────────────────────
+    $dbRows = [];
+    try {
+        $stmt = $pdo->prepare(
+            'SELECT step_label, occurred_at, note
+             FROM order_timeline
+             WHERE order_id = :oid
+             ORDER BY occurred_at ASC, timeline_id ASC'
+        );
+        $stmt->execute([':oid' => $orderId]);
+        $dbRows = $stmt->fetchAll(PDO::FETCH_ASSOC);
+    } catch (Throwable $ignored) {
+        $dbRows = [];
     }
 
-    return $timeline;
+    // Build a lookup: normalised label → occurred_at
+    $dbDone = [];
+    foreach ($dbRows as $row) {
+        $key = strtolower(trim($row['step_label']));
+        $dbDone[$key] = $row['occurred_at'];
+    }
+
+    $useDB = !empty($dbDone);
+
+    // ── 2. Build stepper array ────────────────────────────────────────────────
+    if ($useDB) {
+        // DB-driven: a step is done if its normalised label exists in $dbDone
+        $lastDoneIdx = -1;
+        $stepDoneFlags = [];
+        foreach (TIMELINE_STEPS as $i => $label) {
+            $key = strtolower($label);
+            $done = isset($dbDone[$key]);
+            $stepDoneFlags[$i] = $done;
+            if ($done) $lastDoneIdx = $i;
+        }
+
+        $timeline = [];
+        foreach (TIMELINE_STEPS as $i => $label) {
+            $done     = $stepDoneFlags[$i];
+            $isActive = ($i === $lastDoneIdx) && ($statusRaw !== 'delivered');
+            $dateStr  = '—';
+
+            if ($done) {
+                $key     = strtolower($label);
+                $dateStr = format_date($dbDone[$key]);
+            }
+
+            $step = [
+                'label' => $label,
+                'date'  => $dateStr,
+                'done'  => $done,
+            ];
+            if ($isActive) {
+                $step['active'] = true;
+            }
+            $timeline[] = $step;
+        }
+    } else {
+        // ── Fallback: derive from status + created_at offsets ────────────────
+        $doneCount = STATUS_DONE_MAP[$statusRaw] ?? 1;
+        $offsets   = [0, 0, 1, 2, 3]; // days after created_at
+
+        $timeline = [];
+        foreach (TIMELINE_STEPS as $i => $label) {
+            $stepDone = ($i + 1) <= $doneCount;
+            $isActive = ($i + 1) === $doneCount && $statusRaw !== 'delivered';
+
+            $dateStr = '—';
+            if ($stepDone && $created) {
+                $ts      = strtotime($created) + ($offsets[$i] * 86400);
+                $dateStr = date('F d, Y', $ts);
+            }
+
+            $step = [
+                'label' => $label,
+                'date'  => $dateStr,
+                'done'  => $stepDone,
+            ];
+            if ($isActive) {
+                $step['active'] = true;
+            }
+            $timeline[] = $step;
+        }
+    }
+
+    // ── 3. Attach tracking metadata ───────────────────────────────────────────
+    $trackingNumber    = $order['tracking_number']    ?? null;
+    $estimatedDelivery = $order['estimated_delivery'] ?? null;
+
+    return [
+        'steps'              => $timeline,
+        'tracking_number'    => $trackingNumber ?: null,
+        'estimated_delivery' => $estimatedDelivery
+                                    ? format_date($estimatedDelivery)
+                                    : null,
+    ];
 }
 
-// ── Fetch product info for an order item (name, image) ───────────────────────
+// ── Fetch product info for an order item ─────────────────────────────────────
 function get_product_info(PDO $pdo, int $product_id): array {
     static $cache = [];
     if (isset($cache[$product_id])) return $cache[$product_id];
@@ -125,7 +196,7 @@ function get_product_info(PDO $pdo, int $product_id): array {
                     (SELECT pi.image_url
                      FROM product_images pi
                      WHERE pi.product_id = p.product_id
-                     ORDER BY pi.sort_order ASC, pi.image_id ASC
+                     ORDER BY pi.image_id ASC
                      LIMIT 1),
                     ""
                 ) AS img
@@ -146,7 +217,7 @@ function get_product_info(PDO $pdo, int $product_id): array {
 
 // ── Build a full order object from a DB row ───────────────────────────────────
 function build_order(PDO $pdo, array $order): array {
-    $orderId   = (int) $order['order_id'];
+    $orderId     = (int) $order['order_id'];
     $shippingFee = (float) $order['shipping_fee'];
     $grandTotal  = (float) $order['grand_total'];
 
@@ -166,7 +237,7 @@ function build_order(PDO $pdo, array $order): array {
             'name'  => $prod['name'],
             'price' => format_price((float) $row['unit_price']),
             'qty'   => (int) $row['qty'],
-            'color' => '',          // not stored per-item in DB
+            'color' => '',
             'size'  => $row['size'] ?? '—',
             'img'   => $prod['img'],
         ];
@@ -186,6 +257,9 @@ function build_order(PDO $pdo, array $order): array {
 
     $statusDisplay = display_status($order['status']);
 
+    $paymentMap = ['card' => 'Credit / Debit Card', 'gcash' => 'GCash', 'cod' => 'Cash on Delivery'];
+    $paymentDisplay = $paymentMap[strtolower($order['payment_method'] ?? '')] ?? ucfirst($order['payment_method'] ?? '');
+
     return [
         'id'        => $order['order_number'],
         'date'      => format_date($order['created_at']),
@@ -194,19 +268,21 @@ function build_order(PDO $pdo, array $order): array {
         'total'     => format_price($grandTotal),
         'totalNum'  => $grandTotal,
         'items'     => $items,
+        'payment'   => $paymentDisplay,
         'shipping'  => [
             'address' => $addrStr,
             'cost'    => $shippingFee,
         ],
-        'tracking'  => build_tracking($order),
+        'tracking'  => build_tracking($pdo, $order),
     ];
 }
 
-// ── Base query ────────────────────────────────────────────────────────────────
+// ── Base query — now includes tracking_number and estimated_delivery ──────────
 $BASE_SQL =
     'SELECT o.order_id, o.order_number, o.status, o.subtotal,
             o.shipping_fee, o.discount, o.grand_total,
             o.payment_method, o.created_at,
+            o.tracking_number, o.estimated_delivery,
             a.street, a.city, a.province, a.zip_code
      FROM orders o
      LEFT JOIN addresses a ON a.address_id = o.address_id

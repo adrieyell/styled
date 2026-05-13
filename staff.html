@@ -395,6 +395,13 @@
             </svg>
             Promotions
           </button>
+          <button class="nav-item" onclick="navigate('contact', this)">
+            <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+              <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z" />
+              <polyline points="22,6 12,13 2,6" />
+            </svg>
+            Contact Messages
+          </button>
         </div>
 
         <div class="sidebar-divider"></div>
@@ -1839,6 +1846,55 @@ Shop the Oversized Wool Coat at Styled — timeless luxury fashion for every mom
             </div>
           </div>
           <!-- /inventory -->
+
+          <!-- contact messages -->
+          <div class="page" id="page-contact">
+            <div class="page-header">
+              <div class="page-header-left">
+                <h2 class="section-title">Contact Messages</h2>
+                <p class="section-subtitle">Messages submitted through the contact form</p>
+              </div>
+              <div class="page-header-right">
+                <select
+                  class="filter-select"
+                  onchange="filterContactMessages(this.value)"
+                  style="height:36px"
+                >
+                  <option value="">All Messages</option>
+                  <option value="unread">Unread</option>
+                  <option value="read">Read</option>
+                  <option value="replied">Replied</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="card" style="margin-top:20px">
+              <div class="table-wrap">
+                <table class="data-table">
+                  <thead>
+                    <tr>
+                      <th>Name</th>
+                      <th>Email</th>
+                      <th>Subject</th>
+                      <th>Message</th>
+                      <th>Status</th>
+                      <th>Date</th>
+                      <th>Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody id="contact-body">
+                    <tr>
+                      <td colspan="7" style="text-align:center;color:var(--brown-100);padding:24px">
+                        Loading…
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+              <div class="pagination" id="contact-pagination"></div>
+            </div>
+          </div>
+          <!-- /contact messages -->
 
         </div>
         <!-- /page-body -->

@@ -162,13 +162,27 @@ function toast(msg, type = "") {
 async function apiPost(url, body) {
   const res = await fetch(url, {
     method: "POST",
-    credentials: "include", // send/receive PHP session cookie
+    credentials: "include",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(body),
   });
   const data = await res.json();
   return { ok: res.ok, status: res.status, data };
 }
+
+// ── On page load: check for ?verified=1 flag ──────────────────────────────────
+(function checkVerifiedFlag() {
+  const params = new URLSearchParams(location.search);
+  if (params.get("verified") === "1") {
+    // Clean URL then show login tab with a success toast
+    history.replaceState({}, "", location.pathname);
+    // Give DOM time to mount
+    setTimeout(() => {
+      switchTab("login");
+      toast("Email verified! You can now log in.", "ok");
+    }, 100);
+  }
+})();
 
 // ── SIGNUP HANDLER ────────────────────────────────────────────────────────────
 async function handleSignup(e) {
@@ -222,15 +236,12 @@ async function handleSignup(e) {
   try {
     const { ok: success, data } = await apiPost(
       API_BASE + "/php/auth/register.php",
-      {
-        full_name: name,
-        email,
-        password: pw,
-      },
+      { full_name: name, email, password: pw },
     );
 
     if (success && data.success) {
-      showModal();
+      window.location.href =
+        "verify-email.html?email=" + encodeURIComponent(email);
     } else {
       const msg = data.error || "Registration failed. Please try again.";
       if (msg.toLowerCase().includes("email")) {
@@ -282,20 +293,18 @@ async function handleLogin(e) {
   setLoading("btn-login", true);
 
   try {
-    const { ok: success, data } = await apiPost(
-      API_BASE + "/php/auth/login.php",
-      {
-        email,
-        password: pw,
-      },
-    );
+    const {
+      ok: success,
+      status,
+      data,
+    } = await apiPost(API_BASE + "/php/auth/login.php", {
+      email,
+      password: pw,
+    });
 
     if (success && data.success) {
       const user = data.user;
 
-      // Save to localStorage for navbar UI (name, email, role).
-      // Map full_name → name so getCurrentUser().name works correctly
-      // in main.js (profile dropdown initials, greeting, admin badge).
       localStorage.setItem(
         "styled_user",
         JSON.stringify({
@@ -307,7 +316,6 @@ async function handleLogin(e) {
 
       toast("Welcome back! Redirecting…", "ok");
 
-      // Role-based redirect
       setTimeout(() => {
         if (user.role === "admin") {
           window.location.href = "admin.html";
@@ -318,8 +326,18 @@ async function handleLogin(e) {
         }
       }, 1200);
     } else {
+      if (data.unverified) {
+        toast("Check your email for a verification code.", "");
+        setTimeout(() => {
+          window.location.href =
+            "verify-email.html?email=" +
+            encodeURIComponent(data.email || email);
+        }, 1400);
+        return;
+      }
+
       const msg = data.error || "Invalid credentials.";
-      setErr("li-email", " "); // marks the email field red without extra text
+      setErr("li-email", " ");
       setErr("li-pw", msg);
     }
   } catch (err) {
@@ -357,6 +375,12 @@ document.getElementById("close-modal")?.addEventListener("click", closeModal);
 document
   .getElementById("modal-login-btn")
   ?.addEventListener("click", goToLogin);
+
+// ── Forgot Password link → redirect to forgot-password.html ──────────────────
+document.querySelector(".forgot-link")?.addEventListener("click", (e) => {
+  e.preventDefault();
+  window.location.href = "forgot-password.html";
+});
 
 // Password strength meter
 const suPw = document.getElementById("su-pw");

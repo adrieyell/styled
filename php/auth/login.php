@@ -5,6 +5,7 @@
 // POST: email, password
 // Returns JSON: { success, user: { user_id, full_name, email, role } }
 //             | { success: false, error }
+//             | { success: false, unverified: true, email } — login blocked
 
 header('Content-Type: application/json');
 header('Access-Control-Allow-Origin: *');
@@ -22,7 +23,6 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     exit;
 }
 
-// Start session before any output
 session_start();
 
 require_once __DIR__ . '/../db.php';
@@ -45,20 +45,20 @@ if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
     exit;
 }
 
-// ── 3. Look up user ───────────────────────────────────────────────────────────
-// FIX: column is named `password_hash` in the users table, not `password`
+// ── 3. Look up user — now also fetches is_verified ───────────────────────────
 $pdo  = getPDO();
 $stmt = $pdo->prepare(
-    'SELECT user_id, full_name, email, password_hash, role FROM users WHERE email = ? LIMIT 1'
+    'SELECT user_id, full_name, email, password_hash, role, is_verified
+     FROM users WHERE email = ? LIMIT 1'
 );
 $stmt->execute([$email]);
 $user = $stmt->fetch();
 
-// ── 4. Verify password ────────────────────────────────────────────────────────
-// Always call password_verify even when user is not found so response time
-// does not leak whether the account exists (timing-safe).
+// ── 4. Verify password (timing-safe) ─────────────────────────────────────────
+// Always call password_verify even when user not found so response time
+// does not leak whether the account exists.
 $dummy_hash = '$2y$10$usesomesillystringfore7hnbRJHxXVLeakoG8K30oukPsA.ztMG';
-$hash       = $user ? $user['password_hash'] : $dummy_hash;   // FIX: password_hash
+$hash       = $user ? $user['password_hash'] : $dummy_hash;
 
 if (!$user || !password_verify($password, $hash)) {
     http_response_code(401);
@@ -66,16 +66,30 @@ if (!$user || !password_verify($password, $hash)) {
     exit;
 }
 
-// ── 5. Store session ──────────────────────────────────────────────────────────
+// ── 5. Block login if email not verified ──────────────────────────────────────
+// Admin and staff accounts are created internally and do not require
+// email verification — only regular customers are blocked here.
+$requiresVerification = !in_array($user['role'], ['admin', 'staff'], true);
+if ($requiresVerification && (int) $user['is_verified'] === 0) {
+    http_response_code(403);
+    echo json_encode([
+        'success'    => false,
+        'unverified' => true,
+        'email'      => $email,
+        'error'      => 'Please verify your email address first. Check your inbox for the verification code.',
+    ]);
+    exit;
+}
+
+// ── 6. Store session ──────────────────────────────────────────────────────────
 $_SESSION['user_id']   = (int) $user['user_id'];
 $_SESSION['full_name'] = $user['full_name'];
 $_SESSION['email']     = $user['email'];
 $_SESSION['role']      = $user['role'];
 
-// Regenerate session ID to prevent session fixation attacks
 session_regenerate_id(true);
 
-// ── 6. Return success ─────────────────────────────────────────────────────────
+// ── 7. Return success ─────────────────────────────────────────────────────────
 echo json_encode([
     'success' => true,
     'user'    => [

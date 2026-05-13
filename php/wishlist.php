@@ -36,18 +36,19 @@ function fetch_wishlist_items(PDO $pdo, int $user_id): array {
         'SELECT w.product_id,
                 p.name,
                 p.price,
-                p.category,
+                COALESCE(c.name, "") AS category,
                 COALESCE(
                     (SELECT pi.image_url
                      FROM product_images pi
                      WHERE pi.product_id = p.product_id
-                     ORDER BY pi.sort_order ASC, pi.image_id ASC
+                     ORDER BY pi.image_id ASC
                      LIMIT 1),
                     ""
                 ) AS img,
                 p.description
          FROM wishlist w
          JOIN products p ON p.product_id = w.product_id
+         LEFT JOIN categories c ON c.category_id = p.category_id
          WHERE w.user_id = :uid
          ORDER BY w.added_at DESC'
     );

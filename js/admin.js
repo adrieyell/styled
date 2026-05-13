@@ -1,585 +1,37 @@
 /* ============================================
-   STYLED ADMIN — app.js
-   All interactivity, data, and chart setup
+   STYLED ADMIN — admin.js
+   All mock arrays removed; data fetched from API.
    ============================================ */
 
 "use strict";
 
-/* ─────────────────────────────────────────────
-   MOCK DATA
-───────────────────────────────────────────── */
-const ORDERS = [
-  {
-    id: "STY-123456",
-    customer: "Bea Santiago",
-    email: "bea.santiago@gmail.com",
-    date: "May 18, 2025",
-    status: "Delivered",
-    payment: "Paid",
-    total: 24500,
-    items: [
-      {
-        name: "Oversized Wool Coat",
-        variant: "M / Camel",
-        qty: 1,
-        price: 24500,
-      },
-    ],
-    address: "123 Ayala Ave, Makati City, Metro Manila 1226, Philippines",
-    timeline: [
-      "Order placed — May 18, 10:06 AM",
-      "Paid — May 18, 10:07 AM",
-      "Shipped — May 19, 9:40 AM",
-      "Delivered — May 20, 2:15 PM",
-    ],
-  },
-  {
-    id: "STY-123455",
-    customer: "Miguel Reyes",
-    email: "miguel.reyes@gmail.com",
-    date: "May 16, 2025",
-    status: "Delivered",
-    payment: "Paid",
-    total: 9960,
-    items: [
-      { name: "Ribbed Knit Sweater", variant: "S / Oat", qty: 1, price: 9960 },
-    ],
-    address: "56 Buendia Ave, Makati City 1200, Philippines",
-    timeline: [
-      "Order placed — May 16, 3:00 PM",
-      "Paid — May 16, 3:01 PM",
-      "Shipped — May 17, 10:00 AM",
-      "Delivered — May 18, 1:30 PM",
-    ],
-  },
-  {
-    id: "STY-123454",
-    customer: "Trisha Mendoza",
-    email: "trisha.mendoza@gmail.com",
-    date: "May 17, 2025",
-    status: "Processing",
-    payment: "Paid",
-    total: 9900,
-    items: [
-      {
-        name: "Tailored Wide-Leg Pants",
-        variant: "M / Black",
-        qty: 1,
-        price: 9900,
-      },
-    ],
-    address: "78 Tomas Morato, QC 1103, Philippines",
-    timeline: ["Order placed — May 17, 6:20 PM", "Paid — May 17, 6:21 PM"],
-  },
-  {
-    id: "STY-123453",
-    customer: "Anna Dela Cruz",
-    email: "anna.dela.cruz@gmail.com",
-    date: "May 16, 2025",
-    status: "Delivered",
-    payment: "Paid",
-    total: 9140,
-    items: [
-      { name: "Cashmere Crewneck", variant: "S / Ivory", qty: 1, price: 9140 },
-    ],
-    address: "34 Katipunan Ave, QC 1105, Philippines",
-    timeline: [
-      "Order placed — May 16, 9:00 AM",
-      "Paid — May 16, 9:02 AM",
-      "Shipped — May 17, 8:30 AM",
-      "Delivered — May 18, 12:00 PM",
-    ],
-  },
-  {
-    id: "STY-123452",
-    customer: "Juan Pablo",
-    email: "juan.pablo@gmail.com",
-    date: "May 16, 2025",
-    status: "Delivered",
-    payment: "Refunded",
-    total: 5340,
-    items: [
-      {
-        name: "Leather Mini Shoulder Bag",
-        variant: "Black",
-        qty: 1,
-        price: 5340,
-      },
-    ],
-    address: "Bonifacio Global City, Taguig 1634, Philippines",
-    timeline: [
-      "Order placed — May 16, 2:00 PM",
-      "Paid — May 16, 2:01 PM",
-      "Refunded — May 18, 9:00 AM",
-    ],
-  },
-  {
-    id: "STY-123451",
-    customer: "Camille Santos",
-    email: "camille.santos@gmail.com",
-    date: "May 15, 2025",
-    status: "Processing",
-    payment: "Paid",
-    total: 3240,
-    items: [
-      {
-        name: "Silk Slip Skirt",
-        variant: "S / Champagne",
-        qty: 1,
-        price: 3240,
-      },
-    ],
-    address: "Ortigas Center, Pasig City 1600, Philippines",
-    timeline: ["Order placed — May 15, 11:00 AM", "Paid — May 15, 11:01 AM"],
-  },
-  {
-    id: "STY-123450",
-    customer: "Patricia Gomez",
-    email: "patricia.gomez@gmail.com",
-    date: "May 15, 2025",
-    status: "Delivered",
-    payment: "Paid",
-    total: 6750,
-    items: [
-      { name: "Linen Button Dress", variant: "M / Sand", qty: 1, price: 6750 },
-    ],
-    address: "Alabang, Muntinlupa City 1780, Philippines",
-    timeline: [
-      "Order placed — May 15, 8:00 AM",
-      "Paid — May 15, 8:01 AM",
-      "Shipped — May 16, 9:00 AM",
-      "Delivered — May 17, 1:00 PM",
-    ],
-  },
-  {
-    id: "STY-123449",
-    customer: "Mikaela Yu",
-    email: "mikaela.yu@gmail.com",
-    date: "May 14, 2025",
-    status: "Shipped",
-    payment: "Paid",
-    total: 7990,
-    items: [
-      { name: "Oversized Blazer", variant: "M / Beige", qty: 1, price: 7990 },
-    ],
-    address: "San Juan City, Metro Manila 1500, Philippines",
-    timeline: [
-      "Order placed — May 14, 4:00 PM",
-      "Paid — May 14, 4:01 PM",
-      "Shipped — May 15, 10:00 AM",
-    ],
-  },
-  {
-    id: "STY-123448",
-    customer: "Daniela Cruz",
-    email: "daniela.cruz@gmail.com",
-    date: "May 14, 2025",
-    status: "Delivered",
-    payment: "Paid",
-    total: 11980,
-    items: [
-      {
-        name: "Tailored Wide-Leg Pants",
-        variant: "S / Cream",
-        qty: 1,
-        price: 9900,
-      },
-      { name: "Ribbed Knit Sweater", variant: "XS / Oat", qty: 1, price: 2080 },
-    ],
-    address: "Las Piñas City, Metro Manila 1747, Philippines",
-    timeline: [
-      "Order placed — May 14, 1:00 PM",
-      "Paid — May 14, 1:01 PM",
-      "Shipped — May 15, 8:00 AM",
-      "Delivered — May 16, 2:00 PM",
-    ],
-  },
-  {
-    id: "STY-123447",
-    customer: "Karena Lim",
-    email: "karena.lim@gmail.com",
-    date: "May 14, 2025",
-    status: "Cancelled",
-    payment: "Refunded",
-    total: 3190,
-    items: [
-      { name: "Knit Camisole", variant: "M / Sage", qty: 1, price: 3190 },
-    ],
-    address: "Mandaluyong City, Metro Manila 1552, Philippines",
-    timeline: [
-      "Order placed — May 14, 9:00 AM",
-      "Cancelled — May 14, 10:30 AM",
-      "Refunded — May 14, 11:00 AM",
-    ],
-  },
-  {
-    id: "STY-123446",
-    customer: "Sofia Aquino",
-    email: "sofia.aquino@gmail.com",
-    date: "May 13, 2025",
-    status: "Delivered",
-    payment: "Paid",
-    total: 19800,
-    items: [
-      { name: "Cashmere Crewneck", variant: "M / Camel", qty: 2, price: 9900 },
-    ],
-    address: "Pasay City, Metro Manila 1300, Philippines",
-    timeline: [
-      "Order placed — May 13, 7:00 AM",
-      "Paid — May 13, 7:01 AM",
-      "Shipped — May 14, 9:00 AM",
-      "Delivered — May 15, 1:00 PM",
-    ],
-  },
-  {
-    id: "STY-123445",
-    customer: "Rica Tan",
-    email: "rica.tan@gmail.com",
-    date: "May 13, 2025",
-    status: "Pending",
-    payment: "Unpaid",
-    total: 8250,
-    items: [{ name: "Linen Blazer", variant: "S / Sage", qty: 1, price: 8250 }],
-    address: "Parañaque City, Metro Manila 1700, Philippines",
-    timeline: ["Order placed — May 13, 11:30 PM"],
-  },
-];
+/**
+ * Wrapper around fetch() that:
+ *  - always sends credentials
+ *  - throws on non-2xx HTTP responses (so catch blocks actually fire)
+ *  - logs the raw response text when JSON.parse fails
+ */
+async function fetchJSON(url, options = {}) {
+  const res = await fetch(url, { credentials: "include", ...options });
+  const text = await res.text();
+  let data;
+  try {
+    data = JSON.parse(text);
+  } catch (e) {
+    console.error(
+      `[admin] Non-JSON response from ${url} (${res.status}):`,
+      text.slice(0, 300),
+    );
+    throw new Error(`Non-JSON response (${res.status}) from ${url}`);
+  }
+  if (!res.ok) {
+    console.error(`[admin] HTTP ${res.status} from ${url}:`, data);
+    throw new Error(`HTTP ${res.status}: ${data?.error || res.statusText}`);
+  }
+  return data;
+}
 
-const PRODUCTS = [
-  {
-    id: "P001",
-    name: "Oversized Wool Coat",
-    category: "Outerwear",
-    price: 24500,
-    stock: 18,
-    status: "Active",
-  },
-  {
-    id: "P002",
-    name: "Ribbed Knit Sweater",
-    category: "Knitwear",
-    price: 9900,
-    stock: 26,
-    status: "Active",
-  },
-  {
-    id: "P003",
-    name: "Tailored Wide-Leg Pants",
-    category: "Bottoms",
-    price: 9900,
-    stock: 14,
-    status: "Active",
-  },
-  {
-    id: "P004",
-    name: "Cashmere Crewneck",
-    category: "Knitwear",
-    price: 14250,
-    stock: 8,
-    status: "Low Stock",
-  },
-  {
-    id: "P005",
-    name: "Leather Mini Shoulder Bag",
-    category: "Accessories",
-    price: 6800,
-    stock: 22,
-    status: "Active",
-  },
-  {
-    id: "P006",
-    name: "Linen Button Dress",
-    category: "Dresses",
-    price: 6750,
-    stock: 3,
-    status: "Low Stock",
-  },
-  {
-    id: "P007",
-    name: "Oversized Blazer",
-    category: "Outerwear",
-    price: 7990,
-    stock: 11,
-    status: "Active",
-  },
-  {
-    id: "P008",
-    name: "Silk Slip Skirt",
-    category: "Bottoms",
-    price: 3240,
-    stock: 0,
-    status: "Draft",
-  },
-  {
-    id: "P009",
-    name: "Knit Camisole",
-    category: "Knitwear",
-    price: 3190,
-    stock: 5,
-    status: "Active",
-  },
-  {
-    id: "P010",
-    name: "Straight-Cut Trousers",
-    category: "Bottoms",
-    price: 5500,
-    stock: 9,
-    status: "Active",
-  },
-];
-
-const CUSTOMERS = [
-  {
-    id: "C001",
-    name: "Bea Santiago",
-    email: "bea.santiago@gmail.com",
-    orders: 12,
-    spent: 62340,
-    tags: ["VIP"],
-    since: "Jan 2024",
-  },
-  {
-    id: "C002",
-    name: "Miguel Reyes",
-    email: "miguel.reyes@gmail.com",
-    orders: 8,
-    spent: 41230,
-    tags: ["Repeat Buyer"],
-    since: "Mar 2024",
-  },
-  {
-    id: "C003",
-    name: "Trisha Mendoza",
-    email: "trisha.mendoza@gmail.com",
-    orders: 5,
-    spent: 33120,
-    tags: ["Repeat Buyer"],
-    since: "May 2024",
-  },
-  {
-    id: "C004",
-    name: "Anna Dela Cruz",
-    email: "anna.dela.cruz@gmail.com",
-    orders: 6,
-    spent: 79800,
-    tags: ["VIP"],
-    since: "Feb 2024",
-  },
-  {
-    id: "C005",
-    name: "Juan Pablo",
-    email: "juan.pablo@gmail.com",
-    orders: 3,
-    spent: 16400,
-    tags: [],
-    since: "Aug 2024",
-  },
-  {
-    id: "C006",
-    name: "Camille Santos",
-    email: "camille.santos@gmail.com",
-    orders: 7,
-    spent: 37650,
-    tags: ["Repeat Buyer"],
-    since: "Apr 2024",
-  },
-  {
-    id: "C007",
-    name: "Patricia Gomez",
-    email: "patricia.gomez@gmail.com",
-    orders: 4,
-    spent: 14300,
-    tags: [],
-    since: "Jun 2024",
-  },
-  {
-    id: "C008",
-    name: "Mikaela Yu",
-    email: "mikaela.yu@gmail.com",
-    orders: 2,
-    spent: 9800,
-    tags: ["New"],
-    since: "Jan 2025",
-  },
-];
-
-const PROMOTIONS = [
-  {
-    code: "WELCOME10",
-    type: "Percentage",
-    discount: "10% off",
-    conditions: "Min. spend ₱2,500",
-    uses: "42 / 100",
-    expiry: "Jun 30, 2025",
-    status: "Active",
-  },
-  {
-    code: "FRIEND",
-    type: "Free Shipping",
-    discount: "Free shipping",
-    conditions: "Min. spend ₱1,000",
-    uses: "89 / —",
-    expiry: "—",
-    status: "Active",
-  },
-  {
-    code: "VIP15",
-    type: "Percentage",
-    discount: "15% off",
-    conditions: "Min. spend ₱5,000",
-    uses: "25 / 50",
-    expiry: "Jul 15, 2025",
-    status: "Active",
-  },
-  {
-    code: "SALE20",
-    type: "Percentage",
-    discount: "20% off",
-    conditions: "Min. spend ₱4,000",
-    uses: "100 / 100",
-    expiry: "May 15, 2025",
-    status: "Expired",
-  },
-  {
-    code: "SUMMER25",
-    type: "Percentage",
-    discount: "25% off",
-    conditions: "Min. spend ₱1,000",
-    uses: "0 / 500",
-    expiry: "Sep 30, 2025",
-    status: "Scheduled",
-  },
-];
-
-const INVENTORY = [
-  {
-    name: "Oversized Wool Coat",
-    variant: "XS / Camel",
-    sku: "OWC-XS-CAM",
-    category: "Outerwear",
-    stock: 3,
-    threshold: 3,
-  },
-  {
-    name: "Oversized Wool Coat",
-    variant: "S / Camel",
-    sku: "OWC-S-CAM",
-    category: "Outerwear",
-    stock: 4,
-    threshold: 3,
-  },
-  {
-    name: "Oversized Wool Coat",
-    variant: "M / Camel",
-    sku: "OWC-M-CAM",
-    category: "Outerwear",
-    stock: 6,
-    threshold: 3,
-  },
-  {
-    name: "Ribbed Knit Sweater",
-    variant: "S / Oat",
-    sku: "RKS-S-OAT",
-    category: "Knitwear",
-    stock: 10,
-    threshold: 5,
-  },
-  {
-    name: "Ribbed Knit Sweater",
-    variant: "M / Oat",
-    sku: "RKS-M-OAT",
-    category: "Knitwear",
-    stock: 12,
-    threshold: 5,
-  },
-  {
-    name: "Tailored Wide-Leg Pants",
-    variant: "XS / Black",
-    sku: "TWP-XS-BLK",
-    category: "Bottoms",
-    stock: 2,
-    threshold: 3,
-  },
-  {
-    name: "Tailored Wide-Leg Pants",
-    variant: "S / Black",
-    sku: "TWP-S-BLK",
-    category: "Bottoms",
-    stock: 5,
-    threshold: 3,
-  },
-  {
-    name: "Cashmere Crewneck",
-    variant: "XS / Ivory",
-    sku: "CC-XS-IVO",
-    category: "Knitwear",
-    stock: 2,
-    threshold: 3,
-  },
-  {
-    name: "Cashmere Crewneck",
-    variant: "S / Ivory",
-    sku: "CC-S-IVO",
-    category: "Knitwear",
-    stock: 0,
-    threshold: 3,
-  },
-  {
-    name: "Leather Mini Shoulder Bag",
-    variant: "Black",
-    sku: "LMSB-BLK",
-    category: "Accessories",
-    stock: 22,
-    threshold: 5,
-  },
-  {
-    name: "Linen Button Dress",
-    variant: "M / Sand",
-    sku: "LBD-M-SND",
-    category: "Dresses",
-    stock: 3,
-    threshold: 4,
-  },
-  {
-    name: "Oversized Blazer",
-    variant: "M / Beige",
-    sku: "OB-M-BEI",
-    category: "Outerwear",
-    stock: 11,
-    threshold: 5,
-  },
-];
-
-const USERS = [
-  {
-    name: "Admin",
-    email: "admin@styled.com",
-    role: "Admin",
-    status: "Active",
-    lastActive: "Today",
-  },
-  {
-    name: "Trisha Mendoza",
-    email: "trisha.mendoza@styled.com",
-    role: "Staff",
-    status: "Active",
-    lastActive: "May 16, 2025",
-  },
-  {
-    name: "Miguel Reyes",
-    email: "miguel.reyes@styled.com",
-    role: "Staff",
-    status: "Active",
-    lastActive: "May 18, 2025",
-  },
-  {
-    name: "Anna Cruz",
-    email: "anna.cruz@styled.com",
-    role: "Staff",
-    status: "Inactive",
-    lastActive: "Apr 30, 2025",
-  },
-];
+const API = "/styled/php/admin";
 
 /* ─────────────────────────────────────────────
    NAVIGATION
@@ -593,7 +45,7 @@ function navigate(page, btn) {
   document
     .querySelectorAll(".nav-item")
     .forEach((n) => n.classList.remove("active"));
-  document.getElementById("page-" + page).classList.add("active");
+  document.getElementById("page-" + page)?.classList.add("active");
   if (btn) btn.classList.add("active");
   currentPage = page;
 
@@ -607,6 +59,7 @@ function navigate(page, btn) {
     inventory: "Inventory",
     settings: "Settings",
     users: "Users",
+    contact: "Contact Messages",
   };
   document.getElementById("page-title").innerHTML = titles[page] || page;
 
@@ -615,6 +68,26 @@ function navigate(page, btn) {
     ? "flex"
     : "none";
 
+  // Lazy-load page data
+  if (page === "dashboard") renderDashboard();
+  if (page === "orders") {
+    ordersPage = 1;
+    renderOrdersTable();
+  }
+  if (page === "products") {
+    productsPage = 1;
+    renderProductsTable();
+  }
+  if (page === "customers") {
+    customersPage = 1;
+    renderCustomersTable();
+  }
+  if (page === "analytics") renderAnalytics();
+  if (page === "promotions") renderPromotions();
+  if (page === "inventory") renderInventory();
+  if (page === "users") renderUsers();
+  if (page === "contact") renderContactMessages();
+
   initCharts(page);
 }
 
@@ -622,10 +95,10 @@ function navigate(page, btn) {
    MODALS
 ───────────────────────────────────────────── */
 function openModal(id) {
-  document.getElementById(id).classList.add("open");
+  document.getElementById(id)?.classList.add("open");
 }
 function closeModal(id) {
-  document.getElementById(id).classList.remove("open");
+  document.getElementById(id)?.classList.remove("open");
 }
 document.querySelectorAll(".modal-overlay").forEach((overlay) => {
   overlay.addEventListener("click", (e) => {
@@ -639,7 +112,7 @@ document.querySelectorAll(".modal-overlay").forEach((overlay) => {
 function formatPrice(n) {
   return (
     "₱" +
-    n.toLocaleString("en-PH", {
+    Number(n).toLocaleString("en-PH", {
       minimumFractionDigits: 2,
       maximumFractionDigits: 2,
     })
@@ -648,27 +121,31 @@ function formatPrice(n) {
 
 function statusBadge(s) {
   const map = {
-    Paid: "paid",
-    Shipped: "shipped",
-    Delivered: "delivered",
-    Processing: "processing",
-    Pending: "pending",
-    Refunded: "refunded",
-    Cancelled: "cancelled",
-    Unpaid: "pending",
-    Active: "active",
-    Draft: "draft",
-    "Low Stock": "low-stock",
-    "In Stock": "in-stock",
-    "Out of Stock": "out",
-    Expired: "refunded",
-    Scheduled: "processing",
+    paid: "paid",
+    shipped: "shipped",
+    delivered: "delivered",
+    processing: "processing",
+    pending: "pending",
+    refunded: "refunded",
+    cancelled: "cancelled",
+    unpaid: "pending",
+    active: "active",
+    draft: "draft",
+    "low stock": "low-stock",
+    "in stock": "in-stock",
+    "out of stock": "out",
+    expired: "refunded",
+    scheduled: "processing",
+    unread: "pending",
+    read: "delivered",
+    replied: "shipped",
   };
-  return `<span class="badge badge-${map[s] || "delivered"}">${s}</span>`;
+  const key = (s || "").toLowerCase();
+  return `<span class="badge badge-${map[key] || "delivered"}">${s}</span>`;
 }
 
 function initials(name) {
-  return name
+  return (name || "?")
     .split(" ")
     .map((w) => w[0])
     .slice(0, 2)
@@ -677,141 +154,203 @@ function initials(name) {
 }
 
 function paginate(arr, page, perPage) {
-  const start = (page - 1) * perPage;
-  return arr.slice(start, start + perPage);
+  return arr.slice((page - 1) * perPage, page * perPage);
 }
 
-function renderPagination(containerId, total, currentPage, perPage, onPage) {
+function renderPagination(containerId, total, cur, perPage, cb) {
   const pages = Math.ceil(total / perPage);
   const el = document.getElementById(containerId);
   if (!el) return;
-  let html = `<button class="page-btn" ${currentPage === 1 ? "disabled" : ""} onclick="(${onPage})(${currentPage - 1})">‹</button>`;
+  let html = `<button class="page-btn" ${cur === 1 ? "disabled" : ""} onclick="(${cb})(${cur - 1})">‹</button>`;
   for (let i = 1; i <= pages; i++) {
-    html += `<button class="page-btn ${i === currentPage ? "active" : ""}" onclick="(${onPage})(${i})">${i}</button>`;
+    html += `<button class="page-btn ${i === cur ? "active" : ""}" onclick="(${cb})(${i})">${i}</button>`;
   }
-  html += `<button class="page-btn" ${currentPage === pages ? "disabled" : ""} onclick="(${onPage})(${currentPage + 1})">›</button>`;
+  html += `<button class="page-btn" ${cur === pages ? "disabled" : ""} onclick="(${cb})(${cur + 1})">›</button>`;
   el.innerHTML = html;
+}
+
+function tableLoading(tbodyId, cols) {
+  const el = document.getElementById(tbodyId);
+  if (el)
+    el.innerHTML = `<tr><td colspan="${cols}" style="text-align:center;color:var(--brown-100);padding:24px">Loading…</td></tr>`;
+}
+
+function tableError(tbodyId, cols, msg = "Failed to load data.") {
+  const el = document.getElementById(tbodyId);
+  if (el)
+    el.innerHTML = `<tr><td colspan="${cols}" style="text-align:center;color:var(--red);padding:24px">${msg}</td></tr>`;
 }
 
 /* ─────────────────────────────────────────────
    DASHBOARD
 ───────────────────────────────────────────── */
-function renderDashboard() {
-  // Recent orders (last 5)
-  const body = document.getElementById("dashboard-orders-body");
-  if (!body) return;
-  body.innerHTML = ORDERS.slice(0, 5)
-    .map(
-      (o) => `
-    <tr style="cursor:pointer" onclick="openOrderDetail('${o.id}')">
-      <td><span style="font-weight:500;color:var(--brown-400)">#${o.id}</span></td>
-      <td>${o.customer}</td>
-      <td class="text-muted">${o.date}</td>
-      <td>${statusBadge(o.status)}</td>
-      <td>${statusBadge(o.payment)}</td>
-      <td style="font-weight:500">${formatPrice(o.total)}</td>
-      <td><button class="ellipsis-btn">···</button></td>
-    </tr>`,
-    )
-    .join("");
+async function renderDashboard() {
+  // Recent orders
+  tableLoading("dashboard-orders-body", 7);
+  try {
+    const data = await fetchJSON(`${API}/orders.php?page=1&limit=5`);
+    const body = document.getElementById("dashboard-orders-body");
+    if (!body) return;
 
-  // Top products
-  const topProds = document.getElementById("top-products-list");
-  if (topProds) {
-    const sorted = [...PRODUCTS].sort((a, b) => b.stock - a.stock).slice(0, 5);
-    topProds.innerHTML = sorted
-      .map(
-        (p) => `
-      <div class="metric-row">
-        <div class="flex-center gap-12">
-          <div class="product-thumb">👗</div>
-          <div>
-            <div style="font-size:13.5px;font-weight:500;color:var(--brown-400)">${p.name}</div>
-            <div class="text-sm text-muted">${formatPrice(p.price)}</div>
-          </div>
-        </div>
-        <div class="text-sm text-muted">${p.stock + 81} sold</div>
-      </div>`,
-      )
-      .join("");
+    if (!data.success || !data.orders.length) {
+      body.innerHTML = `<tr><td colspan="7" class="text-muted text-sm" style="padding:16px">No orders yet.</td></tr>`;
+    } else {
+      body.innerHTML = data.orders
+        .map(
+          (o) => `
+        <tr style="cursor:pointer" onclick="openOrderDetail('${o.order_number}')">
+          <td><span style="font-weight:500;color:var(--brown-400)">#${o.order_number}</span></td>
+          <td>${o.customer_name || "—"}</td>
+          <td class="text-muted">${new Date(o.created_at).toLocaleDateString("en-PH", { month: "short", day: "numeric", year: "numeric" })}</td>
+          <td>${statusBadge(o.status)}</td>
+          <td>${statusBadge(o.payment_method === "cod" ? "Pending" : "Paid")}</td>
+          <td style="font-weight:500">${formatPrice(o.total_amount)}</td>
+          <td><button class="ellipsis-btn">···</button></td>
+        </tr>`,
+        )
+        .join("");
+    }
+  } catch (err) {
+    console.error("[admin]", err);
+    tableError("dashboard-orders-body", 7);
   }
 
-  // Low stock
-  const lowStock = document.getElementById("low-stock-list");
-  if (lowStock) {
-    const low = PRODUCTS.filter(
-      (p) => p.stock <= 3 || p.status === "Low Stock",
-    ).slice(0, 5);
-    lowStock.innerHTML = low
-      .map(
-        (p) => `
-      <div class="metric-row">
-        <div class="flex-center gap-12">
-          <div class="product-thumb">👗</div>
-          <div>
-            <div style="font-size:13.5px;font-weight:500;color:var(--brown-400)">${p.name}</div>
-            <div class="text-sm text-muted">${p.category}</div>
+  // Dashboard stat cards — fetch from analytics
+  try {
+    const data = await fetchJSON(`${API}/analytics.php`);
+    if (!data) return;
+
+    const set = (id, val) => {
+      const el = document.getElementById(id);
+      if (el) el.textContent = val;
+    };
+    set("stat-revenue", formatPrice(data.total_revenue));
+    set("stat-orders", data.total_orders);
+    set("stat-avg-order", formatPrice(data.avg_order_value));
+    set("stat-conversion", data.conversion_rate + "%");
+
+    // Top products
+    const topProds = document.getElementById("top-products-list");
+    if (topProds && data.top_products) {
+      topProds.innerHTML = data.top_products
+        .slice(0, 5)
+        .map(
+          (p) => `
+        <div class="metric-row">
+          <div class="flex-center gap-12">
+            <div class="product-thumb">👗</div>
+            <div>
+              <div style="font-size:13.5px;font-weight:500;color:var(--brown-400)">${p.name}</div>
+              <div class="text-sm text-muted">${p.quantity_sold} sold</div>
+            </div>
           </div>
-        </div>
-        <div style="font-size:13px;font-weight:500;color:var(--red)">${p.stock} left</div>
-      </div>`,
-      )
-      .join("");
+          <div class="text-sm text-muted">${formatPrice(p.revenue)}</div>
+        </div>`,
+        )
+        .join("");
+    }
+
+    // Low stock — fetch from inventory
+    const invRes = await fetch(`${API}/inventory.php?status=low`, {
+      credentials: "include",
+    });
+    const invData = await invRes.json();
+    const lowStock = document.getElementById("low-stock-list");
+    if (lowStock && invData.inventory) {
+      const low = invData.inventory.slice(0, 5);
+      lowStock.innerHTML = low.length
+        ? low
+            .map(
+              (i) => `
+            <div class="metric-row">
+              <div class="flex-center gap-12">
+                <div class="product-thumb">👗</div>
+                <div>
+                  <div style="font-size:13.5px;font-weight:500;color:var(--brown-400)">${i.product_name}</div>
+                  <div class="text-sm text-muted">${i.size} — ${i.category}</div>
+                </div>
+              </div>
+              <div style="font-size:13px;font-weight:500;color:var(--red)">${i.stock_qty} left</div>
+            </div>`,
+            )
+            .join("")
+        : `<div class="text-sm text-muted" style="padding:12px">All stock levels healthy.</div>`;
+    }
+
+    // Feed revenue chart with real data
+    _dashboardChartData = data;
+    initCharts("dashboard");
+  } catch (err) {
+    console.error("[admin]", err);
   }
 }
 
 /* ─────────────────────────────────────────────
    ORDERS
 ───────────────────────────────────────────── */
-let filteredOrders = [...ORDERS];
 let ordersPage = 1;
+let ordersStatusFilter = "";
+let ordersSearch = "";
 const ORDERS_PER_PAGE = 8;
 
-function renderOrdersTable() {
-  const body = document.getElementById("orders-body");
-  if (!body) return;
-  const page = paginate(filteredOrders, ordersPage, ORDERS_PER_PAGE);
-  body.innerHTML = page
-    .map(
-      (o) => `
-    <tr style="cursor:pointer" onclick="openOrderDetail('${o.id}')">
-      <td><span style="font-weight:500;color:var(--brown-400)">#${o.id}</span></td>
-      <td>
-        <div class="flex-center gap-8">
-          <div class="customer-avatar">${initials(o.customer)}</div>
-          ${o.customer}
-        </div>
-      </td>
-      <td class="text-muted">${o.date}</td>
-      <td>${statusBadge(o.status)}</td>
-      <td>${statusBadge(o.payment)}</td>
-      <td style="font-weight:500">${formatPrice(o.total)}</td>
-      <td><button class="ellipsis-btn">···</button></td>
-    </tr>`,
-    )
-    .join("");
+async function renderOrdersTable() {
+  tableLoading("orders-body", 7);
+  const params = new URLSearchParams({
+    page: ordersPage,
+    limit: ORDERS_PER_PAGE,
+    status: ordersStatusFilter,
+    search: ordersSearch,
+  });
+  try {
+    const data = await fetchJSON(`${API}/orders.php?${params}`);
+    const body = document.getElementById("orders-body");
+    if (!body) return;
 
-  renderPagination(
-    "orders-pagination",
-    filteredOrders.length,
-    ordersPage,
-    ORDERS_PER_PAGE,
-    `function(p){ordersPage=p;renderOrdersTable();}`,
-  );
+    if (!data.success || !data.orders.length) {
+      body.innerHTML = `<tr><td colspan="7" class="text-muted text-sm" style="padding:16px">No orders found.</td></tr>`;
+    } else {
+      body.innerHTML = data.orders
+        .map(
+          (o) => `
+        <tr style="cursor:pointer" onclick="openOrderDetail('${o.order_number}')">
+          <td><span style="font-weight:500;color:var(--brown-400)">#${o.order_number}</span></td>
+          <td>
+            <div class="flex-center gap-8">
+              <div class="customer-avatar">${initials(o.customer_name)}</div>
+              ${o.customer_name || "—"}
+            </div>
+          </td>
+          <td class="text-muted">${new Date(o.created_at).toLocaleDateString("en-PH", { month: "short", day: "numeric", year: "numeric" })}</td>
+          <td>${statusBadge(o.status)}</td>
+          <td>${statusBadge(o.payment_method === "cod" ? "Pending" : "Paid")}</td>
+          <td style="font-weight:500">${formatPrice(o.total_amount)}</td>
+          <td><button class="ellipsis-btn">···</button></td>
+        </tr>`,
+        )
+        .join("");
+    }
+
+    renderPagination(
+      "orders-pagination",
+      data.total,
+      ordersPage,
+      ORDERS_PER_PAGE,
+      `function(p){ordersPage=p;renderOrdersTable();}`,
+    );
+  } catch (err) {
+    console.error("[admin]", err);
+    tableError("orders-body", 7);
+  }
 }
 
 function filterOrders(q) {
-  q = q.toLowerCase();
-  filteredOrders = ORDERS.filter(
-    (o) =>
-      o.id.toLowerCase().includes(q) || o.customer.toLowerCase().includes(q),
-  );
+  ordersSearch = q;
   ordersPage = 1;
   renderOrdersTable();
 }
 
 function filterOrdersByStatus(s) {
-  filteredOrders = s ? ORDERS.filter((o) => o.status === s) : [...ORDERS];
+  ordersStatusFilter = s;
   ordersPage = 1;
   renderOrdersTable();
 }
@@ -821,146 +360,221 @@ function showOrdersList() {
   document.getElementById("orders-detail-view").style.display = "none";
 }
 
-function openOrderDetail(id) {
-  navigate("orders", document.querySelector('[onclick*="orders"]'));
-  const o = ORDERS.find((x) => x.id === id);
-  if (!o) return;
-
+async function openOrderDetail(orderNumber) {
+  navigate("orders", document.querySelector("[onclick*=\"'orders'\"]"));
   document.getElementById("orders-list-view").style.display = "none";
   document.getElementById("orders-detail-view").style.display = "";
 
-  document.getElementById("detail-order-id").textContent = "Order #" + o.id;
-  document.getElementById("detail-status-badge").outerHTML =
-    `<span id="detail-status-badge" class="badge badge-${o.status.toLowerCase().replace(" ", "-")}">${o.status}</span>`;
-  document.getElementById("detail-payment-badge").outerHTML =
-    `<span id="detail-payment-badge" class="badge badge-${o.payment.toLowerCase()}">${o.payment}</span>`;
+  document.getElementById("detail-order-id").textContent =
+    "Order #" + orderNumber;
 
-  document.getElementById("detail-items").innerHTML = o.items
-    .map(
-      (item) => `
-    <div class="order-item">
-      <div class="order-item-img" style="display:flex;align-items:center;justify-content:center;font-size:24px">👗</div>
-      <div style="flex:1">
-        <div style="font-weight:500;font-size:13.5px;color:var(--brown-400)">${item.name}</div>
-        <div class="text-sm text-muted">${item.variant} × ${item.qty}</div>
-      </div>
-      <div style="font-weight:500">${formatPrice(item.price * item.qty)}</div>
-    </div>`,
-    )
-    .join("");
+  try {
+    const data = await fetchJSON(`${API}/orders.php?id=${orderNumber}`);
+    if (!data.success) return;
+    const o = data.order;
 
-  const subtotal = o.items.reduce((sum, i) => sum + i.price * i.qty, 0);
-  document.getElementById("detail-subtotal").textContent =
-    formatPrice(subtotal);
-  document.getElementById("detail-total-price").textContent = formatPrice(
-    o.total,
-  );
+    document.getElementById("detail-order-id").textContent =
+      "Order #" + o.order_number;
 
-  document.getElementById("detail-customer").innerHTML = `
-    <div class="flex-center gap-12" style="margin-bottom:12px">
-      <div class="customer-avatar" style="width:38px;height:38px;font-size:15px">${initials(o.customer)}</div>
-      <div>
-        <div style="font-weight:500;font-size:13.5px;color:var(--brown-400)">${o.customer}</div>
-        <div class="text-sm text-muted">${o.email}</div>
-      </div>
-    </div>`;
+    const statusBadgeEl = document.getElementById("detail-status-badge");
+    if (statusBadgeEl)
+      statusBadgeEl.outerHTML = `<span id="detail-status-badge">${statusBadge(o.status)}</span>`;
 
-  document.getElementById("detail-address").innerHTML = o.address.replace(
-    /,\s*/g,
-    "<br>",
-  );
+    const payBadgeEl = document.getElementById("detail-payment-badge");
+    if (payBadgeEl)
+      payBadgeEl.outerHTML = `<span id="detail-payment-badge">${statusBadge(o.payment_method === "cod" ? "Pending" : "Paid")}</span>`;
 
-  document.getElementById("detail-timeline").innerHTML = o.timeline
-    .map(
-      (t, i) => `
-    <div class="timeline-item">
-      <div class="timeline-dot ${i >= o.timeline.length - 1 && !["Delivered", "Cancelled", "Refunded"].includes(o.status) ? "empty" : ""}"></div>
-      <div class="timeline-content">
-        <div class="timeline-label">${t.split(" — ")[0]}</div>
-        <div class="timeline-time">${t.split(" — ")[1] || ""}</div>
-      </div>
-    </div>`,
-    )
-    .join("");
+    // Items
+    document.getElementById("detail-items").innerHTML = (o.items || [])
+      .map(
+        (item) => `
+      <div class="order-item">
+        <div class="order-item-img" style="display:flex;align-items:center;justify-content:center;font-size:24px">👗</div>
+        <div style="flex:1">
+          <div style="font-weight:500;font-size:13.5px;color:var(--brown-400)">${item.product_name}</div>
+          <div class="text-sm text-muted">${item.size || ""} × ${item.qty}</div>
+        </div>
+        <div style="font-weight:500">${formatPrice(item.unit_price * item.qty)}</div>
+      </div>`,
+      )
+      .join("");
+
+    const subtotal = (o.items || []).reduce(
+      (s, i) => s + i.unit_price * i.qty,
+      0,
+    );
+    const elSub = document.getElementById("detail-subtotal");
+    if (elSub) elSub.textContent = formatPrice(subtotal);
+    const elTotal = document.getElementById("detail-total-price");
+    if (elTotal) elTotal.textContent = formatPrice(o.total_amount);
+
+    // Customer
+    document.getElementById("detail-customer").innerHTML = `
+      <div class="flex-center gap-12" style="margin-bottom:12px">
+        <div class="customer-avatar" style="width:38px;height:38px;font-size:15px">${initials(o.customer_name)}</div>
+        <div>
+          <div style="font-weight:500;font-size:13.5px;color:var(--brown-400)">${o.customer_name || "—"}</div>
+          <div class="text-sm text-muted">${o.customer_email || ""}</div>
+        </div>
+      </div>`;
+
+    const addr = [o.street, o.city, o.province, o.zip_code]
+      .filter(Boolean)
+      .join(", ");
+    const elAddr = document.getElementById("detail-address");
+    if (elAddr) elAddr.innerHTML = addr.replace(/,\s*/g, "<br>");
+
+    // Tracking number
+    const elTrack = document.getElementById("detail-tracking");
+    if (elTrack) elTrack.value = o.tracking_number || "";
+
+    // Status update controls
+    const actionsEl = document.getElementById("detail-actions");
+    if (actionsEl) {
+      actionsEl.innerHTML = `
+        <select class="filter-select" id="status-select" style="height:36px;font-size:13px">
+          ${[
+            "pending",
+            "processing",
+            "shipped",
+            "delivered",
+            "cancelled",
+            "refunded",
+          ]
+            .map(
+              (s) =>
+                `<option value="${s}" ${s === o.status ? "selected" : ""}>${s.charAt(0).toUpperCase() + s.slice(1)}</option>`,
+            )
+            .join("")}
+        </select>
+        <button class="btn btn-primary btn-sm" onclick="updateOrderStatus(${o.order_id})">Update Status</button>`;
+    }
+  } catch (err) {
+    console.error("[admin]", err);
+  }
+}
+
+async function updateOrderStatus(orderId) {
+  const status = document.getElementById("status-select")?.value;
+  const tracking = document.getElementById("detail-tracking")?.value || "";
+  if (!status) return;
+
+  try {
+    const res = await fetch(`${API}/orders.php`, {
+      method: "PUT",
+      credentials: "include",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        order_id: orderId,
+        status,
+        tracking_number: tracking,
+      }),
+    });
+    const data = await res.json();
+    if (data.success) {
+      const el = document.getElementById("detail-status-badge");
+      if (el)
+        el.outerHTML = `<span id="detail-status-badge">${statusBadge(status)}</span>`;
+      alert("Order updated successfully.");
+    } else {
+      alert(data.error || "Update failed.");
+    }
+  } catch (err) {
+    console.error("[admin]", err);
+    alert("Network error.");
+  }
 }
 
 /* ─────────────────────────────────────────────
    PRODUCTS
 ───────────────────────────────────────────── */
-let filteredProducts = [...PRODUCTS];
 let productsPage = 1;
+let productsCategoryFilter = "";
+let productsStatusFilter = "";
+let productsSearch = "";
 const PRODUCTS_PER_PAGE = 8;
 
-function renderProductsTable() {
-  const body = document.getElementById("products-body");
-  if (!body) return;
-  const page = paginate(filteredProducts, productsPage, PRODUCTS_PER_PAGE);
-  body.innerHTML = page
-    .map(
-      (p) => `
-    <tr>
-      <td>
-        <div class="flex-center gap-12">
-          <div class="product-thumb">👗</div>
-          <span style="font-weight:500;color:var(--brown-400)">${p.name}</span>
-        </div>
-      </td>
-      <td class="text-muted">${p.category}</td>
-      <td style="font-weight:500">${formatPrice(p.price)}</td>
-      <td>
-        <div class="stock-bar-wrap">
-          <span class="stock-num ${p.stock === 0 ? "" : ""}${p.stock <= 3 && p.stock > 0 ? "" : ""}${p.stock <= 3 ? "text-muted" : ""}"
-            style="color:${p.stock === 0 ? "var(--red)" : p.stock <= 3 ? "var(--gold)" : "var(--brown-300)"}">${p.stock}</span>
-          <div class="progress-bar" style="flex:1">
-            <div class="progress-fill" style="width:${Math.min(100, (p.stock / 30) * 100)}%;background:${p.stock === 0 ? "var(--red)" : p.stock <= 5 ? "var(--gold)" : "var(--gold)"}"></div>
-          </div>
-        </div>
-      </td>
-      <td>${statusBadge(p.status === "Low Stock" ? "Low Stock" : p.status)}</td>
-      <td>
-        <div class="flex-center gap-8">
-          <button class="btn btn-outline btn-sm" onclick="openProductEditor('${p.id}')">Edit</button>
-          <button class="ellipsis-btn">···</button>
-        </div>
-      </td>
-    </tr>`,
-    )
-    .join("");
+async function renderProductsTable() {
+  tableLoading("products-body", 6);
+  const params = new URLSearchParams({
+    page: productsPage,
+    limit: PRODUCTS_PER_PAGE,
+    category: productsCategoryFilter,
+    status: productsStatusFilter,
+    search: productsSearch,
+  });
+  try {
+    const data = await fetchJSON(`${API}/products.php?${params}`);
+    const body = document.getElementById("products-body");
+    if (!body) return;
 
-  renderPagination(
-    "products-pagination",
-    filteredProducts.length,
-    productsPage,
-    PRODUCTS_PER_PAGE,
-    `function(p){productsPage=p;renderProductsTable();}`,
-  );
+    if (!data.success || !data.products.length) {
+      body.innerHTML = `<tr><td colspan="6" class="text-muted text-sm" style="padding:16px">No products found.</td></tr>`;
+    } else {
+      body.innerHTML = data.products
+        .map((p) => {
+          const stock = parseInt(p.stock) || 0;
+          const statLbl =
+            stock === 0
+              ? "Out of Stock"
+              : stock <= 5
+                ? "Low Stock"
+                : p.status || "Active";
+          return `
+        <tr>
+          <td>
+            <div class="flex-center gap-12">
+              <div class="product-thumb">👗</div>
+              <span style="font-weight:500;color:var(--brown-400)">${p.name}</span>
+            </div>
+          </td>
+          <td class="text-muted">${p.category || "—"}</td>
+          <td style="font-weight:500">${formatPrice(p.price)}</td>
+          <td>
+            <div class="stock-bar-wrap">
+              <span class="stock-num" style="color:${stock === 0 ? "var(--red)" : stock <= 5 ? "var(--gold)" : "var(--brown-300)"}">${stock}</span>
+              <div class="progress-bar" style="flex:1">
+                <div class="progress-fill" style="width:${Math.min(100, (stock / 30) * 100)}%;background:var(--gold)"></div>
+              </div>
+            </div>
+          </td>
+          <td>${statusBadge(statLbl)}</td>
+          <td>
+            <div class="flex-center gap-8">
+              <button class="btn btn-outline btn-sm" onclick="openProductEditor(${p.product_id})">Edit</button>
+              <button class="btn btn-outline btn-sm" style="color:var(--red)" onclick="deleteProduct(${p.product_id},'${p.name.replace(/'/g, "\\'")}')">Delete</button>
+            </div>
+          </td>
+        </tr>`;
+        })
+        .join("");
+    }
+
+    renderPagination(
+      "products-pagination",
+      data.total,
+      productsPage,
+      PRODUCTS_PER_PAGE,
+      `function(p){productsPage=p;renderProductsTable();}`,
+    );
+  } catch (err) {
+    console.error("[admin]", err);
+    tableError("products-body", 6);
+  }
 }
 
 function filterProducts(q) {
-  q = q.toLowerCase();
-  filteredProducts = PRODUCTS.filter(
-    (p) =>
-      p.name.toLowerCase().includes(q) || p.category.toLowerCase().includes(q),
-  );
+  productsSearch = q;
   productsPage = 1;
   renderProductsTable();
 }
-
 function filterProductsByStatus(s) {
-  filteredProducts = s
-    ? PRODUCTS.filter(
-        (p) =>
-          p.status === s || (s === "Low Stock" && p.status === "Low Stock"),
-      )
-    : [...PRODUCTS];
+  productsStatusFilter = s;
   productsPage = 1;
   renderProductsTable();
 }
-
 function filterProductsByCategory(c) {
-  filteredProducts = c
-    ? PRODUCTS.filter((p) => p.category === c)
-    : [...PRODUCTS];
+  productsCategoryFilter = c;
   productsPage = 1;
   renderProductsTable();
 }
@@ -970,18 +584,92 @@ function showProductsList() {
   document.getElementById("products-editor-view").style.display = "none";
 }
 
-function openProductEditor(id) {
-  const p = PRODUCTS.find((x) => x.id === id);
-  if (!p) return;
+let editingProductId = null;
+
+async function openProductEditor(id) {
+  editingProductId = id || null;
   document.getElementById("products-list-view").style.display = "none";
   document.getElementById("products-editor-view").style.display = "";
-  document.getElementById("editor-product-name").textContent = p.name;
-  document.getElementById("edit-product-name").value = p.name;
-  document.getElementById("edit-price").value = p.price;
-  switchProductTab(
-    "general",
-    document.querySelector("#product-editor-tabs .pill-tab"),
-  );
+
+  if (!id) {
+    // New product form — clear fields
+    document.getElementById("editor-product-name").textContent = "New Product";
+    ["edit-product-name", "edit-price"].forEach((f) => {
+      const el = document.getElementById(f);
+      if (el) el.value = "";
+    });
+    return;
+  }
+
+  try {
+    const data = await fetchJSON(`${API}/products.php?id=${id}`);
+    if (!data.success) return;
+    const p = data.product;
+    document.getElementById("editor-product-name").textContent = p.name;
+    const nameEl = document.getElementById("edit-product-name");
+    const priceEl = document.getElementById("edit-price");
+    if (nameEl) nameEl.value = p.name;
+    if (priceEl) priceEl.value = p.price;
+    switchProductTab(
+      "general",
+      document.querySelector("#product-editor-tabs .pill-tab"),
+    );
+  } catch (err) {
+    console.error("[admin]", err);
+  }
+}
+
+async function saveProduct() {
+  const name = document.getElementById("edit-product-name")?.value.trim();
+  const price = parseFloat(document.getElementById("edit-price")?.value);
+  if (!name || isNaN(price)) {
+    alert("Name and price are required.");
+    return;
+  }
+
+  const body = { name, price };
+  const method = editingProductId ? "PUT" : "POST";
+  const url = editingProductId
+    ? `${API}/products.php?id=${editingProductId}`
+    : `${API}/products.php`;
+
+  try {
+    const res = await fetch(url, {
+      method,
+      credentials: "include",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body),
+    });
+    const data = await res.json();
+    if (data.success) {
+      showProductsList();
+      renderProductsTable();
+      alert(editingProductId ? "Product updated." : "Product created.");
+    } else {
+      alert(data.error || "Save failed.");
+    }
+  } catch (err) {
+    console.error("[admin]", err);
+    alert("Network error.");
+  }
+}
+
+async function deleteProduct(id, name) {
+  if (!confirm(`Delete "${name}"? This cannot be undone.`)) return;
+  try {
+    const res = await fetch(`${API}/products.php?id=${id}`, {
+      method: "DELETE",
+      credentials: "include",
+    });
+    const data = await res.json();
+    if (data.success) {
+      renderProductsTable();
+      alert("Product deleted.");
+    } else alert(data.error || "Delete failed.");
+  } catch (err) {
+    console.error("[admin]", err);
+    alert("Network error.");
+  }
 }
 
 function switchProductTab(tab, btn) {
@@ -998,49 +686,61 @@ function switchProductTab(tab, btn) {
 /* ─────────────────────────────────────────────
    CUSTOMERS
 ───────────────────────────────────────────── */
-let filteredCustomers = [...CUSTOMERS];
 let customersPage = 1;
+let customersSearch = "";
 const CUSTOMERS_PER_PAGE = 8;
 
-function renderCustomersTable() {
-  const body = document.getElementById("customers-body");
-  if (!body) return;
-  const page = paginate(filteredCustomers, customersPage, CUSTOMERS_PER_PAGE);
-  body.innerHTML = page
-    .map(
-      (c) => `
-    <tr style="cursor:pointer" onclick="openCustomerProfile('${c.id}')">
-      <td>
-        <div class="flex-center gap-12">
-          <div class="customer-avatar">${initials(c.name)}</div>
-          <span style="font-weight:500;color:var(--brown-400)">${c.name}</span>
-        </div>
-      </td>
-      <td class="text-muted">${c.email}</td>
-      <td>${c.orders}</td>
-      <td style="font-weight:500">${formatPrice(c.spent)}</td>
-      <td>${c.tags.map((t) => `<span class="badge badge-vip" style="margin-right:4px">${t}</span>`).join("")}</td>
-      <td class="text-muted">${c.since}</td>
-      <td><button class="ellipsis-btn">···</button></td>
-    </tr>`,
-    )
-    .join("");
+async function renderCustomersTable() {
+  tableLoading("customers-body", 7);
+  const params = new URLSearchParams({
+    page: customersPage,
+    limit: CUSTOMERS_PER_PAGE,
+    search: customersSearch,
+  });
+  try {
+    const data = await fetchJSON(`${API}/customers.php?${params}`);
+    const body = document.getElementById("customers-body");
+    if (!body) return;
 
-  renderPagination(
-    "customers-pagination",
-    filteredCustomers.length,
-    customersPage,
-    CUSTOMERS_PER_PAGE,
-    `function(p){customersPage=p;renderCustomersTable();}`,
-  );
+    if (!data.success || !data.customers.length) {
+      body.innerHTML = `<tr><td colspan="7" class="text-muted text-sm" style="padding:16px">No customers found.</td></tr>`;
+    } else {
+      body.innerHTML = data.customers
+        .map(
+          (c) => `
+        <tr style="cursor:pointer" onclick="openCustomerProfile(${c.user_id})">
+          <td>
+            <div class="flex-center gap-12">
+              <div class="customer-avatar">${initials(c.full_name)}</div>
+              <span style="font-weight:500;color:var(--brown-400)">${c.full_name}</span>
+            </div>
+          </td>
+          <td class="text-muted">${c.email}</td>
+          <td>${c.order_count}</td>
+          <td style="font-weight:500">${formatPrice(c.total_spent)}</td>
+          <td>${c.admin_notes ? `<span class="badge badge-processing">Has note</span>` : "—"}</td>
+          <td class="text-muted">${new Date(c.created_at).toLocaleDateString("en-PH", { month: "short", year: "numeric" })}</td>
+          <td><button class="ellipsis-btn">···</button></td>
+        </tr>`,
+        )
+        .join("");
+    }
+
+    renderPagination(
+      "customers-pagination",
+      data.total,
+      customersPage,
+      CUSTOMERS_PER_PAGE,
+      `function(p){customersPage=p;renderCustomersTable();}`,
+    );
+  } catch (err) {
+    console.error("[admin]", err);
+    tableError("customers-body", 7);
+  }
 }
 
 function filterCustomers(q) {
-  q = q.toLowerCase();
-  filteredCustomers = CUSTOMERS.filter(
-    (c) =>
-      c.name.toLowerCase().includes(q) || c.email.toLowerCase().includes(q),
-  );
+  customersSearch = q;
   customersPage = 1;
   renderCustomersTable();
 }
@@ -1050,185 +750,525 @@ function showCustomersList() {
   document.getElementById("customer-profile-view").style.display = "none";
 }
 
-function openCustomerProfile(id) {
-  const c = CUSTOMERS.find((x) => x.id === id);
-  if (!c) return;
-  navigate("customers", document.querySelector('[onclick*="customers"]'));
+let viewingCustomerId = null;
+
+async function openCustomerProfile(id) {
+  viewingCustomerId = id;
+  navigate("customers", document.querySelector("[onclick*=\"'customers'\"]"));
   document.getElementById("customers-list-view").style.display = "none";
   document.getElementById("customer-profile-view").style.display = "";
-  document.getElementById("profile-avatar").textContent = initials(c.name);
-  document.getElementById("profile-name").textContent = c.name;
-  document.getElementById("profile-email").textContent = c.email;
-  document.getElementById("profile-total-orders").textContent = c.orders;
-  document.getElementById("profile-total-spent").textContent = formatPrice(
-    c.spent,
-  );
-  const cOrders = ORDERS.filter((o) => o.customer === c.name);
-  document.getElementById("profile-orders").innerHTML = cOrders.length
-    ? cOrders
-        .map(
-          (o) =>
-            `<tr><td>#${o.id}</td><td class="text-muted">${o.date}</td><td>${statusBadge(o.status)}</td><td style="font-weight:500">${formatPrice(o.total)}</td></tr>`,
-        )
-        .join("")
-    : `<tr><td colspan="4" class="text-muted text-sm" style="padding:12px">No orders found</td></tr>`;
+
+  try {
+    const data = await fetchJSON(`${API}/customers.php?id=${id}`);
+    if (!data.success) return;
+    const c = data.customer;
+
+    document.getElementById("profile-avatar").textContent = initials(
+      c.full_name,
+    );
+    document.getElementById("profile-name").textContent = c.full_name;
+    document.getElementById("profile-email").textContent = c.email;
+    document.getElementById("profile-total-orders").textContent = c.order_count;
+    document.getElementById("profile-total-spent").textContent = formatPrice(
+      c.total_spent,
+    );
+
+    const noteEl = document.getElementById("profile-admin-notes");
+    if (noteEl) noteEl.value = c.admin_notes || "";
+
+    document.getElementById("profile-orders").innerHTML = c.orders.length
+      ? c.orders
+          .map(
+            (o) => `
+          <tr>
+            <td>#${o.order_number}</td>
+            <td class="text-muted">${new Date(o.created_at).toLocaleDateString("en-PH", { month: "short", day: "numeric", year: "numeric" })}</td>
+            <td>${statusBadge(o.status)}</td>
+            <td style="font-weight:500">${formatPrice(o.total_amount)}</td>
+          </tr>`,
+          )
+          .join("")
+      : `<tr><td colspan="4" class="text-muted text-sm" style="padding:12px">No orders found</td></tr>`;
+  } catch (err) {
+    console.error("[admin]", err);
+  }
+}
+
+async function saveCustomerNote() {
+  if (!viewingCustomerId) return;
+  const notes = document.getElementById("profile-admin-notes")?.value || "";
+  try {
+    const res = await fetch(`${API}/customers.php?id=${viewingCustomerId}`, {
+      method: "PUT",
+      credentials: "include",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ admin_notes: notes }),
+    });
+    const data = await res.json();
+    alert(data.success ? "Note saved." : data.error || "Failed.");
+  } catch (err) {
+    console.error("[admin]", err);
+    alert("Network error.");
+  }
 }
 
 /* ─────────────────────────────────────────────
    ANALYTICS
 ───────────────────────────────────────────── */
-function renderAnalytics() {
-  const topProds = document.getElementById("analytics-top-products");
-  if (topProds) {
-    const sorted = [...PRODUCTS].sort((a, b) => b.stock - a.stock).slice(0, 5);
-    topProds.innerHTML = sorted
-      .map(
-        (p, i) => `
-      <div class="metric-row">
-        <div>
-          <div style="font-size:13.5px;font-weight:500;color:var(--brown-400)">${i + 1}. ${p.name}</div>
-          <div class="text-sm text-muted">${p.category} — ${formatPrice(p.price)}</div>
-        </div>
-        <div class="text-sm text-bold">${p.stock + 81} sold</div>
-      </div>`,
-      )
-      .join("");
-  }
+let _analyticsData = null;
 
-  const traffic = document.getElementById("analytics-traffic");
-  if (traffic) {
-    const sources = [
-      { label: "Direct", pct: 42, color: "var(--brown-300)" },
-      { label: "Instagram", pct: 29, color: "var(--gold)" },
-      { label: "Google", pct: 20, color: "var(--blue)" },
-      { label: "Email", pct: 9, color: "var(--brown-100)" },
-    ];
-    traffic.innerHTML = sources
-      .map(
-        (s) => `
-      <div class="metric-row">
-        <div style="font-size:13.5px">${s.label}</div>
-        <div style="display:flex;align-items:center;gap:8px;width:160px">
-          <div class="progress-bar" style="flex:1"><div class="progress-fill" style="width:${s.pct}%;background:${s.color}"></div></div>
-          <span class="text-sm text-bold" style="min-width:28px">${s.pct}%</span>
-        </div>
-      </div>`,
-      )
-      .join("");
+async function renderAnalytics() {
+  try {
+    const data = await fetchJSON(`${API}/analytics.php`);
+    _analyticsData = data;
+
+    // KPI cards
+    const set = (id, val) => {
+      const el = document.getElementById(id);
+      if (el) el.textContent = val;
+    };
+    set("analytics-total-revenue", formatPrice(data.total_revenue));
+    set("analytics-total-orders", data.total_orders);
+    set("analytics-avg-order", formatPrice(data.avg_order_value));
+    set("analytics-conversion-rate", data.conversion_rate + "%");
+
+    // Top products
+    const topProds = document.getElementById("analytics-top-products");
+    if (topProds) {
+      topProds.innerHTML = data.top_products
+        .slice(0, 5)
+        .map(
+          (p, i) => `
+        <div class="metric-row">
+          <div>
+            <div style="font-size:13.5px;font-weight:500;color:var(--brown-400)">${i + 1}. ${p.name}</div>
+            <div class="text-sm text-muted">${p.quantity_sold} sold</div>
+          </div>
+          <div class="text-sm text-bold">${formatPrice(p.revenue)}</div>
+        </div>`,
+        )
+        .join("");
+    }
+
+    initCharts("analytics");
+  } catch (err) {
+    console.error("[admin]", err);
   }
 }
 
 /* ─────────────────────────────────────────────
    PROMOTIONS
 ───────────────────────────────────────────── */
-function renderPromotions() {
-  const body = document.getElementById("promotions-body");
-  if (!body) return;
-  body.innerHTML = PROMOTIONS.map(
-    (p) => `
-    <tr>
-      <td><span style="font-weight:600;font-family:var(--font-body);letter-spacing:.05em;color:var(--brown-400)">${p.code}</span></td>
-      <td class="text-muted">${p.type}</td>
-      <td style="font-weight:500">${p.discount}</td>
-      <td class="text-muted text-sm">${p.conditions}</td>
-      <td class="text-muted">${p.uses}</td>
-      <td class="text-muted">${p.expiry}</td>
-      <td>${statusBadge(p.status)}</td>
-      <td><button class="ellipsis-btn">···</button></td>
-    </tr>`,
-  ).join("");
+async function renderPromotions() {
+  tableLoading("promotions-body", 8);
+  try {
+    const data = await fetchJSON(`${API}/promotions.php`);
+    const body = document.getElementById("promotions-body");
+    if (!body) return;
+
+    if (!data.success || !data.promotions.length) {
+      body.innerHTML = `<tr><td colspan="8" class="text-muted text-sm" style="padding:16px">No promotions yet.</td></tr>`;
+    } else {
+      body.innerHTML = data.promotions
+        .map((p) => {
+          const isExpired =
+            p.expiry_date && new Date(p.expiry_date) < new Date();
+          const status = !p.is_active
+            ? "Inactive"
+            : isExpired
+              ? "Expired"
+              : "Active";
+          const discount =
+            p.discount_type === "percent"
+              ? `${p.discount_value}% off`
+              : `₱${p.discount_value} off`;
+          const minOrder =
+            p.min_order > 0
+              ? `Min. spend ₱${Number(p.min_order).toLocaleString()}`
+              : "No minimum";
+          const uses = p.usage_limit
+            ? `${p.usage_count} / ${p.usage_limit}`
+            : `${p.usage_count} / —`;
+          const expiry = p.expiry_date
+            ? new Date(p.expiry_date).toLocaleDateString("en-PH", {
+                month: "short",
+                day: "numeric",
+                year: "numeric",
+              })
+            : "—";
+          return `
+          <tr>
+            <td><span style="font-weight:600;letter-spacing:.05em;color:var(--brown-400)">${p.code}</span></td>
+            <td class="text-muted">${p.discount_type === "percent" ? "Percentage" : "Fixed"}</td>
+            <td style="font-weight:500">${discount}</td>
+            <td class="text-muted text-sm">${minOrder}</td>
+            <td class="text-muted">${uses}</td>
+            <td class="text-muted">${expiry}</td>
+            <td>${statusBadge(status)}</td>
+            <td>
+              <div class="flex-center gap-6">
+                <button class="btn btn-outline btn-sm" onclick="togglePromo(${p.promo_id}, ${p.is_active})">${p.is_active ? "Deactivate" : "Activate"}</button>
+                <button class="btn btn-outline btn-sm" style="color:var(--red)" onclick="deletePromo(${p.promo_id},'${p.code}')">Delete</button>
+              </div>
+            </td>
+          </tr>`;
+        })
+        .join("");
+    }
+  } catch (err) {
+    console.error("[admin]", err);
+    tableError("promotions-body", 8);
+  }
+}
+
+async function createPromotion() {
+  const code = document
+    .getElementById("promo-code")
+    ?.value.trim()
+    .toUpperCase();
+  const type = document.getElementById("promo-type")?.value;
+  const value = parseFloat(document.getElementById("promo-value")?.value);
+  const minOrder = parseFloat(
+    document.getElementById("promo-min-order")?.value || "0",
+  );
+  const limit = document.getElementById("promo-limit")?.value;
+  const expiry = document.getElementById("promo-expiry")?.value;
+
+  if (!code || !type || isNaN(value)) {
+    alert("Code, type and value are required.");
+    return;
+  }
+
+  try {
+    const res = await fetch(`${API}/promotions.php`, {
+      method: "POST",
+      credentials: "include",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        code,
+        discount_type: type,
+        discount_value: value,
+        min_order: minOrder,
+        usage_limit: limit || null,
+        expiry_date: expiry || null,
+      }),
+    });
+    const data = await res.json();
+    if (data.success) {
+      closeModal("modal-add-promo");
+      renderPromotions();
+      alert("Promotion created.");
+    } else alert(data.error || "Failed.");
+  } catch (err) {
+    console.error("[admin]", err);
+    alert("Network error.");
+  }
+}
+
+async function togglePromo(id, currentActive) {
+  try {
+    const res = await fetch(`${API}/promotions.php?id=${id}`, {
+      method: "PUT",
+      credentials: "include",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ is_active: currentActive ? 0 : 1 }),
+    });
+    const data = await res.json();
+    if (data.success) renderPromotions();
+    else alert(data.error || "Failed.");
+  } catch (err) {
+    console.error("[admin]", err);
+    alert("Network error.");
+  }
+}
+
+async function deletePromo(id, code) {
+  if (!confirm(`Delete promo "${code}"?`)) return;
+  try {
+    const res = await fetch(`${API}/promotions.php?id=${id}`, {
+      method: "DELETE",
+      credentials: "include",
+    });
+    const data = await res.json();
+    if (data.success) {
+      renderPromotions();
+      alert("Promotion deleted.");
+    } else alert(data.error || "Failed.");
+  } catch (err) {
+    console.error("[admin]", err);
+    alert("Network error.");
+  }
 }
 
 /* ─────────────────────────────────────────────
    INVENTORY
 ───────────────────────────────────────────── */
-let filteredInventory = [...INVENTORY];
+let inventoryStatusFilter = "";
+let inventorySearch = "";
 
-function renderInventory() {
-  const body = document.getElementById("inventory-body");
-  if (!body) return;
-  body.innerHTML = filteredInventory
-    .map((item) => {
-      const isLow = item.stock > 0 && item.stock <= item.threshold;
-      const isOut = item.stock === 0;
-      const status = isOut ? "Out of Stock" : isLow ? "Low Stock" : "In Stock";
-      return `
-      <tr>
-        <td style="font-weight:500;color:var(--brown-400)">${item.name}</td>
-        <td class="text-muted">${item.variant}</td>
-        <td><code style="font-size:12px;background:var(--beige-100);padding:2px 6px;border-radius:3px">${item.sku}</code></td>
-        <td class="text-muted">${item.category}</td>
-        <td>
-          <div class="flex-center gap-8">
-            <span style="font-weight:600;color:${isOut ? "var(--red)" : isLow ? "var(--gold)" : "var(--brown-400)"}">${item.stock}</span>
-            <div class="progress-bar" style="width:60px"><div class="progress-fill" style="width:${Math.min(100, (item.stock / 20) * 100)}%;background:${isOut ? "var(--red)" : isLow ? "var(--gold)" : "var(--gold)"}"></div></div>
-          </div>
-        </td>
-        <td>${statusBadge(status)}</td>
-        <td>
-          <div class="flex-center gap-6">
-            <input class="form-input" type="number" value="${item.stock}" style="width:65px;height:30px;padding:0 8px;font-size:13px" />
-            <button class="btn btn-outline btn-sm">Update</button>
-          </div>
-        </td>
-      </tr>`;
-    })
-    .join("");
+async function renderInventory() {
+  tableLoading("inventory-body", 7);
+  const params = new URLSearchParams({
+    status: inventoryStatusFilter,
+    search: inventorySearch,
+  });
+  try {
+    const data = await fetchJSON(`${API}/inventory.php?${params}`);
+    const body = document.getElementById("inventory-body");
+    if (!body) return;
+
+    if (!data.success || !data.inventory.length) {
+      body.innerHTML = `<tr><td colspan="7" class="text-muted text-sm" style="padding:16px">No inventory data found.</td></tr>`;
+    } else {
+      body.innerHTML = data.inventory
+        .map((item) => {
+          const qty = parseInt(item.stock_qty) || 0;
+          const isOut = qty === 0;
+          const isLow = qty > 0 && qty <= 5;
+          const status = isOut
+            ? "Out of Stock"
+            : isLow
+              ? "Low Stock"
+              : "In Stock";
+          return `
+          <tr>
+            <td style="font-weight:500;color:var(--brown-400)">${item.product_name}</td>
+            <td class="text-muted">${item.size || "—"}</td>
+            <td><code style="font-size:12px;background:var(--beige-100);padding:2px 6px;border-radius:3px">${item.sku || "—"}</code></td>
+            <td class="text-muted">${item.category}</td>
+            <td>
+              <div class="flex-center gap-8">
+                <span style="font-weight:600;color:${isOut ? "var(--red)" : isLow ? "var(--gold)" : "var(--brown-400)"}">${qty}</span>
+                <div class="progress-bar" style="width:60px"><div class="progress-fill" style="width:${Math.min(100, (qty / 20) * 100)}%;background:${isOut ? "var(--red)" : "var(--gold)"}"></div></div>
+              </div>
+            </td>
+            <td>${statusBadge(status)}</td>
+            <td>
+              <div class="flex-center gap-6">
+                <input class="form-input" type="number" value="${qty}" min="0" id="inv-qty-${item.size_id}" style="width:65px;height:30px;padding:0 8px;font-size:13px" />
+                <button class="btn btn-outline btn-sm" onclick="updateStock(${item.size_id})">Update</button>
+              </div>
+            </td>
+          </tr>`;
+        })
+        .join("");
+    }
+  } catch (err) {
+    console.error("[admin]", err);
+    tableError("inventory-body", 7);
+  }
 }
 
 function filterInventory(q) {
-  q = q.toLowerCase();
-  filteredInventory = INVENTORY.filter(
-    (i) => i.name.toLowerCase().includes(q) || i.sku.toLowerCase().includes(q),
-  );
+  inventorySearch = q;
+  renderInventory();
+}
+function filterInventoryByStatus(s) {
+  inventoryStatusFilter = s;
   renderInventory();
 }
 
-function filterInventoryByStatus(s) {
-  if (!s) {
-    filteredInventory = [...INVENTORY];
-  } else if (s === "in")
-    filteredInventory = INVENTORY.filter((i) => i.stock > i.threshold);
-  else if (s === "low")
-    filteredInventory = INVENTORY.filter(
-      (i) => i.stock > 0 && i.stock <= i.threshold,
-    );
-  else if (s === "out")
-    filteredInventory = INVENTORY.filter((i) => i.stock === 0);
-  renderInventory();
+async function updateStock(sizeId) {
+  const qty = parseInt(document.getElementById(`inv-qty-${sizeId}`)?.value, 10);
+  if (isNaN(qty) || qty < 0) {
+    alert("Enter a valid quantity.");
+    return;
+  }
+  try {
+    const res = await fetch(`${API}/inventory.php`, {
+      method: "PUT",
+      credentials: "include",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ size_id: sizeId, stock_qty: qty }),
+    });
+    const data = await res.json();
+    if (data.success) {
+      renderInventory();
+      alert("Stock updated.");
+    } else alert(data.error || "Failed.");
+  } catch (err) {
+    console.error("[admin]", err);
+    alert("Network error.");
+  }
 }
 
 /* ─────────────────────────────────────────────
    USERS
 ───────────────────────────────────────────── */
-function renderUsers() {
-  const body = document.getElementById("users-body");
-  if (!body) return;
-  const roleClass = {
-    Admin: "role-admin",
-    Staff: "role-staff",
-  };
-  body.innerHTML = USERS.map(
-    (u) => `
-    <tr>
-      <td>
-        <div class="flex-center gap-12">
-          <div class="customer-avatar">${initials(u.name)}</div>
-          <span style="font-weight:500;color:var(--brown-400)">${u.name}</span>
-        </div>
-      </td>
-      <td class="text-muted">${u.email}</td>
-      <td><span class="role-badge ${roleClass[u.role] || "role-staff"}">${u.role}</span></td>
-      <td>${statusBadge(u.status)}</td>
-      <td class="text-muted">${u.lastActive}</td>
-      <td>
-        <div class="flex-center gap-8">
-          <button class="btn btn-outline btn-sm">Edit</button>
-          <button class="ellipsis-btn">···</button>
-        </div>
-      </td>
-    </tr>`,
-  ).join("");
+async function renderUsers() {
+  tableLoading("users-body", 6);
+  try {
+    const data = await fetchJSON(`${API}/users.php`);
+    const body = document.getElementById("users-body");
+    if (!body) return;
+
+    if (!data.success || !data.users.length) {
+      body.innerHTML = `<tr><td colspan="6" class="text-muted text-sm" style="padding:16px">No staff users found.</td></tr>`;
+    } else {
+      const roleClass = { admin: "role-admin", staff: "role-staff" };
+      body.innerHTML = data.users
+        .map(
+          (u) => `
+        <tr>
+          <td>
+            <div class="flex-center gap-12">
+              <div class="customer-avatar">${initials(u.full_name)}</div>
+              <span style="font-weight:500;color:var(--brown-400)">${u.full_name}</span>
+            </div>
+          </td>
+          <td class="text-muted">${u.email}</td>
+          <td><span class="role-badge ${roleClass[u.role] || "role-staff"}">${u.role}</span></td>
+          <td>${statusBadge(u.is_verified ? "Active" : "Pending")}</td>
+          <td class="text-muted">${new Date(u.created_at).toLocaleDateString("en-PH", { month: "short", day: "numeric", year: "numeric" })}</td>
+          <td>
+            <div class="flex-center gap-8">
+              <button class="btn btn-outline btn-sm" onclick="deleteUser(${u.user_id},'${u.full_name.replace(/'/g, "\\'")}')">Remove</button>
+            </div>
+          </td>
+        </tr>`,
+        )
+        .join("");
+    }
+  } catch (err) {
+    console.error("[admin]", err);
+    tableError("users-body", 6);
+  }
+}
+
+async function addStaff() {
+  const name = document.getElementById("new-staff-name")?.value.trim();
+  const email = document.getElementById("new-staff-email")?.value.trim();
+  const role = document.getElementById("new-staff-role")?.value || "staff";
+  if (!name || !email) {
+    alert("Name and email are required.");
+    return;
+  }
+
+  try {
+    const res = await fetch(`${API}/users.php`, {
+      method: "POST",
+      credentials: "include",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ full_name: name, email, role }),
+    });
+    const data = await res.json();
+    if (data.success) {
+      closeModal("modal-add-staff");
+      renderUsers();
+      alert("Staff member added.");
+    } else alert(data.error || "Failed.");
+  } catch (err) {
+    console.error("[admin]", err);
+    alert("Network error.");
+  }
+}
+
+async function deleteUser(id, name) {
+  if (!confirm(`Remove "${name}" from staff?`)) return;
+  try {
+    const res = await fetch(`${API}/users.php?id=${id}`, {
+      method: "DELETE",
+      credentials: "include",
+    });
+    const data = await res.json();
+    if (data.success) {
+      renderUsers();
+      alert("User removed.");
+    } else alert(data.error || "Failed.");
+  } catch (err) {
+    console.error("[admin]", err);
+    alert("Network error.");
+  }
+}
+
+/* ─────────────────────────────────────────────
+   CONTACT MESSAGES
+───────────────────────────────────────────── */
+let contactStatusFilter = "";
+let contactPage = 1;
+
+async function renderContactMessages() {
+  tableLoading("contact-body", 6);
+  const params = new URLSearchParams({
+    page: contactPage,
+    limit: 20,
+    status: contactStatusFilter,
+  });
+  try {
+    const data = await fetchJSON(`${API}/contact-messages.php?${params}`);
+    const body = document.getElementById("contact-body");
+    if (!body) return;
+
+    if (!data.success || !data.messages.length) {
+      body.innerHTML = `<tr><td colspan="6" class="text-muted text-sm" style="padding:16px">No messages found.</td></tr>`;
+    } else {
+      body.innerHTML = data.messages
+        .map(
+          (m) => `
+        <tr style="cursor:pointer;${m.status === "unread" ? "font-weight:600;" : ""}">
+          <td style="color:var(--brown-400)">${m.name}</td>
+          <td class="text-muted">${m.email}</td>
+          <td>${m.subject}</td>
+          <td class="text-muted text-sm" style="max-width:220px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${m.message}</td>
+          <td>${statusBadge(m.status)}</td>
+          <td class="text-muted">${new Date(m.sent_at).toLocaleDateString("en-PH", { month: "short", day: "numeric", year: "numeric" })}</td>
+          <td>
+            <div class="flex-center gap-6">
+              <button class="btn btn-outline btn-sm" onclick="viewContactMessage(${m.message_id})">View</button>
+              ${m.status !== "replied" ? `<button class="btn btn-outline btn-sm" onclick="markMessage(${m.message_id},'replied')">Replied</button>` : ""}
+              ${m.status === "unread" ? `<button class="btn btn-outline btn-sm" onclick="markMessage(${m.message_id},'read')">Mark Read</button>` : ""}
+            </div>
+          </td>
+        </tr>`,
+        )
+        .join("");
+    }
+
+    renderPagination(
+      "contact-pagination",
+      data.total,
+      contactPage,
+      20,
+      `function(p){contactPage=p;renderContactMessages();}`,
+    );
+  } catch (err) {
+    console.error("[admin]", err);
+    tableError("contact-body", 6);
+  }
+}
+
+function filterContactMessages(s) {
+  contactStatusFilter = s;
+  contactPage = 1;
+  renderContactMessages();
+}
+
+async function viewContactMessage(id) {
+  try {
+    const data = await fetchJSON(`${API}/contact-messages.php?id=${id}`);
+    if (!data.success) return;
+    const m = data.message;
+    alert(
+      `From: ${m.name} <${m.email}>\nSubject: ${m.subject}\n\n${m.message}`,
+    );
+    if (m.status === "unread") markMessage(id, "read");
+  } catch (err) {
+    console.error("[admin]", err);
+  }
+}
+
+async function markMessage(id, status) {
+  try {
+    await fetch(`${API}/contact-messages.php?id=${id}`, {
+      method: "PUT",
+      credentials: "include",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ status }),
+    });
+    renderContactMessages();
+  } catch (err) {
+    console.error("[admin]", err);
+  }
 }
 
 /* ─────────────────────────────────────────────
@@ -1241,7 +1281,7 @@ function switchSettings(section, btn) {
   document
     .querySelectorAll(".settings-nav-item")
     .forEach((b) => b.classList.remove("active"));
-  document.getElementById("settings-" + section).classList.add("active");
+  document.getElementById("settings-" + section)?.classList.add("active");
   if (btn) btn.classList.add("active");
 }
 
@@ -1249,6 +1289,7 @@ function switchSettings(section, btn) {
    CHARTS
 ───────────────────────────────────────────── */
 const chartInstances = {};
+let _dashboardChartData = null;
 
 function destroyChart(id) {
   if (chartInstances[id]) {
@@ -1259,8 +1300,7 @@ function destroyChart(id) {
 
 const BRAND_GOLD = "rgba(184,146,74,1)";
 const BRAND_GOLD_BG = "rgba(184,146,74,0.12)";
-const BRAND_BROWN = "rgba(92,68,51,1)";
-const COLORS_DONUT = ["#3a6b4a", "#2d4f7a", "#5c4433", "#c4b5a0"];
+const COLORS_DONUT = ["#3a6b4a", "#2d4f7a", "#5c4433", "#c4b5a0", "#9a7a44"];
 
 const baseOptions = {
   responsive: true,
@@ -1288,7 +1328,7 @@ const baseOptions = {
       border: { display: false },
     },
     y: {
-      grid: { color: "rgba(230,221,210,0.6)", drawBorder: false },
+      grid: { color: "rgba(230,221,210,0.6)" },
       ticks: {
         color: "#b8a090",
         font: { family: "'DM Sans', sans-serif", size: 11 },
@@ -1303,26 +1343,26 @@ function initCharts(page) {
     destroyChart("revenueChart");
     destroyChart("statusChart");
 
+    const days = _dashboardChartData?.revenue_by_day || [];
+    const labels = days.map((d) =>
+      new Date(d.date).toLocaleDateString("en-PH", {
+        month: "short",
+        day: "numeric",
+      }),
+    );
+    const revenues = days.map((d) => d.revenue);
+
     const rCtx = document.getElementById("revenueChart");
     if (rCtx) {
       chartInstances["revenueChart"] = new Chart(rCtx, {
         type: "bar",
         data: {
-          labels: [
-            "May 12",
-            "May 13",
-            "May 14",
-            "May 15",
-            "May 16",
-            "May 17",
-            "May 18",
-          ],
+          labels,
           datasets: [
             {
-              data: [42000, 78000, 55000, 91000, 63000, 110000, 80000],
+              data: revenues,
               backgroundColor: (ctx) => {
-                const chart = ctx.chart;
-                const { ctx: c, chartArea } = chart;
+                const { ctx: c, chartArea } = ctx.chart;
                 if (!chartArea) return "rgba(61,36,16,0.7)";
                 const g = c.createLinearGradient(
                   0,
@@ -1343,16 +1383,19 @@ function initCharts(page) {
       });
     }
 
+    const statusData = _dashboardChartData?.orders_by_status || {};
     const sCtx = document.getElementById("statusChart");
     if (sCtx) {
       chartInstances["statusChart"] = new Chart(sCtx, {
         type: "doughnut",
         data: {
-          labels: ["Paid", "Shipped", "Delivered", "Processing"],
+          labels: Object.keys(statusData).map(
+            (k) => k.charAt(0).toUpperCase() + k.slice(1),
+          ),
           datasets: [
             {
-              data: [100, 50, 30, 30],
-              backgroundColor: ["#27503a", "#1e3f6a", "#3d2410", "#c4b5a0"],
+              data: Object.values(statusData),
+              backgroundColor: COLORS_DONUT,
               borderWidth: 0,
               hoverOffset: 4,
             },
@@ -1376,23 +1419,24 @@ function initCharts(page) {
     destroyChart("categoryChart");
     destroyChart("customerTypeChart");
 
+    const days = _analyticsData?.revenue_by_day || [];
+    const labels = days.map((d) =>
+      new Date(d.date).toLocaleDateString("en-PH", {
+        month: "short",
+        day: "numeric",
+      }),
+    );
+    const revData = days.map((d) => d.revenue);
+
     const arCtx = document.getElementById("analyticsRevenueChart");
     if (arCtx) {
       chartInstances["analyticsRevenueChart"] = new Chart(arCtx, {
         type: "line",
         data: {
-          labels: [
-            "May 12",
-            "May 13",
-            "May 14",
-            "May 15",
-            "May 16",
-            "May 17",
-            "May 18",
-          ],
+          labels,
           datasets: [
             {
-              data: [42000, 78000, 55000, 91000, 63000, 110000, 80000],
+              data: revData,
               borderColor: "rgba(61,36,16,0.65)",
               backgroundColor: "rgba(61,36,16,0.05)",
               fill: true,
@@ -1408,21 +1452,16 @@ function initCharts(page) {
       });
     }
 
+    const cats = _analyticsData?.sales_by_category || [];
     const catCtx = document.getElementById("categoryChart");
-    if (catCtx) {
+    if (catCtx && cats.length) {
       chartInstances["categoryChart"] = new Chart(catCtx, {
         type: "doughnut",
         data: {
-          labels: [
-            "Outerwear",
-            "Knitwear",
-            "Bottoms",
-            "Dresses",
-            "Accessories",
-          ],
+          labels: cats.map((c) => c.category),
           datasets: [
             {
-              data: [42, 29, 18, 6, 5],
+              data: cats.map((c) => c.percentage),
               backgroundColor: [
                 "#1c1109",
                 "#3d2410",
@@ -1485,7 +1524,7 @@ function initCharts(page) {
 }
 
 /* ─────────────────────────────────────────────
-   LOGOUT
+   LOGOUT / USER INFO
 ───────────────────────────────────────────── */
 async function handleLogout() {
   try {
@@ -1493,18 +1532,14 @@ async function handleLogout() {
       method: "POST",
       credentials: "include",
     });
-  } catch (_) {
-    // ignore network errors — still redirect
+  } catch (err) {
+    console.error("[admin]", err);
   }
   localStorage.removeItem("styled_user");
   window.location.replace("auth.html");
 }
-
 document.getElementById("logout-btn")?.addEventListener("click", handleLogout);
 
-/* ─────────────────────────────────────────────
-   POPULATE SIDEBAR USER INFO FROM SESSION
-───────────────────────────────────────────── */
 async function populateUserInfo() {
   try {
     const res = await fetch("/styled/php/auth/check.php", {
@@ -1514,36 +1549,27 @@ async function populateUserInfo() {
     const data = await res.json();
     if (data.logged_in && data.user) {
       const u = data.user;
-      const avatarEl = document.getElementById("sidebar-avatar");
-      const nameEl = document.getElementById("sidebar-name");
-      const emailEl = document.getElementById("sidebar-email");
-      if (avatarEl) avatarEl.textContent = initials(u.full_name);
-      if (nameEl) nameEl.textContent = u.full_name;
-      if (emailEl) emailEl.textContent = u.email;
-
-      // Update topbar greeting
-      const titleEl = document.getElementById("page-title");
-      if (titleEl && currentPage === "dashboard") {
-        titleEl.innerHTML = `Welcome back, <span>${u.full_name.split(" ")[0]}</span>`;
+      const el = (id) => document.getElementById(id);
+      if (el("sidebar-avatar"))
+        el("sidebar-avatar").textContent = initials(u.full_name);
+      if (el("sidebar-name")) el("sidebar-name").textContent = u.full_name;
+      if (el("sidebar-email")) el("sidebar-email").textContent = u.email;
+      if (el("page-title") && currentPage === "dashboard") {
+        el("page-title").innerHTML =
+          `Welcome back, <span>${u.full_name.split(" ")[0]}</span>`;
       }
     }
-  } catch (_) {}
+  } catch (err) {
+    console.error("[admin]", err);
+  }
 }
 
 /* ─────────────────────────────────────────────
    INIT
 ───────────────────────────────────────────── */
 function init() {
-  renderDashboard();
-  renderOrdersTable();
-  renderProductsTable();
-  renderCustomersTable();
-  renderAnalytics();
-  renderPromotions();
-  renderInventory();
-  renderUsers();
-  initCharts("dashboard");
   populateUserInfo();
+  renderDashboard();
 }
 
 document.addEventListener("DOMContentLoaded", init);

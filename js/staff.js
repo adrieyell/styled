@@ -1,484 +1,38 @@
 /* ============================================
-   STYLED STAFF DASHBOARD — js/staff.js
-   Role-based restricted version of admin.js.
-
-   Staff CAN:  Dashboard, Orders (update status/tracking),
-               Products (view + update stock), Customers
-               (view + add notes), Inventory (view),
-               Promotions (view).
-
-   Staff CANNOT: Analytics, Settings, Users/Staff Mgmt,
-                 delete products, refund orders, manage
-                 payment/shipping/domain settings,
-                 create/remove admin users.
+   STYLED STAFF DASHBOARD — staff.js
+   All mock arrays removed. Data fetched from same
+   admin APIs with role-restricted access.
    ============================================ */
 
 "use strict";
 
-/* ─────────────────────────────────────────────
-   MOCK DATA  (identical to admin.js)
-───────────────────────────────────────────── */
-const ORDERS = [
-  {
-    id: "STY-123456",
-    customer: "Bea Santiago",
-    email: "bea.santiago@gmail.com",
-    date: "May 18, 2025",
-    status: "Delivered",
-    payment: "Paid",
-    total: 24500,
-    items: [
-      {
-        name: "Oversized Wool Coat",
-        variant: "M / Camel",
-        qty: 1,
-        price: 24500,
-      },
-    ],
-    address: "123 Ayala Ave, Makati City, Metro Manila 1226, Philippines",
-    timeline: [
-      "Order placed — May 18, 10:06 AM",
-      "Paid — May 18, 10:07 AM",
-      "Shipped — May 19, 9:40 AM",
-      "Delivered — May 20, 2:15 PM",
-    ],
-  },
-  {
-    id: "STY-123455",
-    customer: "Miguel Reyes",
-    email: "miguel.reyes@gmail.com",
-    date: "May 16, 2025",
-    status: "Delivered",
-    payment: "Paid",
-    total: 9960,
-    items: [
-      { name: "Ribbed Knit Sweater", variant: "S / Oat", qty: 1, price: 9960 },
-    ],
-    address: "56 Buendia Ave, Makati City 1200, Philippines",
-    timeline: [
-      "Order placed — May 16, 3:00 PM",
-      "Paid — May 16, 3:01 PM",
-      "Shipped — May 17, 10:00 AM",
-      "Delivered — May 18, 1:30 PM",
-    ],
-  },
-  {
-    id: "STY-123454",
-    customer: "Trisha Mendoza",
-    email: "trisha.mendoza@gmail.com",
-    date: "May 17, 2025",
-    status: "Processing",
-    payment: "Paid",
-    total: 9900,
-    items: [
-      {
-        name: "Tailored Wide-Leg Pants",
-        variant: "M / Black",
-        qty: 1,
-        price: 9900,
-      },
-    ],
-    address: "78 Tomas Morato, QC 1103, Philippines",
-    timeline: ["Order placed — May 17, 6:20 PM", "Paid — May 17, 6:21 PM"],
-  },
-  {
-    id: "STY-123453",
-    customer: "Anna Dela Cruz",
-    email: "anna.dela.cruz@gmail.com",
-    date: "May 16, 2025",
-    status: "Delivered",
-    payment: "Paid",
-    total: 9140,
-    items: [
-      { name: "Cashmere Crewneck", variant: "S / Ivory", qty: 1, price: 9140 },
-    ],
-    address: "34 Katipunan Ave, QC 1105, Philippines",
-    timeline: [
-      "Order placed — May 16, 9:00 AM",
-      "Paid — May 16, 9:02 AM",
-      "Shipped — May 17, 8:30 AM",
-      "Delivered — May 18, 12:00 PM",
-    ],
-  },
-  {
-    id: "STY-123452",
-    customer: "Juan Pablo",
-    email: "juan.pablo@gmail.com",
-    date: "May 16, 2025",
-    status: "Delivered",
-    payment: "Refunded",
-    total: 5340,
-    items: [
-      { name: "Silk Slip Dress", variant: "XS / Black", qty: 1, price: 5340 },
-    ],
-    address: "90 Ortigas Center, Pasig City 1605, Philippines",
-    timeline: [
-      "Order placed — May 16, 11:00 AM",
-      "Paid — May 16, 11:01 AM",
-      "Shipped — May 17, 2:00 PM",
-      "Delivered — May 18, 10:00 AM",
-      "Refunded — May 19, 3:00 PM",
-    ],
-  },
-  {
-    id: "STY-123451",
-    customer: "Sofia Ramos",
-    email: "sofia.ramos@gmail.com",
-    date: "May 15, 2025",
-    status: "Shipped",
-    payment: "Paid",
-    total: 6480,
-    items: [
-      { name: "Linen Blazer", variant: "M / Beige", qty: 1, price: 6480 },
-    ],
-    address: "22 Timog Ave, QC 1103, Philippines",
-    timeline: [
-      "Order placed — May 15, 8:00 AM",
-      "Paid — May 15, 8:02 AM",
-      "Shipped — May 16, 9:00 AM",
-    ],
-  },
-  {
-    id: "STY-123450",
-    customer: "Camille Santos",
-    email: "camille.santos@gmail.com",
-    date: "May 14, 2025",
-    status: "Processing",
-    payment: "Paid",
-    total: 18900,
-    items: [
-      {
-        name: "Structured Tote Bag",
-        variant: "One Size / Tan",
-        qty: 1,
-        price: 9950,
-      },
-      { name: "Leather Belt", variant: "S / Brown", qty: 1, price: 8950 },
-    ],
-    address: "5 Scout Tuason, QC 1103, Philippines",
-    timeline: ["Order placed — May 14, 7:45 PM", "Paid — May 14, 7:46 PM"],
-  },
-  {
-    id: "STY-123449",
-    customer: "Diego Villanueva",
-    email: "diego.v@gmail.com",
-    date: "May 14, 2025",
-    status: "Pending",
-    payment: "Unpaid",
-    total: 3480,
-    items: [
-      { name: "Cotton Turtleneck", variant: "L / White", qty: 1, price: 3480 },
-    ],
-    address: "17 Gilmore Ave, QC 1100, Philippines",
-    timeline: ["Order placed — May 14, 3:00 PM"],
-  },
-];
+async function fetchJSON(url, options = {}) {
+  const res = await fetch(url, { credentials: "include", ...options });
+  const text = await res.text();
+  let data;
+  try {
+    data = JSON.parse(text);
+  } catch (e) {
+    console.error(
+      `[staff] Non-JSON response from ${url} (${res.status}):`,
+      text.slice(0, 300),
+    );
+    throw new Error(`Non-JSON response (${res.status}) from ${url}`);
+  }
+  if (!res.ok) {
+    console.error(`[staff] HTTP ${res.status} from ${url}:`, data);
+    throw new Error(`HTTP ${res.status}: ${data?.error || res.statusText}`);
+  }
+  return data;
+}
 
-const PRODUCTS = [
-  {
-    id: "P001",
-    name: "Oversized Wool Coat",
-    category: "Outerwear",
-    price: 24500,
-    stock: 12,
-    status: "Active",
-  },
-  {
-    id: "P002",
-    name: "Ribbed Knit Sweater",
-    category: "Knitwear",
-    price: 9960,
-    stock: 3,
-    status: "Low Stock",
-  },
-  {
-    id: "P003",
-    name: "Tailored Wide-Leg Pants",
-    category: "Bottoms",
-    price: 9900,
-    stock: 18,
-    status: "Active",
-  },
-  {
-    id: "P004",
-    name: "Cashmere Crewneck",
-    category: "Knitwear",
-    price: 9140,
-    stock: 0,
-    status: "Out of Stock",
-  },
-  {
-    id: "P005",
-    name: "Silk Slip Dress",
-    category: "Dresses",
-    price: 5340,
-    stock: 7,
-    status: "Active",
-  },
-  {
-    id: "P006",
-    name: "Linen Blazer",
-    category: "Outerwear",
-    price: 6480,
-    stock: 2,
-    status: "Low Stock",
-  },
-  {
-    id: "P007",
-    name: "Structured Tote Bag",
-    category: "Accessories",
-    price: 9950,
-    stock: 14,
-    status: "Active",
-  },
-  {
-    id: "P008",
-    name: "Leather Belt",
-    category: "Accessories",
-    price: 8950,
-    stock: 20,
-    status: "Active",
-  },
-  {
-    id: "P009",
-    name: "Cotton Turtleneck",
-    category: "Knitwear",
-    price: 3480,
-    stock: 30,
-    status: "Active",
-  },
-  {
-    id: "P010",
-    name: "Pleated Midi Skirt",
-    category: "Bottoms",
-    price: 4960,
-    stock: 9,
-    status: "Active",
-  },
-];
-
-const CUSTOMERS = [
-  {
-    id: "C001",
-    name: "Bea Santiago",
-    email: "bea.santiago@gmail.com",
-    orders: 4,
-    spent: 82000,
-    tags: ["VIP"],
-    since: "Jan 2024",
-  },
-  {
-    id: "C002",
-    name: "Miguel Reyes",
-    email: "miguel.reyes@gmail.com",
-    orders: 2,
-    spent: 19920,
-    tags: [],
-    since: "Mar 2024",
-  },
-  {
-    id: "C003",
-    name: "Trisha Mendoza",
-    email: "trisha.mendoza@gmail.com",
-    orders: 1,
-    spent: 9900,
-    tags: [],
-    since: "May 2025",
-  },
-  {
-    id: "C004",
-    name: "Anna Dela Cruz",
-    email: "anna.dela.cruz@gmail.com",
-    orders: 3,
-    spent: 27420,
-    tags: ["Loyal"],
-    since: "Feb 2024",
-  },
-  {
-    id: "C005",
-    name: "Juan Pablo",
-    email: "juan.pablo@gmail.com",
-    orders: 1,
-    spent: 0,
-    tags: ["Refunded"],
-    since: "May 2025",
-  },
-  {
-    id: "C006",
-    name: "Sofia Ramos",
-    email: "sofia.ramos@gmail.com",
-    orders: 2,
-    spent: 12960,
-    tags: [],
-    since: "Apr 2025",
-  },
-  {
-    id: "C007",
-    name: "Camille Santos",
-    email: "camille.santos@gmail.com",
-    orders: 1,
-    spent: 18900,
-    tags: [],
-    since: "May 2025",
-  },
-  {
-    id: "C008",
-    name: "Diego Villanueva",
-    email: "diego.v@gmail.com",
-    orders: 0,
-    spent: 0,
-    tags: ["Pending"],
-    since: "May 2025",
-  },
-];
-
-const PROMOTIONS = [
-  {
-    code: "SUMMER25",
-    type: "Percentage",
-    discount: "25% off",
-    conditions: "No min spend",
-    uses: 142,
-    expiry: "Jun 30, 2025",
-    status: "Active",
-  },
-  {
-    code: "WELCOME10",
-    type: "Percentage",
-    discount: "10% off",
-    conditions: "First order",
-    uses: 89,
-    expiry: "Dec 31, 2025",
-    status: "Active",
-  },
-  {
-    code: "FREESHIP",
-    type: "Free Shipping",
-    discount: "Free shipping",
-    conditions: "₱500 min",
-    uses: 67,
-    expiry: "Jul 1, 2025",
-    status: "Active",
-  },
-  {
-    code: "FLASH500",
-    type: "Fixed Amount",
-    discount: "₱500 off",
-    conditions: "₱3,000 min",
-    uses: 34,
-    expiry: "May 20, 2025",
-    status: "Expired",
-  },
-  {
-    code: "VIP20",
-    type: "Percentage",
-    discount: "20% off",
-    conditions: "VIP members only",
-    uses: 10,
-    expiry: "Sep 1, 2025",
-    status: "Scheduled",
-  },
-];
-
-const INVENTORY = [
-  {
-    id: "P001",
-    sku: "WC-M-CAM",
-    name: "Oversized Wool Coat",
-    variant: "M / Camel",
-    stock: 12,
-    reserved: 2,
-    incoming: 0,
-  },
-  {
-    id: "P002",
-    sku: "RKS-S-OAT",
-    name: "Ribbed Knit Sweater",
-    variant: "S / Oat",
-    stock: 3,
-    reserved: 1,
-    incoming: 20,
-  },
-  {
-    id: "P003",
-    sku: "WLP-M-BLK",
-    name: "Tailored Wide-Leg Pants",
-    variant: "M / Black",
-    stock: 18,
-    reserved: 1,
-    incoming: 0,
-  },
-  {
-    id: "P004",
-    sku: "CC-S-IVR",
-    name: "Cashmere Crewneck",
-    variant: "S / Ivory",
-    stock: 0,
-    reserved: 0,
-    incoming: 15,
-  },
-  {
-    id: "P005",
-    sku: "SSD-XS-BLK",
-    name: "Silk Slip Dress",
-    variant: "XS / Black",
-    stock: 7,
-    reserved: 0,
-    incoming: 0,
-  },
-  {
-    id: "P006",
-    sku: "LB-M-BGE",
-    name: "Linen Blazer",
-    variant: "M / Beige",
-    stock: 2,
-    reserved: 1,
-    incoming: 10,
-  },
-  {
-    id: "P007",
-    sku: "STB-OS-TAN",
-    name: "Structured Tote Bag",
-    variant: "One Size / Tan",
-    stock: 14,
-    reserved: 1,
-    incoming: 0,
-  },
-  {
-    id: "P008",
-    sku: "LBT-S-BRN",
-    name: "Leather Belt",
-    variant: "S / Brown",
-    stock: 20,
-    reserved: 0,
-    incoming: 0,
-  },
-  {
-    id: "P009",
-    sku: "CTN-L-WHT",
-    name: "Cotton Turtleneck",
-    variant: "L / White",
-    stock: 30,
-    reserved: 1,
-    incoming: 0,
-  },
-  {
-    id: "P010",
-    sku: "PMS-M-NAV",
-    name: "Pleated Midi Skirt",
-    variant: "M / Navy",
-    stock: 9,
-    reserved: 2,
-    incoming: 0,
-  },
-];
+const API = "/styled/php/admin";
 
 /* ─────────────────────────────────────────────
    NAVIGATION
 ───────────────────────────────────────────── */
 let currentPage = "dashboard";
 
-// Staff-allowed pages
 const ALLOWED_PAGES = [
   "dashboard",
   "orders",
@@ -486,6 +40,7 @@ const ALLOWED_PAGES = [
   "customers",
   "promotions",
   "inventory",
+  "contact",
 ];
 
 function navigate(page, btn) {
@@ -493,6 +48,7 @@ function navigate(page, btn) {
     showAccessDenied();
     return;
   }
+
   document
     .querySelectorAll(".page")
     .forEach((p) => p.classList.remove("active"));
@@ -510,20 +66,32 @@ function navigate(page, btn) {
     customers: "Customers",
     promotions: "Promotions",
     inventory: "Inventory",
+    contact: "Contact Messages",
   };
   document.getElementById("page-title").innerHTML = titles[page] || page;
+  document.getElementById("topbar-date-filter").style.display =
+    page === "dashboard" ? "flex" : "none";
 
-  const showDateFilter = page === "dashboard";
-  document.getElementById("topbar-date-filter").style.display = showDateFilter
-    ? "flex"
-    : "none";
+  if (page === "dashboard") renderDashboard();
+  if (page === "orders") {
+    ordersPage = 1;
+    renderOrdersTable();
+  }
+  if (page === "products") {
+    productsPage = 1;
+    renderProductsTable();
+  }
+  if (page === "customers") {
+    customersPage = 1;
+    renderCustomersTable();
+  }
+  if (page === "promotions") renderPromotions();
+  if (page === "inventory") renderInventory();
+  if (page === "contact") renderContactMessages();
 
   initCharts(page);
 }
 
-/* ─────────────────────────────────────────────
-   ACCESS DENIED TOAST
-───────────────────────────────────────────── */
 function showAccessDenied() {
   toast("Access restricted. Contact your admin.", "error");
 }
@@ -549,7 +117,7 @@ document.querySelectorAll(".modal-overlay").forEach((overlay) => {
 function formatPrice(n) {
   return (
     "₱" +
-    n.toLocaleString("en-PH", {
+    Number(n).toLocaleString("en-PH", {
       minimumFractionDigits: 2,
       maximumFractionDigits: 2,
     })
@@ -558,27 +126,31 @@ function formatPrice(n) {
 
 function statusBadge(s) {
   const map = {
-    Paid: "paid",
-    Shipped: "shipped",
-    Delivered: "delivered",
-    Processing: "processing",
-    Pending: "pending",
-    Refunded: "refunded",
-    Cancelled: "cancelled",
-    Unpaid: "pending",
-    Active: "active",
-    Draft: "draft",
-    "Low Stock": "low-stock",
-    "In Stock": "in-stock",
-    "Out of Stock": "out",
-    Expired: "refunded",
-    Scheduled: "processing",
+    paid: "paid",
+    shipped: "shipped",
+    delivered: "delivered",
+    processing: "processing",
+    pending: "pending",
+    refunded: "refunded",
+    cancelled: "cancelled",
+    unpaid: "pending",
+    active: "active",
+    draft: "draft",
+    "low stock": "low-stock",
+    "in stock": "in-stock",
+    "out of stock": "out",
+    expired: "refunded",
+    scheduled: "processing",
+    unread: "pending",
+    read: "delivered",
+    replied: "shipped",
   };
-  return `<span class="badge badge-${map[s] || "delivered"}">${s}</span>`;
+  const key = (s || "").toLowerCase();
+  return `<span class="badge badge-${map[key] || "delivered"}">${s}</span>`;
 }
 
 function initials(name) {
-  return name
+  return (name || "?")
     .split(" ")
     .map((w) => w[0])
     .slice(0, 2)
@@ -587,387 +159,399 @@ function initials(name) {
 }
 
 function paginate(arr, page, perPage) {
-  const start = (page - 1) * perPage;
-  return arr.slice(start, start + perPage);
+  return arr.slice((page - 1) * perPage, page * perPage);
 }
 
-function renderPagination(containerId, total, currentPage, perPage, onPage) {
+function renderPagination(containerId, total, cur, perPage, cb) {
   const pages = Math.ceil(total / perPage);
   const el = document.getElementById(containerId);
   if (!el) return;
-  let html = `<button class="page-btn" ${currentPage === 1 ? "disabled" : ""} onclick="(${onPage})(${currentPage - 1})">‹</button>`;
+  let html = `<button class="page-btn" ${cur === 1 ? "disabled" : ""} onclick="(${cb})(${cur - 1})">‹</button>`;
   for (let i = 1; i <= pages; i++) {
-    html += `<button class="page-btn ${i === currentPage ? "active" : ""}" onclick="(${onPage})(${i})">${i}</button>`;
+    html += `<button class="page-btn ${i === cur ? "active" : ""}" onclick="(${cb})(${i})">${i}</button>`;
   }
-  html += `<button class="page-btn" ${currentPage === pages ? "disabled" : ""} onclick="(${onPage})(${currentPage + 1})">›</button>`;
+  html += `<button class="page-btn" ${cur === pages ? "disabled" : ""} onclick="(${cb})(${cur + 1})">›</button>`;
   el.innerHTML = html;
 }
 
-/* ─────────────────────────────────────────────
-   TOAST
-───────────────────────────────────────────── */
-let toastTimer;
-function toast(msg, type = "") {
-  let el = document.getElementById("staff-toast");
-  if (!el) {
-    el = document.createElement("div");
-    el.id = "staff-toast";
-    el.className = "toast";
-    document.body.appendChild(el);
-  }
-  el.textContent = msg;
-  el.className = "toast " + type + " show";
-  clearTimeout(toastTimer);
-  toastTimer = setTimeout(() => el.classList.remove("show"), 3200);
+function tableLoading(tbodyId, cols) {
+  const el = document.getElementById(tbodyId);
+  if (el)
+    el.innerHTML = `<tr><td colspan="${cols}" style="text-align:center;color:var(--brown-100);padding:24px">Loading…</td></tr>`;
+}
+
+function tableError(tbodyId, cols, msg = "Failed to load data.") {
+  const el = document.getElementById(tbodyId);
+  if (el)
+    el.innerHTML = `<tr><td colspan="${cols}" style="text-align:center;color:var(--red);padding:24px">${msg}</td></tr>`;
+}
+
+function toast(msg, type) {
+  // Simple toast — reuse existing alert if no toast UI
+  if (type === "error") console.warn(msg);
+  else console.log(msg);
+  // Swap with your actual toast implementation if you have one
+  alert(msg);
 }
 
 /* ─────────────────────────────────────────────
-   LOGOUT
+   DASHBOARD  (no revenue charts for staff)
 ───────────────────────────────────────────── */
-async function handleLogout() {
+async function renderDashboard() {
+  // Recent orders only — no revenue stats
+  tableLoading("dashboard-orders-body", 6);
   try {
-    await fetch("/styled/php/auth/logout.php", {
-      method: "POST",
-      credentials: "include",
-    });
-  } catch (_) {}
-  localStorage.removeItem("styled_user");
-  window.location.replace("auth.html");
-}
+    const data = await fetchJSON(`${API}/orders.php?page=1&limit=5`);
+    const body = document.getElementById("dashboard-orders-body");
+    if (!body) return;
 
-document.getElementById("logout-btn")?.addEventListener("click", handleLogout);
-
-/* ─────────────────────────────────────────────
-   POPULATE SIDEBAR USER INFO FROM SESSION
-───────────────────────────────────────────── */
-async function populateUserInfo() {
-  try {
-    const res = await fetch("/styled/php/auth/check.php", {
-      credentials: "include",
-      cache: "no-store",
-    });
-    const data = await res.json();
-    if (data.logged_in && data.user) {
-      const u = data.user;
-      const avatarEl = document.getElementById("sidebar-avatar");
-      const nameEl = document.getElementById("sidebar-name");
-      const emailEl = document.getElementById("sidebar-email");
-      if (avatarEl) avatarEl.textContent = initials(u.full_name);
-      if (nameEl) nameEl.textContent = u.full_name;
-      if (emailEl) emailEl.textContent = u.email;
-
-      const titleEl = document.getElementById("page-title");
-      if (titleEl && currentPage === "dashboard") {
-        titleEl.innerHTML = `Welcome back, <span>${u.full_name.split(" ")[0]}</span>`;
-      }
+    if (!data.success || !data.orders.length) {
+      body.innerHTML = `<tr><td colspan="6" class="text-muted text-sm" style="padding:16px">No orders yet.</td></tr>`;
+    } else {
+      body.innerHTML = data.orders
+        .map(
+          (o) => `
+        <tr style="cursor:pointer" onclick="openOrderDetail('${o.order_number}')">
+          <td><span style="font-weight:500;color:var(--brown-400)">#${o.order_number}</span></td>
+          <td>${o.customer_name || "—"}</td>
+          <td class="text-muted">${new Date(o.created_at).toLocaleDateString("en-PH", { month: "short", day: "numeric", year: "numeric" })}</td>
+          <td>${statusBadge(o.status)}</td>
+          <td style="font-weight:500">${formatPrice(o.total_amount)}</td>
+          <td><button class="ellipsis-btn">···</button></td>
+        </tr>`,
+        )
+        .join("");
     }
-  } catch (_) {}
+  } catch (err) {
+    console.error("[staff]", err);
+    tableError("dashboard-orders-body", 6);
+  }
+
+  // Low stock alert (staff CAN see inventory)
+  try {
+    const invRes = await fetch(`${API}/inventory.php?status=low`, {
+      credentials: "include",
+    });
+    const invData = await invRes.json();
+    const lowStock = document.getElementById("low-stock-list");
+    if (lowStock && invData.inventory) {
+      const low = invData.inventory.slice(0, 5);
+      lowStock.innerHTML = low.length
+        ? low
+            .map(
+              (i) => `
+            <div class="metric-row">
+              <div class="flex-center gap-12">
+                <div class="product-thumb">👗</div>
+                <div>
+                  <div style="font-size:13.5px;font-weight:500;color:var(--brown-400)">${i.product_name}</div>
+                  <div class="text-sm text-muted">${i.size} — ${i.category}</div>
+                </div>
+              </div>
+              <div style="font-size:13px;font-weight:500;color:var(--red)">${i.stock_qty} left</div>
+            </div>`,
+            )
+            .join("")
+        : `<div class="text-sm text-muted" style="padding:12px">All stock levels healthy.</div>`;
+    }
+  } catch (err) {
+    console.error("[staff]", err);
+  }
+
+  initCharts("dashboard");
 }
 
 /* ─────────────────────────────────────────────
-   DASHBOARD
+   ORDERS  (staff can update status, not refund/cancel)
 ───────────────────────────────────────────── */
-function renderDashboard() {
-  const body = document.getElementById("dashboard-orders-body");
-  if (!body) return;
-  body.innerHTML = ORDERS.slice(0, 5)
-    .map(
-      (o) => `
-    <tr style="cursor:pointer" onclick="openOrderDetail('${o.id}')">
-      <td><span style="font-weight:500;color:var(--brown-400)">#${o.id}</span></td>
-      <td>${o.customer}</td>
-      <td class="text-muted">${o.date}</td>
-      <td>${statusBadge(o.status)}</td>
-      <td>${statusBadge(o.payment)}</td>
-      <td style="font-weight:500">${formatPrice(o.total)}</td>
-      <td><button class="ellipsis-btn">···</button></td>
-    </tr>`,
-    )
-    .join("");
-
-  const topProds = document.getElementById("top-products-list");
-  if (topProds) {
-    const sorted = [...PRODUCTS].sort((a, b) => b.stock - a.stock).slice(0, 5);
-    topProds.innerHTML = sorted
-      .map(
-        (p) => `
-      <div class="metric-row">
-        <div class="flex-center gap-12">
-          <div class="product-thumb">👗</div>
-          <div>
-            <div style="font-size:13.5px;font-weight:500;color:var(--brown-400)">${p.name}</div>
-            <div class="text-sm text-muted">${formatPrice(p.price)}</div>
-          </div>
-        </div>
-        <div class="text-sm text-muted">${p.stock + 81} sold</div>
-      </div>`,
-      )
-      .join("");
-  }
-
-  const lowStock = document.getElementById("low-stock-list");
-  if (lowStock) {
-    const low = PRODUCTS.filter(
-      (p) => p.stock <= 3 || p.status === "Low Stock",
-    ).slice(0, 5);
-    lowStock.innerHTML = low
-      .map(
-        (p) => `
-      <div class="metric-row">
-        <div class="flex-center gap-12">
-          <div class="product-thumb">👗</div>
-          <div>
-            <div style="font-size:13.5px;font-weight:500;color:var(--brown-400)">${p.name}</div>
-            <div class="text-sm text-muted">${p.category}</div>
-          </div>
-        </div>
-        <div style="font-size:13px;font-weight:500;color:var(--red)">${p.stock} left</div>
-      </div>`,
-      )
-      .join("");
-  }
-}
-
-/* ─────────────────────────────────────────────
-   ORDERS  (staff can update status / tracking)
-───────────────────────────────────────────── */
-let filteredOrders = [...ORDERS];
 let ordersPage = 1;
+let ordersStatusFilter = "";
+let ordersSearch = "";
 const ORDERS_PER_PAGE = 8;
 
-function renderOrdersTable() {
-  const body = document.getElementById("orders-body");
-  if (!body) return;
-  const page = paginate(filteredOrders, ordersPage, ORDERS_PER_PAGE);
-  body.innerHTML = page
-    .map(
-      (o) => `
-    <tr style="cursor:pointer" onclick="openOrderDetail('${o.id}')">
-      <td><span style="font-weight:500;color:var(--brown-400)">#${o.id}</span></td>
-      <td>
-        <div class="flex-center gap-8">
-          <div class="customer-avatar">${initials(o.customer)}</div>
-          ${o.customer}
-        </div>
-      </td>
-      <td class="text-muted">${o.date}</td>
-      <td>${statusBadge(o.status)}</td>
-      <td>${statusBadge(o.payment)}</td>
-      <td style="font-weight:500">${formatPrice(o.total)}</td>
-      <td><button class="ellipsis-btn">···</button></td>
-    </tr>`,
-    )
-    .join("");
+async function renderOrdersTable() {
+  tableLoading("orders-body", 6);
+  const params = new URLSearchParams({
+    page: ordersPage,
+    limit: ORDERS_PER_PAGE,
+    status: ordersStatusFilter,
+    search: ordersSearch,
+  });
+  try {
+    const data = await fetchJSON(`${API}/orders.php?${params}`);
+    const body = document.getElementById("orders-body");
+    if (!body) return;
 
-  renderPagination(
-    "orders-pagination",
-    filteredOrders.length,
-    ordersPage,
-    ORDERS_PER_PAGE,
-    `function(p){ordersPage=p;renderOrdersTable();}`,
-  );
+    if (!data.success || !data.orders.length) {
+      body.innerHTML = `<tr><td colspan="6" class="text-muted text-sm" style="padding:16px">No orders found.</td></tr>`;
+    } else {
+      body.innerHTML = data.orders
+        .map(
+          (o) => `
+        <tr style="cursor:pointer" onclick="openOrderDetail('${o.order_number}')">
+          <td><span style="font-weight:500;color:var(--brown-400)">#${o.order_number}</span></td>
+          <td>
+            <div class="flex-center gap-8">
+              <div class="customer-avatar">${initials(o.customer_name)}</div>
+              ${o.customer_name || "—"}
+            </div>
+          </td>
+          <td class="text-muted">${new Date(o.created_at).toLocaleDateString("en-PH", { month: "short", day: "numeric", year: "numeric" })}</td>
+          <td>${statusBadge(o.status)}</td>
+          <td style="font-weight:500">${formatPrice(o.total_amount)}</td>
+          <td><button class="ellipsis-btn">···</button></td>
+        </tr>`,
+        )
+        .join("");
+    }
+
+    renderPagination(
+      "orders-pagination",
+      data.total,
+      ordersPage,
+      ORDERS_PER_PAGE,
+      `function(p){ordersPage=p;renderOrdersTable();}`,
+    );
+  } catch (err) {
+    console.error("[staff]", err);
+    tableError("orders-body", 6);
+  }
 }
 
 function filterOrders(q) {
-  q = q.toLowerCase();
-  filteredOrders = ORDERS.filter(
-    (o) =>
-      o.id.toLowerCase().includes(q) || o.customer.toLowerCase().includes(q),
-  );
+  ordersSearch = q;
   ordersPage = 1;
   renderOrdersTable();
 }
-
 function filterOrdersByStatus(s) {
-  filteredOrders = s ? ORDERS.filter((o) => o.status === s) : [...ORDERS];
+  ordersStatusFilter = s;
   ordersPage = 1;
   renderOrdersTable();
 }
-
 function showOrdersList() {
   document.getElementById("orders-list-view").style.display = "";
   document.getElementById("orders-detail-view").style.display = "none";
 }
 
-function openOrderDetail(id) {
-  navigate("orders", document.querySelector('[onclick*="orders"]'));
-  const o = ORDERS.find((x) => x.id === id);
-  if (!o) return;
+async function openOrderDetail(orderNumber) {
+  navigate("orders", document.querySelector("[onclick*=\"'orders'\"]"));
   document.getElementById("orders-list-view").style.display = "none";
   document.getElementById("orders-detail-view").style.display = "";
 
-  document.getElementById("detail-order-id").textContent = "#" + o.id;
-  document.getElementById("detail-order-date").textContent = o.date;
-  document.getElementById("detail-status-badge").innerHTML = statusBadge(
-    o.status,
-  );
-  document.getElementById("detail-payment-badge").innerHTML = statusBadge(
-    o.payment,
-  );
-  document.getElementById("detail-customer-name").textContent = o.customer;
-  document.getElementById("detail-customer-email").textContent = o.email;
-  document.getElementById("detail-customer-avatar").textContent = initials(
-    o.customer,
-  );
-  document.getElementById("detail-shipping-address").textContent = o.address;
+  try {
+    const data = await fetchJSON(`${API}/orders.php?id=${orderNumber}`);
+    if (!data.success) return;
+    const o = data.order;
 
-  const itemsEl = document.getElementById("detail-items");
-  if (itemsEl) {
-    itemsEl.innerHTML = o.items
-      .map(
-        (item) => `
-      <div class="metric-row">
-        <div class="flex-center gap-12">
-          <div class="product-thumb">👗</div>
-          <div>
-            <div style="font-size:13.5px;font-weight:500;color:var(--brown-400)">${item.name}</div>
-            <div class="text-sm text-muted">${item.variant} × ${item.qty}</div>
+    document.getElementById("detail-order-id").textContent =
+      "#" + o.order_number;
+    document.getElementById("detail-order-date").textContent = new Date(
+      o.created_at,
+    ).toLocaleDateString("en-PH", {
+      month: "long",
+      day: "numeric",
+      year: "numeric",
+    });
+    document.getElementById("detail-status-badge").innerHTML = statusBadge(
+      o.status,
+    );
+    document.getElementById("detail-payment-badge").innerHTML = statusBadge(
+      o.payment_method === "cod" ? "Pending" : "Paid",
+    );
+    document.getElementById("detail-customer-name").textContent =
+      o.customer_name || "—";
+    document.getElementById("detail-customer-email").textContent =
+      o.customer_email || "";
+    document.getElementById("detail-customer-avatar").textContent = initials(
+      o.customer_name,
+    );
+
+    const addr = [o.street, o.city, o.province, o.zip_code]
+      .filter(Boolean)
+      .join(", ");
+    document.getElementById("detail-shipping-address").textContent = addr;
+
+    const itemsEl = document.getElementById("detail-items");
+    if (itemsEl) {
+      itemsEl.innerHTML = (o.items || [])
+        .map(
+          (item) => `
+        <div class="metric-row">
+          <div class="flex-center gap-12">
+            <div class="product-thumb">👗</div>
+            <div>
+              <div style="font-size:13.5px;font-weight:500;color:var(--brown-400)">${item.product_name}</div>
+              <div class="text-sm text-muted">${item.size || ""} × ${item.qty}</div>
+            </div>
           </div>
-        </div>
-        <div style="font-weight:500">${formatPrice(item.price)}</div>
-      </div>`,
-      )
-      .join("");
-  }
+          <div style="font-weight:500">${formatPrice(item.unit_price)}</div>
+        </div>`,
+        )
+        .join("");
+    }
 
-  const total = o.items.reduce((sum, i) => sum + i.price * i.qty, 0);
-  const summaryEl = document.getElementById("detail-summary");
-  if (summaryEl) {
-    summaryEl.innerHTML = `
-      <div class="metric-row"><span class="text-sm text-muted">Subtotal</span><span style="font-size:13.5px">${formatPrice(total)}</span></div>
-      <div class="metric-row"><span class="text-sm text-muted">Shipping</span><span style="font-size:13.5px">₱150.00</span></div>
-      <div class="metric-row" style="border-top:1px solid var(--border);padding-top:10px;margin-top:4px">
-        <span style="font-weight:600;color:var(--brown-400)">Total</span>
-        <span style="font-weight:600;color:var(--brown-400)">${formatPrice(total + 150)}</span>
-      </div>`;
-  }
+    const summaryEl = document.getElementById("detail-summary");
+    if (summaryEl) {
+      const subtotal = (o.items || []).reduce(
+        (s, i) => s + i.unit_price * i.qty,
+        0,
+      );
+      summaryEl.innerHTML = `
+        <div class="metric-row"><span class="text-sm text-muted">Subtotal</span><span>${formatPrice(subtotal)}</span></div>
+        <div class="metric-row" style="border-top:1px solid var(--border);padding-top:10px;margin-top:4px">
+          <span style="font-weight:600;color:var(--brown-400)">Total</span>
+          <span style="font-weight:600;color:var(--brown-400)">${formatPrice(o.total_amount)}</span>
+        </div>`;
+    }
 
-  const timelineEl = document.getElementById("detail-timeline");
-  if (timelineEl) {
-    timelineEl.innerHTML = o.timeline
-      .map(
-        (t, i) => `
-      <div class="flex-center gap-12" style="align-items:flex-start">
-        <div style="width:8px;height:8px;border-radius:50%;background:${i === o.timeline.length - 1 ? "var(--brown-300)" : "var(--border)"};margin-top:5px;flex-shrink:0"></div>
-        <span class="text-sm" style="color:${i === o.timeline.length - 1 ? "var(--brown-400)" : "var(--brown-200)"}">${t}</span>
-      </div>`,
-      )
-      .join("");
-  }
-
-  // Staff: allow status update + tracking, but NO refund button
-  const actionsEl = document.getElementById("detail-actions");
-  if (actionsEl) {
-    actionsEl.innerHTML = `
-      <select class="filter-select" id="status-select" style="height:36px;font-size:13px">
-        ${["Processing", "Shipped", "Delivered", "Cancelled"]
-          .map(
-            (s) => `<option ${s === o.status ? "selected" : ""}>${s}</option>`,
-          )
-          .join("")}
-      </select>
-      <button class="btn btn-primary btn-sm" onclick="updateOrderStatus('${o.id}')">Update Status</button>`;
+    // Staff: show status update (no refund/cancel options)
+    const actionsEl = document.getElementById("detail-actions");
+    if (actionsEl) {
+      actionsEl.innerHTML = `
+        <select class="filter-select" id="status-select" style="height:36px;font-size:13px">
+          ${["processing", "shipped", "delivered"]
+            .map(
+              (s) =>
+                `<option value="${s}" ${s === o.status ? "selected" : ""}>${s.charAt(0).toUpperCase() + s.slice(1)}</option>`,
+            )
+            .join("")}
+        </select>
+        <input class="form-input" type="text" id="tracking-input" placeholder="Tracking number" value="${o.tracking_number || ""}" style="width:160px;height:36px" />
+        <button class="btn btn-primary btn-sm" onclick="updateOrderStatus(${o.order_id})">Update Status</button>`;
+    }
+  } catch (err) {
+    console.error("[staff]", err);
   }
 }
 
-function updateOrderStatus(id) {
-  const sel = document.getElementById("status-select");
-  if (!sel) return;
-  const o = ORDERS.find((x) => x.id === id);
-  if (!o) return;
-  const newStatus = sel.value;
-  o.status = newStatus;
-  document.getElementById("detail-status-badge").innerHTML =
-    statusBadge(newStatus);
-  toast("Order status updated to " + newStatus, "ok");
+async function updateOrderStatus(orderId) {
+  const status = document.getElementById("status-select")?.value;
+  const tracking = document.getElementById("tracking-input")?.value || "";
+  if (!status) return;
+  try {
+    const res = await fetch(`${API}/orders.php`, {
+      method: "PUT",
+      credentials: "include",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        order_id: orderId,
+        status,
+        tracking_number: tracking,
+      }),
+    });
+    const data = await res.json();
+    if (data.success) {
+      document.getElementById("detail-status-badge").innerHTML =
+        statusBadge(status);
+      toast("Order status updated to " + status, "ok");
+    } else {
+      toast(data.error || "Update failed.", "error");
+    }
+  } catch (err) {
+    console.error("[staff]", err);
+    toast("Network error.", "error");
+  }
 }
 
 /* ─────────────────────────────────────────────
-   PRODUCTS  (view + update stock only — no delete)
+   PRODUCTS  (view + update stock only — no add/delete/edit)
 ───────────────────────────────────────────── */
-let filteredProducts = [...PRODUCTS];
 let productsPage = 1;
+let productsCategoryFilter = "";
+let productsStatusFilter = "";
+let productsSearch = "";
 const PRODUCTS_PER_PAGE = 8;
 
-function renderProductsTable() {
-  const body = document.getElementById("products-body");
-  if (!body) return;
-  const page = paginate(filteredProducts, productsPage, PRODUCTS_PER_PAGE);
-  body.innerHTML = page
-    .map(
-      (p) => `
-    <tr>
-      <td>
-        <div class="flex-center gap-12">
-          <div class="product-thumb">👗</div>
-          <span style="font-weight:500;color:var(--brown-400)">${p.name}</span>
-        </div>
-      </td>
-      <td class="text-muted">${p.category}</td>
-      <td style="font-weight:500">${formatPrice(p.price)}</td>
-      <td>
-        <div class="stock-bar-wrap">
-          <span class="stock-num" style="color:${p.stock === 0 ? "var(--red)" : p.stock <= 3 ? "var(--gold)" : "var(--brown-300)"}">${p.stock}</span>
-          <div class="progress-bar" style="flex:1">
-            <div class="progress-fill" style="width:${Math.min(100, (p.stock / 30) * 100)}%;background:var(--gold)"></div>
-          </div>
-        </div>
-      </td>
-      <td>${statusBadge(p.status === "Low Stock" ? "Low Stock" : p.status)}</td>
-      <td>
-        <div class="flex-center gap-8">
-          <button class="btn btn-outline btn-sm" onclick="openStockEditor('${p.id}')">Update Stock</button>
-        </div>
-      </td>
-    </tr>`,
-    )
-    .join("");
+async function renderProductsTable() {
+  tableLoading("products-body", 6);
+  const params = new URLSearchParams({
+    page: productsPage,
+    limit: PRODUCTS_PER_PAGE,
+    category: productsCategoryFilter,
+    status: productsStatusFilter,
+    search: productsSearch,
+  });
+  try {
+    const data = await fetchJSON(`${API}/products.php?${params}`);
+    const body = document.getElementById("products-body");
+    if (!body) return;
 
-  renderPagination(
-    "products-pagination",
-    filteredProducts.length,
-    productsPage,
-    PRODUCTS_PER_PAGE,
-    `function(p){productsPage=p;renderProductsTable();}`,
-  );
+    if (!data.success || !data.products.length) {
+      body.innerHTML = `<tr><td colspan="6" class="text-muted text-sm" style="padding:16px">No products found.</td></tr>`;
+    } else {
+      body.innerHTML = data.products
+        .map((p) => {
+          const stock = parseInt(p.stock) || 0;
+          const statLbl =
+            stock === 0
+              ? "Out of Stock"
+              : stock <= 5
+                ? "Low Stock"
+                : p.status || "Active";
+          return `
+          <tr>
+            <td>
+              <div class="flex-center gap-12">
+                <div class="product-thumb">👗</div>
+                <span style="font-weight:500;color:var(--brown-400)">${p.name}</span>
+              </div>
+            </td>
+            <td class="text-muted">${p.category || "—"}</td>
+            <td style="font-weight:500">${formatPrice(p.price)}</td>
+            <td>
+              <div class="stock-bar-wrap">
+                <span class="stock-num" style="color:${stock === 0 ? "var(--red)" : stock <= 5 ? "var(--gold)" : "var(--brown-300)"}">${stock}</span>
+                <div class="progress-bar" style="flex:1"><div class="progress-fill" style="width:${Math.min(100, (stock / 30) * 100)}%;background:var(--gold)"></div></div>
+              </div>
+            </td>
+            <td>${statusBadge(statLbl)}</td>
+            <td>
+              <button class="btn btn-outline btn-sm" onclick="openStockEditor(${p.product_id},'${p.name.replace(/'/g, "\\'")}',${stock})">Update Stock</button>
+            </td>
+          </tr>`;
+        })
+        .join("");
+    }
+
+    renderPagination(
+      "products-pagination",
+      data.total,
+      productsPage,
+      PRODUCTS_PER_PAGE,
+      `function(p){productsPage=p;renderProductsTable();}`,
+    );
+  } catch (err) {
+    console.error("[staff]", err);
+    tableError("products-body", 6);
+  }
 }
 
 function filterProducts(q) {
-  q = q.toLowerCase();
-  filteredProducts = PRODUCTS.filter(
-    (p) =>
-      p.name.toLowerCase().includes(q) || p.category.toLowerCase().includes(q),
-  );
+  productsSearch = q;
   productsPage = 1;
   renderProductsTable();
 }
-
 function filterProductsByStatus(s) {
-  filteredProducts = s
-    ? PRODUCTS.filter(
-        (p) =>
-          p.status === s || (s === "Low Stock" && p.status === "Low Stock"),
-      )
-    : [...PRODUCTS];
+  productsStatusFilter = s;
   productsPage = 1;
   renderProductsTable();
 }
-
 function filterProductsByCategory(c) {
-  filteredProducts = c
-    ? PRODUCTS.filter((p) => p.category === c)
-    : [...PRODUCTS];
+  productsCategoryFilter = c;
   productsPage = 1;
   renderProductsTable();
 }
 
-// Staff sees a stock-update modal, not the full product editor
-let stockEditId = null;
-function openStockEditor(id) {
-  const p = PRODUCTS.find((x) => x.id === id);
-  if (!p) return;
-  stockEditId = id;
+// Staff: block full product editor
+function openProductEditor() {
+  showAccessDenied();
+}
 
+// Stock edit modal
+let stockEditSizeId = null;
+
+function openStockEditor(productId, name, currentStock) {
+  stockEditSizeId = productId; // we'll fetch sizes on save
   let modal = document.getElementById("modal-stock-edit");
   if (!modal) {
     modal = document.createElement("div");
@@ -983,7 +567,7 @@ function openStockEditor(id) {
         </div>
         <div class="modal-body">
           <div class="form-field">
-            <label class="form-label">Current Stock</label>
+            <label class="form-label">New Stock Quantity</label>
             <input class="form-input" type="number" id="stock-qty-input" min="0" />
           </div>
         </div>
@@ -997,80 +581,118 @@ function openStockEditor(id) {
       if (e.target === modal) closeModal("modal-stock-edit");
     });
   }
-
   document.getElementById("stock-modal-title").textContent =
-    "Update Stock — " + p.name;
-  document.getElementById("stock-qty-input").value = p.stock;
+    "Update Stock — " + name;
+  document.getElementById("stock-qty-input").value = currentStock;
   openModal("modal-stock-edit");
 }
 
-function saveStock() {
-  const p = PRODUCTS.find((x) => x.id === stockEditId);
-  if (!p) return;
-  const qty = parseInt(document.getElementById("stock-qty-input").value, 10);
+async function saveStock() {
+  // For staff stock update: we use the product_id and update ALL sizes proportionally
+  // In production you'd show a per-size breakdown — this uses inventory PUT with size_id
+  const qty = parseInt(document.getElementById("stock-qty-input")?.value, 10);
   if (isNaN(qty) || qty < 0) {
     toast("Enter a valid stock quantity.", "error");
     return;
   }
-  p.stock = qty;
-  p.status = qty === 0 ? "Out of Stock" : qty <= 3 ? "Low Stock" : "Active";
-  closeModal("modal-stock-edit");
-  renderProductsTable();
-  renderInventory();
-  toast("Stock updated for " + p.name, "ok");
-}
 
-// Staff cannot add products — intercept the Add Product button
-function openProductEditor() {
-  showAccessDenied();
+  // Fetch sizes for this product then update each
+  try {
+    const prodRes = await fetch(`${API}/products.php?id=${stockEditSizeId}`, {
+      credentials: "include",
+    });
+    const prodData = await prodRes.json();
+    if (!prodData.success) {
+      toast("Could not load product sizes.", "error");
+      return;
+    }
+
+    const sizes = prodData.product.sizes || [];
+    if (!sizes.length) {
+      toast("No size variants found.", "error");
+      return;
+    }
+
+    // Update first size (or all equally if multiple)
+    await Promise.all(
+      sizes.map((s) =>
+        fetch(`${API}/inventory.php`, {
+          method: "PUT",
+          credentials: "include",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ size_id: s.size_id, stock_qty: qty }),
+        }),
+      ),
+    );
+
+    closeModal("modal-stock-edit");
+    renderProductsTable();
+    renderInventory();
+    toast("Stock updated.", "ok");
+  } catch (err) {
+    console.error("[staff]", err);
+    toast("Network error.", "error");
+  }
 }
 
 /* ─────────────────────────────────────────────
-   CUSTOMERS  (view + add internal notes)
+   CUSTOMERS  (view + add notes)
 ───────────────────────────────────────────── */
-let filteredCustomers = [...CUSTOMERS];
 let customersPage = 1;
+let customersSearch = "";
 const CUSTOMERS_PER_PAGE = 8;
 
-function renderCustomersTable() {
-  const body = document.getElementById("customers-body");
-  if (!body) return;
-  const page = paginate(filteredCustomers, customersPage, CUSTOMERS_PER_PAGE);
-  body.innerHTML = page
-    .map(
-      (c) => `
-    <tr style="cursor:pointer" onclick="openCustomerProfile('${c.id}')">
-      <td>
-        <div class="flex-center gap-12">
-          <div class="customer-avatar">${initials(c.name)}</div>
-          <span style="font-weight:500;color:var(--brown-400)">${c.name}</span>
-        </div>
-      </td>
-      <td class="text-muted">${c.email}</td>
-      <td>${c.orders}</td>
-      <td style="font-weight:500">${formatPrice(c.spent)}</td>
-      <td>${c.tags.map((t) => `<span class="badge badge-active">${t}</span>`).join(" ") || "—"}</td>
-      <td class="text-muted">${c.since}</td>
-      <td><button class="ellipsis-btn">···</button></td>
-    </tr>`,
-    )
-    .join("");
+async function renderCustomersTable() {
+  tableLoading("customers-body", 7);
+  const params = new URLSearchParams({
+    page: customersPage,
+    limit: CUSTOMERS_PER_PAGE,
+    search: customersSearch,
+  });
+  try {
+    const data = await fetchJSON(`${API}/customers.php?${params}`);
+    const body = document.getElementById("customers-body");
+    if (!body) return;
 
-  renderPagination(
-    "customers-pagination",
-    filteredCustomers.length,
-    customersPage,
-    CUSTOMERS_PER_PAGE,
-    `function(p){customersPage=p;renderCustomersTable();}`,
-  );
+    if (!data.success || !data.customers.length) {
+      body.innerHTML = `<tr><td colspan="7" class="text-muted text-sm" style="padding:16px">No customers found.</td></tr>`;
+    } else {
+      body.innerHTML = data.customers
+        .map(
+          (c) => `
+        <tr style="cursor:pointer" onclick="openCustomerProfile(${c.user_id})">
+          <td>
+            <div class="flex-center gap-12">
+              <div class="customer-avatar">${initials(c.full_name)}</div>
+              <span style="font-weight:500;color:var(--brown-400)">${c.full_name}</span>
+            </div>
+          </td>
+          <td class="text-muted">${c.email}</td>
+          <td>${c.order_count}</td>
+          <td style="font-weight:500">${formatPrice(c.total_spent)}</td>
+          <td>${c.admin_notes ? `<span class="badge badge-processing">Has note</span>` : "—"}</td>
+          <td class="text-muted">${new Date(c.created_at).toLocaleDateString("en-PH", { month: "short", year: "numeric" })}</td>
+          <td><button class="ellipsis-btn">···</button></td>
+        </tr>`,
+        )
+        .join("");
+    }
+
+    renderPagination(
+      "customers-pagination",
+      data.total,
+      customersPage,
+      CUSTOMERS_PER_PAGE,
+      `function(p){customersPage=p;renderCustomersTable();}`,
+    );
+  } catch (err) {
+    console.error("[staff]", err);
+    tableError("customers-body", 7);
+  }
 }
 
 function filterCustomers(q) {
-  q = q.toLowerCase();
-  filteredCustomers = CUSTOMERS.filter(
-    (c) =>
-      c.name.toLowerCase().includes(q) || c.email.toLowerCase().includes(q),
-  );
+  customersSearch = q;
   customersPage = 1;
   renderCustomersTable();
 }
@@ -1080,113 +702,282 @@ function showCustomersList() {
   document.getElementById("customer-profile-view").style.display = "none";
 }
 
-function openCustomerProfile(id) {
-  const c = CUSTOMERS.find((x) => x.id === id);
-  if (!c) return;
-  navigate("customers", document.querySelector('[onclick*="customers"]'));
+let viewingCustomerId = null;
+
+async function openCustomerProfile(id) {
+  viewingCustomerId = id;
+  navigate("customers", document.querySelector("[onclick*=\"'customers'\"]"));
   document.getElementById("customers-list-view").style.display = "none";
   document.getElementById("customer-profile-view").style.display = "";
-  document.getElementById("profile-avatar").textContent = initials(c.name);
-  document.getElementById("profile-name").textContent = c.name;
-  document.getElementById("profile-email").textContent = c.email;
-  document.getElementById("profile-total-orders").textContent = c.orders;
-  document.getElementById("profile-total-spent").textContent = formatPrice(
-    c.spent,
-  );
 
-  const cOrders = ORDERS.filter((o) => o.customer === c.name);
-  document.getElementById("profile-orders").innerHTML = cOrders.length
-    ? cOrders
-        .map(
-          (o) =>
-            `<tr><td>#${o.id}</td><td class="text-muted">${o.date}</td><td>${statusBadge(o.status)}</td><td style="font-weight:500">${formatPrice(o.total)}</td></tr>`,
-        )
-        .join("")
-    : `<tr><td colspan="4" class="text-muted text-sm" style="padding:12px">No orders found</td></tr>`;
+  try {
+    const data = await fetchJSON(`${API}/customers.php?id=${id}`);
+    if (!data.success) return;
+    const c = data.customer;
+
+    document.getElementById("profile-avatar").textContent = initials(
+      c.full_name,
+    );
+    document.getElementById("profile-name").textContent = c.full_name;
+    document.getElementById("profile-email").textContent = c.email;
+    document.getElementById("profile-total-orders").textContent = c.order_count;
+    document.getElementById("profile-total-spent").textContent = formatPrice(
+      c.total_spent,
+    );
+
+    const noteEl = document.getElementById("profile-admin-notes");
+    if (noteEl) noteEl.value = c.admin_notes || "";
+
+    document.getElementById("profile-orders").innerHTML = c.orders.length
+      ? c.orders
+          .map(
+            (o) => `
+          <tr>
+            <td>#${o.order_number}</td>
+            <td class="text-muted">${new Date(o.created_at).toLocaleDateString("en-PH", { month: "short", day: "numeric", year: "numeric" })}</td>
+            <td>${statusBadge(o.status)}</td>
+            <td style="font-weight:500">${formatPrice(o.total_amount)}</td>
+          </tr>`,
+          )
+          .join("")
+      : `<tr><td colspan="4" class="text-muted text-sm" style="padding:12px">No orders found</td></tr>`;
+  } catch (err) {
+    console.error("[staff]", err);
+  }
+}
+
+async function saveCustomerNote() {
+  if (!viewingCustomerId) return;
+  const notes = document.getElementById("profile-admin-notes")?.value || "";
+  try {
+    const res = await fetch(`${API}/customers.php?id=${viewingCustomerId}`, {
+      method: "PUT",
+      credentials: "include",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ admin_notes: notes }),
+    });
+    const data = await res.json();
+    toast(
+      data.success ? "Note saved." : data.error || "Failed.",
+      data.success ? "ok" : "error",
+    );
+  } catch (err) {
+    console.error("[staff]", err);
+    toast("Network error.", "error");
+  }
 }
 
 /* ─────────────────────────────────────────────
-   PROMOTIONS  (view only — staff cannot create)
+   PROMOTIONS  (view only — no create/delete)
 ───────────────────────────────────────────── */
-function renderPromotions() {
-  const body = document.getElementById("promotions-body");
-  if (!body) return;
-  body.innerHTML = PROMOTIONS.map(
-    (p) => `
-    <tr>
-      <td><span style="font-weight:600;font-family:var(--font-body);letter-spacing:.05em;color:var(--brown-400)">${p.code}</span></td>
-      <td class="text-muted">${p.type}</td>
-      <td style="font-weight:500">${p.discount}</td>
-      <td class="text-muted text-sm">${p.conditions}</td>
-      <td class="text-muted">${p.uses}</td>
-      <td class="text-muted">${p.expiry}</td>
-      <td>${statusBadge(p.status)}</td>
-      <td>—</td>
-    </tr>`,
-  ).join("");
+async function renderPromotions() {
+  tableLoading("promotions-body", 8);
+  try {
+    const data = await fetchJSON(`${API}/promotions.php`);
+    const body = document.getElementById("promotions-body");
+    if (!body) return;
+
+    if (!data.success || !data.promotions.length) {
+      body.innerHTML = `<tr><td colspan="8" class="text-muted text-sm" style="padding:16px">No promotions found.</td></tr>`;
+    } else {
+      body.innerHTML = data.promotions
+        .map((p) => {
+          const isExpired =
+            p.expiry_date && new Date(p.expiry_date) < new Date();
+          const status = !p.is_active
+            ? "Inactive"
+            : isExpired
+              ? "Expired"
+              : "Active";
+          const discount =
+            p.discount_type === "percent"
+              ? `${p.discount_value}% off`
+              : `₱${p.discount_value} off`;
+          const minOrder =
+            p.min_order > 0
+              ? `Min. spend ₱${Number(p.min_order).toLocaleString()}`
+              : "No minimum";
+          const uses = p.usage_limit
+            ? `${p.usage_count} / ${p.usage_limit}`
+            : `${p.usage_count} / —`;
+          const expiry = p.expiry_date
+            ? new Date(p.expiry_date).toLocaleDateString("en-PH", {
+                month: "short",
+                day: "numeric",
+                year: "numeric",
+              })
+            : "—";
+          return `
+          <tr>
+            <td><span style="font-weight:600;letter-spacing:.05em;color:var(--brown-400)">${p.code}</span></td>
+            <td class="text-muted">${p.discount_type === "percent" ? "Percentage" : "Fixed"}</td>
+            <td style="font-weight:500">${discount}</td>
+            <td class="text-muted text-sm">${minOrder}</td>
+            <td class="text-muted">${uses}</td>
+            <td class="text-muted">${expiry}</td>
+            <td>${statusBadge(status)}</td>
+            <td>—</td>
+          </tr>`;
+        })
+        .join("");
+    }
+  } catch (err) {
+    console.error("[staff]", err);
+    tableError("promotions-body", 8);
+  }
 }
 
 /* ─────────────────────────────────────────────
-   INVENTORY  (view only — stock edits via Products)
+   INVENTORY  (view only for staff)
 ───────────────────────────────────────────── */
-let filteredInventory = [...INVENTORY];
+let inventorySearch = "";
 
-function renderInventory() {
-  const body = document.getElementById("inventory-body");
-  if (!body) return;
-  body.innerHTML = filteredInventory
-    .map((item) => {
-      const statusLabel =
-        item.stock === 0
-          ? "Out of Stock"
-          : item.stock <= 3
-            ? "Low Stock"
-            : "In Stock";
-      return `
-    <tr>
-      <td class="text-muted" style="font-family:monospace;font-size:12px">${item.sku}</td>
-      <td>
-        <div class="flex-center gap-12">
-          <div class="product-thumb">👗</div>
-          <div>
-            <div style="font-size:13.5px;font-weight:500;color:var(--brown-400)">${item.name}</div>
-            <div class="text-sm text-muted">${item.variant}</div>
-          </div>
-        </div>
-      </td>
-      <td style="font-weight:500;color:${item.stock === 0 ? "var(--red)" : item.stock <= 3 ? "var(--gold)" : "var(--brown-300)"}">${item.stock}</td>
-      <td class="text-muted">${item.reserved}</td>
-      <td class="text-muted">${item.incoming > 0 ? `+${item.incoming} incoming` : "—"}</td>
-      <td>${statusBadge(statusLabel)}</td>
-      <td>—</td>
-    </tr>`;
-    })
-    .join("");
+async function renderInventory() {
+  tableLoading("inventory-body", 6);
+  const params = new URLSearchParams({ search: inventorySearch });
+  try {
+    const data = await fetchJSON(`${API}/inventory.php?${params}`);
+    const body = document.getElementById("inventory-body");
+    if (!body) return;
+
+    if (!data.success || !data.inventory.length) {
+      body.innerHTML = `<tr><td colspan="6" class="text-muted text-sm" style="padding:16px">No inventory data found.</td></tr>`;
+    } else {
+      body.innerHTML = data.inventory
+        .map((item) => {
+          const qty = parseInt(item.stock_qty) || 0;
+          const isOut = qty === 0;
+          const isLow = qty > 0 && qty <= 5;
+          const status = isOut
+            ? "Out of Stock"
+            : isLow
+              ? "Low Stock"
+              : "In Stock";
+          return `
+          <tr>
+           <td class="text-muted">—</td>
+            <td>
+              <div class="flex-center gap-12">
+                <div class="product-thumb">👗</div>
+                <div>
+                  <div style="font-size:13.5px;font-weight:500;color:var(--brown-400)">${item.product_name}</div>
+                  <div class="text-sm text-muted">${item.size || "—"}</div>
+                </div>
+              </div>
+            </td>
+            <td style="font-weight:500;color:${isOut ? "var(--red)" : isLow ? "var(--gold)" : "var(--brown-300)"}">${qty}</td>
+            <td class="text-muted">—</td>
+            <td class="text-muted">—</td>
+            <td>${statusBadge(status)}</td>
+            <td>—</td>
+          </tr>`;
+        })
+        .join("");
+    }
+  } catch (err) {
+    console.error("[staff]", err);
+    tableError("inventory-body", 6);
+  }
 }
 
 function filterInventory(q) {
-  q = q.toLowerCase();
-  filteredInventory = INVENTORY.filter(
-    (i) =>
-      i.name.toLowerCase().includes(q) ||
-      i.sku.toLowerCase().includes(q) ||
-      i.variant.toLowerCase().includes(q),
-  );
+  inventorySearch = q;
   renderInventory();
 }
 
 /* ─────────────────────────────────────────────
-   CHARTS  (dashboard only for staff)
+   CONTACT MESSAGES
 ───────────────────────────────────────────── */
-const chartInstances = {};
+let contactStatusFilter = "";
+let contactPage = 1;
 
-function destroyChart(id) {
-  if (chartInstances[id]) {
-    chartInstances[id].destroy();
-    delete chartInstances[id];
+async function renderContactMessages() {
+  tableLoading("contact-body", 7);
+  const params = new URLSearchParams({
+    page: contactPage,
+    limit: 20,
+    status: contactStatusFilter,
+  });
+  try {
+    const data = await fetchJSON(`${API}/contact-messages.php?${params}`);
+    const body = document.getElementById("contact-body");
+    if (!body) return;
+
+    if (!data.success || !data.messages.length) {
+      body.innerHTML = `<tr><td colspan="7" class="text-muted text-sm" style="padding:16px">No messages found.</td></tr>`;
+    } else {
+      body.innerHTML = data.messages
+        .map(
+          (m) => `
+        <tr style="${m.status === "unread" ? "font-weight:600;" : ""}">
+          <td style="color:var(--brown-400)">${m.name}</td>
+          <td class="text-muted">${m.email}</td>
+          <td>${m.subject}</td>
+          <td class="text-muted text-sm" style="max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${m.message}</td>
+          <td>${statusBadge(m.status)}</td>
+          <td class="text-muted">${new Date(m.sent_at).toLocaleDateString("en-PH", { month: "short", day: "numeric", year: "numeric" })}</td>
+          <td>
+            <div class="flex-center gap-6">
+              <button class="btn btn-outline btn-sm" onclick="viewContactMessage(${m.message_id})">View</button>
+              ${m.status === "unread" ? `<button class="btn btn-outline btn-sm" onclick="markMessage(${m.message_id},'read')">Mark Read</button>` : ""}
+            </div>
+          </td>
+        </tr>`,
+        )
+        .join("");
+    }
+
+    renderPagination(
+      "contact-pagination",
+      data.total,
+      contactPage,
+      20,
+      `function(p){contactPage=p;renderContactMessages();}`,
+    );
+  } catch (err) {
+    console.error("[staff]", err);
+    tableError("contact-body", 7);
   }
 }
 
+function filterContactMessages(s) {
+  contactStatusFilter = s;
+  contactPage = 1;
+  renderContactMessages();
+}
+
+async function viewContactMessage(id) {
+  try {
+    const data = await fetchJSON(`${API}/contact-messages.php?id=${id}`);
+    if (!data.success) return;
+    const m = data.message;
+    alert(
+      `From: ${m.name} <${m.email}>\nSubject: ${m.subject}\n\n${m.message}`,
+    );
+    if (m.status === "unread") markMessage(id, "read");
+  } catch (err) {
+    console.error("[staff]", err);
+  }
+}
+
+async function markMessage(id, status) {
+  try {
+    await fetch(`${API}/contact-messages.php?id=${id}`, {
+      method: "PUT",
+      credentials: "include",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ status }),
+    });
+    renderContactMessages();
+  } catch (err) {
+    console.error("[staff]", err);
+  }
+}
+
+/* ─────────────────────────────────────────────
+   CHARTS  (dashboard only — no revenue for staff)
+───────────────────────────────────────────── */
+const chartInstances = {};
 const BRAND_GOLD = "rgba(184,146,74,1)";
 const BRAND_GOLD_BG = "rgba(184,146,74,0.12)";
 
@@ -1216,7 +1007,7 @@ const baseOptions = {
       border: { display: false },
     },
     y: {
-      grid: { color: "rgba(230,221,210,0.6)", drawBorder: false },
+      grid: { color: "rgba(230,221,210,0.6)" },
       ticks: {
         color: "#b8a090",
         font: { family: "'DM Sans', sans-serif", size: 11 },
@@ -1226,48 +1017,17 @@ const baseOptions = {
   },
 };
 
+function destroyChart(id) {
+  if (chartInstances[id]) {
+    chartInstances[id].destroy();
+    delete chartInstances[id];
+  }
+}
+
 function initCharts(page) {
+  // Staff only sees order-count chart on dashboard (no revenue)
   if (page === "dashboard") {
-    destroyChart("revenueChart");
     destroyChart("statusChart");
-
-    const rCtx = document.getElementById("revenueChart");
-    if (rCtx) {
-      chartInstances["revenueChart"] = new Chart(rCtx, {
-        type: "bar",
-        data: {
-          labels: [
-            "Jan",
-            "Feb",
-            "Mar",
-            "Apr",
-            "May",
-            "Jun",
-            "Jul",
-            "Aug",
-            "Sep",
-            "Oct",
-            "Nov",
-            "Dec",
-          ],
-          datasets: [
-            {
-              label: "Revenue",
-              data: [
-                42000, 58000, 51000, 67000, 89000, 74000, 95000, 82000, 71000,
-                88000, 102000, 118000,
-              ],
-              backgroundColor: BRAND_GOLD_BG,
-              borderColor: BRAND_GOLD,
-              borderWidth: 2,
-              borderRadius: 4,
-            },
-          ],
-        },
-        options: { ...baseOptions },
-      });
-    }
-
     const sCtx = document.getElementById("statusChart");
     if (sCtx) {
       chartInstances["statusChart"] = new Chart(sCtx, {
@@ -1277,7 +1037,7 @@ function initCharts(page) {
           datasets: [
             {
               label: "Orders",
-              data: [12, 19, 14, 22, 17, 28, 21],
+              data: [0, 0, 0, 0, 0, 0, 0],
               borderColor: BRAND_GOLD,
               backgroundColor: BRAND_GOLD_BG,
               fill: true,
@@ -1292,6 +1052,7 @@ function initCharts(page) {
         options: { ...baseOptions },
       });
     }
+    // Revenue chart hidden for staff — controlled in HTML via applyStaffRestrictions
   }
 }
 
@@ -1299,20 +1060,62 @@ function initCharts(page) {
    HIDE ADMIN-ONLY UI ELEMENTS
 ───────────────────────────────────────────── */
 function applyStaffRestrictions() {
-  // Hide "Add Product" button in topbar
-  document.querySelectorAll('[onclick*="modal-add-product"]').forEach((el) => {
-    el.style.display = "none";
-  });
-  // Hide "Create Discount" button in topbar (staff views promos but can't create)
-  document.querySelectorAll('[onclick*="modal-add-promo"]').forEach((el) => {
-    el.style.display = "none";
-  });
-  // Hide "Create Promotion" button on promotions page if it exists
+  // Hide "Add Product" button
   document
-    .querySelectorAll("[onclick*=\"openModal('modal-add-promo')\"]")
+    .querySelectorAll('[onclick*="modal-add-product"]')
+    .forEach((el) => (el.style.display = "none"));
+  // Hide "Create Promotion" button
+  document
+    .querySelectorAll('[onclick*="modal-add-promo"]')
+    .forEach((el) => (el.style.display = "none"));
+  // Hide revenue chart card on dashboard
+  document
+    .querySelectorAll(".revenue-chart-card, #revenueChart")
     .forEach((el) => {
-      el.style.display = "none";
+      const card = el.closest(".card") || el;
+      card.style.display = "none";
     });
+}
+
+/* ─────────────────────────────────────────────
+   LOGOUT / USER INFO
+───────────────────────────────────────────── */
+async function handleLogout() {
+  try {
+    await fetch("/styled/php/auth/logout.php", {
+      method: "POST",
+      credentials: "include",
+    });
+  } catch (err) {
+    console.error("[staff]", err);
+  }
+  localStorage.removeItem("styled_user");
+  window.location.replace("auth.html");
+}
+document.getElementById("logout-btn")?.addEventListener("click", handleLogout);
+
+async function populateUserInfo() {
+  try {
+    const res = await fetch("/styled/php/auth/check.php", {
+      credentials: "include",
+      cache: "no-store",
+    });
+    const data = await res.json();
+    if (data.logged_in && data.user) {
+      const u = data.user;
+      const el = (id) => document.getElementById(id);
+      if (el("sidebar-avatar"))
+        el("sidebar-avatar").textContent = initials(u.full_name);
+      if (el("sidebar-name")) el("sidebar-name").textContent = u.full_name;
+      if (el("sidebar-email")) el("sidebar-email").textContent = u.email;
+      if (el("page-title") && currentPage === "dashboard") {
+        el("page-title").innerHTML =
+          `Welcome back, <span>${u.full_name.split(" ")[0]}</span>`;
+      }
+    }
+  } catch (err) {
+    console.error("[staff]", err);
+  }
 }
 
 /* ─────────────────────────────────────────────
@@ -1320,14 +1123,8 @@ function applyStaffRestrictions() {
 ───────────────────────────────────────────── */
 function init() {
   applyStaffRestrictions();
-  renderDashboard();
-  renderOrdersTable();
-  renderProductsTable();
-  renderCustomersTable();
-  renderPromotions();
-  renderInventory();
-  initCharts("dashboard");
   populateUserInfo();
+  renderDashboard();
 }
 
 document.addEventListener("DOMContentLoaded", init);

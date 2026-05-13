@@ -238,7 +238,7 @@
             </div>
             <div class="od-meta-item">
               <p class="od-meta-label">Payment</p>
-              <p class="od-meta-val">Credit Card</p>
+              <p class="od-meta-val" id="od-payment">—</p>
             </div>
           </div>
 
@@ -367,25 +367,12 @@
         checkAuthStatus({ redirectIfGuest: true }).then(function (loggedIn) {
           if (!loggedIn) return; // redirect already triggered
 
-          // ── 2. Populate sidebar user info from the live session ──────────
-          // checkAuthStatus() updated localStorage; getCurrentUser() reads it.
-          var user = getCurrentUser();
-          if (user) {
-            var nameEl = document.getElementById("os-name");
-            var avatarEl = document.getElementById("os-avatar");
-            if (nameEl) nameEl.textContent = user.name || user.email;
-            if (avatarEl) {
-              avatarEl.textContent = user.name
-                ? user.name
-                    .split(" ")
-                    .map(function (w) {
-                      return w[0];
-                    })
-                    .join("")
-                    .toUpperCase()
-                    .slice(0, 2)
-                : "?";
-            }
+          // ── 2. Now that the session is confirmed, load orders ────────────
+          // initOrdersPage() is defined in orders.js. Calling it here (after
+          // checkAuthStatus resolves) guarantees the session cookie is active
+          // before the orders API request is made, preventing a spurious 401.
+          if (typeof window.initOrdersPage === "function") {
+            window.initOrdersPage();
           }
         });
 
