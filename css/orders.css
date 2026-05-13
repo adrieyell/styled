@@ -73,40 +73,40 @@
 .os-nav-item {
   display: flex;
   align-items: center;
-  gap: 14px;
-  padding: 18px 32px;
-  font-size: 13px; /* ← bigger text (was 11px) */
-  line-height: 1.2;
+  gap: 16px;
+  padding: 20px 32px;
+  font-size: 13px;
   letter-spacing: 1.5px;
   text-transform: uppercase;
   color: var(--text-muted);
   text-decoration: none;
-  border-left: 3px solid transparent;
-  transition: all 0.2s ease;
+  transition:
+    background 0.2s,
+    color 0.2s;
+  font-family: var(--sans);
+  width: 100%;
   box-sizing: border-box;
 }
 
 .os-nav-item svg {
-  width: 20px; /* ← bigger icon (was 17px) */
-  height: 20px;
+  width: 22px;
+  height: 22px;
   flex-shrink: 0;
 }
 
 .os-nav-item:hover {
   color: var(--text-main);
-  background: rgba(255, 255, 255, 0.5);
+  background: rgba(44, 31, 20, 0.06);
 }
 
-/* Active state uses data-active attribute — immune to class conflicts */
-.os-nav-item[data-active="true"] {
-  background: #ffffff !important;
-  border-left: 3px solid var(--brown-dark) !important;
-  color: var(--text-main) !important;
+.os-nav-item.active {
+  background: var(--brown-dark);
+  color: #f5ede4;
   font-weight: 500;
 }
 
-.os-nav-item:not([data-active="true"]) {
-  border-left: 3px solid transparent !important;
+.os-nav-item.active svg {
+  stroke: #f5ede4;
 }
 
 /* SIGN OUT */

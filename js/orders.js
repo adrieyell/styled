@@ -333,18 +333,10 @@ const tabOrders = document.getElementById("tab-orders");
 const tabWishlist = document.getElementById("tab-wishlist");
 
 function setActiveTab(activeEl) {
-  [tabOrders, tabWishlist].forEach((el) => {
-    if (!el) return;
-    el.style.background = "";
-    el.style.borderLeft = "3px solid transparent";
-    el.style.color = "";
-    el.style.fontWeight = "";
-  });
-  if (!activeEl) return;
-  activeEl.style.background = "#ffffff";
-  activeEl.style.borderLeft = "3px solid #2c1f14";
-  activeEl.style.color = "#1e1510";
-  activeEl.style.fontWeight = "500";
+  document
+    .querySelectorAll(".os-nav-item")
+    .forEach((el) => el.classList.remove("active"));
+  if (activeEl) activeEl.classList.add("active");
 }
 
 tabOrders?.addEventListener("click", (e) => {
