@@ -1,183 +1,239 @@
 <?php
 // ============================================
-// PRODUCTS API — php/products.php
+// PRODUCTS API — php/admin/products.php
+// FIXED: Removed 'color' column (doesn't exist)
 // ============================================
-// GET params: category (slug), min_price, max_price, search
-// Returns JSON matching the CATEGORIES structure in main.js
-
-// Capture any stray output (PHP notices/warnings) so they never corrupt JSON
-ob_start();
-
-// Turn off display_errors so warnings go to the log, not the response body
-ini_set('display_errors', '0');
-error_reporting(E_ALL);
 
 header('Content-Type: application/json');
-header('Access-Control-Allow-Origin: *');
-header('Access-Control-Allow-Methods: GET, OPTIONS');
-header('Access-Control-Allow-Headers: Content-Type');
-header('Cache-Control: no-store, no-cache, must-revalidate');
+require_once __DIR__ . '/_auth.php';
+require_once __DIR__ . '/../db.php';
 
-if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
-    http_response_code(200);
-    exit;
-}
+$user   = requireAuth();
+$method = $_SERVER['REQUEST_METHOD'];
+$pdo    = getPDO();
 
-if ($_SERVER['REQUEST_METHOD'] !== 'GET') {
-    http_response_code(405);
-    echo json_encode(['success' => false, 'error' => 'Method not allowed.']);
-    exit;
-}
+// ── GET ───────────────────────────────────────────────────────────────────────
+if ($method === 'GET') {
 
-require_once __DIR__ . '/db.php';
+    // Single product
+    if (!empty($_GET['id'])) {
+        $stmt = $pdo->prepare("
+            SELECT p.*, c.name AS category_name
+            FROM products p
+            LEFT JOIN categories c ON c.category_id = p.category_id
+            WHERE p.product_id = ?
+        ");
+        $stmt->execute([(int) $_GET['id']]);
+        $product = $stmt->fetch();
 
-try {
+        if (!$product) {
+            http_response_code(404);
+            echo json_encode(['success' => false, 'error' => 'Product not found.']);
+            exit;
+        }
 
-$pdo = getPDO();
+        // Sizes + stock
+        $sizes = $pdo->prepare("SELECT * FROM product_sizes WHERE product_id = ?");
+        $sizes->execute([$product['product_id']]);
+        $product['sizes'] = $sizes->fetchAll();
 
-// ── 1. Read & sanitise query params ──────────────────────────────────────────
-$category_slug = trim($_GET['category'] ?? '');
-$min_price     = isset($_GET['min_price']) && is_numeric($_GET['min_price'])
-                    ? (float) $_GET['min_price'] : null;
-$max_price     = isset($_GET['max_price']) && is_numeric($_GET['max_price'])
-                    ? (float) $_GET['max_price'] : null;
-$search        = trim($_GET['search'] ?? '');
+        // Images
+        $imgs = $pdo->prepare("SELECT * FROM product_images WHERE product_id = ? ORDER BY sort_order ASC");
+        $imgs->execute([$product['product_id']]);
+        $product['images'] = $imgs->fetchAll();
 
-// ── 2. Build dynamic WHERE clause ────────────────────────────────────────────
-$where  = ['p.is_active = 1'];
-$params = [];
-
-if ($category_slug !== '') {
-    $where[]  = 'c.slug = ?';
-    $params[] = $category_slug;
-}
-
-if ($min_price !== null) {
-    $where[]  = 'p.price >= ?';
-    $params[] = $min_price;
-}
-
-if ($max_price !== null) {
-    $where[]  = 'p.price <= ?';
-    $params[] = $max_price;
-}
-
-if ($search !== '') {
-    $where[]  = '(p.name LIKE ? OR p.description LIKE ?)';
-    $like     = '%' . $search . '%';
-    $params[] = $like;
-    $params[] = $like;
-}
-
-$whereSQL = 'WHERE ' . implode(' AND ', $where);
-
-// ── 3. Fetch products (with category join) ────────────────────────────────────
-// Use a subquery to grab the first image from product_images for each product.
-$sql = "
-    SELECT
-        p.product_id,
-        p.name,
-        p.description,
-        p.price,
-        c.slug        AS category,
-        c.name        AS category_name,
-(SELECT pi.image_url FROM product_images pi
- WHERE pi.product_id = p.product_id
- ORDER BY pi.image_id ASC LIMIT 1) AS image_url
-    FROM products p
-    JOIN categories c ON p.category_id = c.category_id
-    $whereSQL
-    ORDER BY p.product_id ASC
-";
-
-$stmt = $pdo->prepare($sql);
-$stmt->execute($params);
-$rows = $stmt->fetchAll();
-
-// ── 4. Fetch sizes & stock for those products ─────────────────────────────────
-if (empty($rows)) {
-    echo json_encode(['products' => []]);
-    exit;
-}
-
-$productIds   = array_column($rows, 'product_id');
-$placeholders = implode(',', array_fill(0, count($productIds), '?'));
-
-$sizeSql  = "
-    SELECT product_id, size, stock_qty
-    FROM product_sizes
-    WHERE product_id IN ($placeholders)
-    ORDER BY FIELD(size, 'XS', 'S', 'M', 'L', 'XL', 'XXL')
-";
-$sizeStmt = $pdo->prepare($sizeSql);
-$sizeStmt->execute($productIds);
-$sizeRows = $sizeStmt->fetchAll();
-
-// Group sizes and stock by product_id
-$sizeMap  = [];  // product_id => ['S','M','L', …]
-$stockMap = [];  // product_id => ['S' => 10, 'M' => 15, …]
-
-foreach ($sizeRows as $sr) {
-    $pid = (int) $sr['product_id'];
-    $sizeMap[$pid][]         = $sr['size'];
-    $stockMap[$pid][$sr['size']] = (int) $sr['stock_qty'];
-}
-
-// ── 5. Category colour map (matches main.js CATEGORIES) ──────────────────────
-// These are the accent colours shown in the product modal colour picker.
-// Update here if you add new categories to the DB.
-$categoryColors = [
-    'tops'        => ['#6b3a2a', '#1c1c1c', '#c9b99a'],
-    'bottoms'     => ['#3d2b1f', '#8c6d57', '#e8ddd0'],
-    'dresses'     => ['#5c3d2e', '#c9b99a', '#1e1510'],
-    'outerwear'   => ['#2c1f14', '#7a6a5a', '#c9b99a'],
-    'accessories' => ['#8c6d57', '#2c1f14', '#f5f0ea'],
-];
-
-// ── 6. Assemble response ──────────────────────────────────────────────────────
-$products = [];
-
-foreach ($rows as $row) {
-    $pid      = (int) $row['product_id'];
-    $slug     = $row['category'];
-    $priceNum = (float) $row['price'];
-
-    // Build image path — use DB value if set, otherwise derive from product name
-    // matching the Assets/Images/<Category>/<Product Name>.png convention in main.js
-if (!empty($row['image_url'])) {
-    $imagePath = $row['image_url'];
-    } else {
-        $catFolder = ucfirst(strtolower($slug));
-        $imagePath = 'Assets/Images/' . $catFolder . '/' . $row['name'] . '.png';
+        echo json_encode(['success' => true, 'product' => $product]);
+        exit;
     }
 
-    $products[] = [
-        'product_id'    => $pid,
-        'name'          => $row['name'],
-        'description'   => $row['description'] ?? '',
-        'price'         => '₱' . number_format($priceNum, 2),
-        'price_num'     => $priceNum,
-        'category'      => $slug,
-        'category_name' => $row['category_name'],
-        'image'         => $imagePath,
-        // Fallback to default sizes if none stored yet
-        'sizes'         => $sizeMap[$pid]  ?? ['XS', 'S', 'M', 'L', 'XL'],
-        'colors'        => $categoryColors[$slug] ?? ['#2c1f14', '#7a6a5a', '#c9b99a'],
-        'stock'         => $stockMap[$pid] ?? (object)[],
-    ];
-}
+    // List
+    $page     = max(1, (int) ($_GET['page']     ?? 1));
+    $limit    = min(50, max(1, (int) ($_GET['limit'] ?? 8)));
+    $offset   = ($page - 1) * $limit;
+    $category = $_GET['category'] ?? '';
+    $search   = $_GET['search']   ?? '';
 
-// Discard any warnings that leaked into the buffer, then send clean JSON
-ob_end_clean();
-echo json_encode(['products' => $products], JSON_UNESCAPED_UNICODE);
+    $where  = [];
+    $params = [];
 
-} catch (Throwable $e) {
-    ob_end_clean();
-    http_response_code(500);
+    if ($category) {
+        $where[]  = 'c.name = ?';
+        $params[] = $category;
+    }
+    if ($search) {
+        $where[]  = 'p.name LIKE ?';
+        $params[] = "%$search%";
+    }
+
+    $whereSQL = $where ? 'WHERE ' . implode(' AND ', $where) : '';
+
+    $totalStmt = $pdo->prepare("
+        SELECT COUNT(*) FROM products p
+        LEFT JOIN categories c ON c.category_id = p.category_id
+        $whereSQL
+    ");
+    $totalStmt->execute($params);
+    $totalCount = (int) $totalStmt->fetchColumn();
+
+    // REMOVED: p.color (doesn't exist in your table)
+    $stmt = $pdo->prepare("
+        SELECT p.product_id, p.name, p.price,
+               c.name AS category,
+               COALESCE(SUM(ps.stock_qty), 0) AS stock
+        FROM products p
+        LEFT JOIN categories   c  ON c.category_id = p.category_id
+        LEFT JOIN product_sizes ps ON ps.product_id = p.product_id
+        $whereSQL
+        GROUP BY p.product_id
+        ORDER BY p.created_at DESC
+        LIMIT $limit OFFSET $offset
+    ");
+    $stmt->execute($params);
+    
+    $products = $stmt->fetchAll();
+    
+    // Add calculated status based on stock
+    foreach ($products as &$product) {
+        $stock = (int) $product['stock'];
+        if ($stock == 0) {
+            $product['status'] = 'Out of Stock';
+        } elseif ($stock <= 5) {
+            $product['status'] = 'Low Stock';
+        } else {
+            $product['status'] = 'Active';
+        }
+    }
+
     echo json_encode([
-        'error' => $e->getMessage(),
-        'file'  => $e->getFile(),
-        'line'  => $e->getLine()
+        'success'  => true,
+        'products' => $products,
+        'total'    => $totalCount,
+        'page'     => $page,
+        'pages'    => (int) ceil($totalCount / $limit),
     ]);
     exit;
 }
+
+// ── POST: Create (admin only) ─────────────────────────────────────────────────
+if ($method === 'POST') {
+    requireAuth('admin');
+
+    // Accept either multipart/form-data (with file upload) or JSON body
+    $hasFile = !empty($_FILES['image']['tmp_name']);
+    if (!$hasFile && strpos($_SERVER['CONTENT_TYPE'] ?? '', 'application/json') !== false) {
+        $body = json_decode(file_get_contents('php://input'), true) ?? [];
+        $name        = trim($body['name']        ?? '');
+        $category_id = (int) ($body['category_id'] ?? 0);
+        $price       = (float) ($body['price']    ?? 0);
+        $description = trim($body['description'] ?? '');
+    } else {
+        $name        = trim($_POST['name']        ?? '');
+        $category_id = (int) ($_POST['category_id'] ?? 0);
+        $price       = (float) ($_POST['price']    ?? 0);
+        $description = trim($_POST['description'] ?? '');
+    }
+
+    if (!$name || !$category_id || !$price) {
+        http_response_code(400);
+        echo json_encode(['success' => false, 'error' => 'name, category_id and price are required.']);
+        exit;
+    }
+
+    // Handle image upload
+    $imagePath = null;
+    if (!empty($_FILES['image']['tmp_name'])) {
+        $uploadDir = __DIR__ . '/../../assets/images/products/';
+        if (!is_dir($uploadDir)) mkdir($uploadDir, 0775, true);
+        $ext       = strtolower(pathinfo($_FILES['image']['name'], PATHINFO_EXTENSION));
+        $allowed   = ['jpg', 'jpeg', 'png', 'webp'];
+        if (!in_array($ext, $allowed)) {
+            http_response_code(400);
+            echo json_encode(['success' => false, 'error' => 'Invalid image type.']);
+            exit;
+        }
+        $filename  = uniqid('prod_') . '.' . $ext;
+        move_uploaded_file($_FILES['image']['tmp_name'], $uploadDir . $filename);
+        $imagePath = 'assets/images/products/' . $filename;
+    }
+
+    // REMOVED: color column
+    $stmt = $pdo->prepare("
+        INSERT INTO products (name, category_id, price, description, image_url, created_at)
+        VALUES (:name, :category_id, :price, :description, :image_url, NOW())
+    ");
+    $stmt->execute([
+        ':name'        => $name,
+        ':category_id' => $category_id,
+        ':price'       => $price,
+        ':description' => $description,
+        ':image_url'   => $imagePath,
+    ]);
+
+    echo json_encode(['success' => true, 'product_id' => (int) $pdo->lastInsertId()]);
+    exit;
+}
+
+// ── PUT: Update (admin only) ──────────────────────────────────────────────────
+if ($method === 'PUT') {
+    requireAuth('admin');
+
+    $id = (int) ($_GET['id'] ?? 0);
+    if (!$id) {
+        http_response_code(400);
+        echo json_encode(['success' => false, 'error' => 'Missing product id.']);
+        exit;
+    }
+
+    $body   = json_decode(file_get_contents('php://input'), true) ?? [];
+    $fields = [];
+    $params = [];
+
+    if (isset($body['name'])) {
+        $fields[] = 'name = ?';
+        $params[] = $body['name'];
+    }
+    if (isset($body['description'])) {
+        $fields[] = 'description = ?';
+        $params[] = $body['description'];
+    }
+    if (isset($body['price'])) {
+        $fields[] = 'price = ?';
+        $params[] = (float) $body['price'];
+    }
+    if (isset($body['category_id'])) {
+        $fields[] = 'category_id = ?';
+        $params[] = (int) $body['category_id'];
+    }
+
+    if (empty($fields)) {
+        http_response_code(400);
+        echo json_encode(['success' => false, 'error' => 'Nothing to update.']);
+        exit;
+    }
+
+    $params[] = $id;
+    $pdo->prepare("UPDATE products SET " . implode(', ', $fields) . " WHERE product_id = ?")->execute($params);
+
+    echo json_encode(['success' => true]);
+    exit;
+}
+
+// ── DELETE (admin only) ───────────────────────────────────────────────────────
+if ($method === 'DELETE') {
+    requireAuth('admin');
+
+    $id = (int) ($_GET['id'] ?? 0);
+    if (!$id) {
+        http_response_code(400);
+        echo json_encode(['success' => false, 'error' => 'Missing product id.']);
+        exit;
+    }
+
+    $pdo->prepare("DELETE FROM products WHERE product_id = ?")->execute([$id]);
+    echo json_encode(['success' => true]);
+    exit;
+}
+
+http_response_code(405);
+echo json_encode(['error' => 'Method not allowed']);
+?>

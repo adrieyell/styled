@@ -1,10 +1,18 @@
-/* ============================================
-   STYLED ADMIN — admin.js
-   All mock arrays removed; data fetched from API.
-   ============================================ */
-
 "use strict";
 
+function escapeHtml(str) {
+  if (!str) return "";
+  return str
+    .replace(/[&<>]/g, function (m) {
+      if (m === "&") return "&amp;";
+      if (m === "<") return "&lt;";
+      if (m === ">") return "&gt;";
+      return m;
+    })
+    .replace(/[\uD800-\uDBFF][\uDC00-\uDFFF]/g, function (c) {
+      return c;
+    });
+}
 /**
  * Wrapper around fetch() that:
  *  - always sends credentials
@@ -181,9 +189,27 @@ function tableError(tbodyId, cols, msg = "Failed to load data.") {
     el.innerHTML = `<tr><td colspan="${cols}" style="text-align:center;color:var(--red);padding:24px">${msg}</td></tr>`;
 }
 
-/* ─────────────────────────────────────────────
-   DASHBOARD
-───────────────────────────────────────────── */
+function showToast(msg, type = "") {
+  let t = document.getElementById("_toast");
+  if (!t) {
+    t = document.createElement("div");
+    t.id = "_toast";
+    t.className = "toast";
+    document.body.appendChild(t);
+  }
+  t.textContent = msg;
+  t.className = "toast" + (type ? " " + type : "");
+  void t.offsetWidth;
+  t.classList.add("show");
+  clearTimeout(t._timer);
+  t._timer = setTimeout(() => t.classList.remove("show"), 3000);
+}
+
+function onAnalyticsDateChange(days) {
+  if (currentPage === "dashboard") renderDashboard();
+  if (currentPage === "analytics") renderAnalytics();
+}
+
 async function renderDashboard() {
   // Recent orders
   tableLoading("dashboard-orders-body", 7);
@@ -238,7 +264,7 @@ async function renderDashboard() {
           (p) => `
         <div class="metric-row">
           <div class="flex-center gap-12">
-            <div class="product-thumb">👗</div>
+            <div class="product-thumb" style="display:flex;align-items:center;justify-content:center"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="color:var(--brown-100)"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/></svg></div>
             <div>
               <div style="font-size:13.5px;font-weight:500;color:var(--brown-400)">${p.name}</div>
               <div class="text-sm text-muted">${p.quantity_sold} sold</div>
@@ -264,7 +290,7 @@ async function renderDashboard() {
               (i) => `
             <div class="metric-row">
               <div class="flex-center gap-12">
-                <div class="product-thumb">👗</div>
+                <div class="product-thumb" style="display:flex;align-items:center;justify-content:center"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="color:var(--brown-100)"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/></svg></div>
                 <div>
                   <div style="font-size:13.5px;font-weight:500;color:var(--brown-400)">${i.product_name}</div>
                   <div class="text-sm text-muted">${i.size} — ${i.category}</div>
@@ -391,7 +417,7 @@ async function openOrderDetail(orderNumber) {
         const price = item.unit_price ?? item.price ?? 0;
         return `
       <div class="order-item">
-        <div class="order-item-img" style="display:flex;align-items:center;justify-content:center;font-size:24px">👗</div>
+        <div class="order-item-img" style="display:flex;align-items:center;justify-content:center"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="color:var(--brown-100)"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/></svg></div>
         <div style="flex:1">
           <div style="font-weight:500;font-size:13.5px;color:var(--brown-400)">${item.product_name}</div>
           <div class="text-sm text-muted">${item.size || ""} × ${qty}</div>
@@ -503,16 +529,17 @@ async function updateOrderStatus(orderId) {
     });
     const data = await res.json();
     if (data.success) {
+      // Update the status badge in the detail view
       const el = document.getElementById("detail-status-badge");
       if (el)
         el.outerHTML = `<span id="detail-status-badge">${statusBadge(status)}</span>`;
-      alert("Order updated successfully.");
+      showToast("Order updated successfully.", "ok");
     } else {
-      alert(data.error || "Update failed.");
+      showToast(data.error || "Update failed.", "error");
     }
   } catch (err) {
     console.error("[admin]", err);
-    alert("Network error.");
+    showToast("Network error.", "error");
   }
 }
 
@@ -555,7 +582,7 @@ async function renderProductsTable() {
         <tr>
           <td>
             <div class="flex-center gap-12">
-              <div class="product-thumb">👗</div>
+              <div class="product-thumb" style="display:flex;align-items:center;justify-content:center"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="color:var(--brown-100)"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/></svg></div>
               <span style="font-weight:500;color:var(--brown-400)">${p.name}</span>
             </div>
           </td>
@@ -625,7 +652,12 @@ async function openProductEditor(id) {
   if (!id) {
     // New product form — clear fields
     document.getElementById("editor-product-name").textContent = "New Product";
-    ["edit-product-name", "edit-price"].forEach((f) => {
+    [
+      "edit-product-name",
+      "edit-price",
+      "edit-description",
+      "edit-category-id",
+    ].forEach((f) => {
       const el = document.getElementById(f);
       if (el) el.value = "";
     });
@@ -639,8 +671,12 @@ async function openProductEditor(id) {
     document.getElementById("editor-product-name").textContent = p.name;
     const nameEl = document.getElementById("edit-product-name");
     const priceEl = document.getElementById("edit-price");
+    const descEl = document.getElementById("edit-description");
+    const catEl = document.getElementById("edit-category-id");
     if (nameEl) nameEl.value = p.name;
     if (priceEl) priceEl.value = p.price;
+    if (descEl) descEl.value = p.description || "";
+    if (catEl) catEl.value = p.category_id || "";
     switchProductTab(
       "general",
       document.querySelector("#product-editor-tabs .pill-tab"),
@@ -650,15 +686,80 @@ async function openProductEditor(id) {
   }
 }
 
-async function saveProduct() {
-  const name = document.getElementById("edit-product-name")?.value.trim();
-  const price = parseFloat(document.getElementById("edit-price")?.value);
-  if (!name || isNaN(price)) {
-    alert("Name and price are required.");
+function productThumb() {
+  return `<div class="product-thumb" style="display:flex;align-items:center;justify-content:center">
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="color:var(--brown-100)">
+      <path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/>
+      <line x1="7" y1="7" x2="7.01" y2="7"/>
+    </svg>
+  </div>`;
+}
+
+async function createProduct() {
+  const name = document.getElementById("new-product-name")?.value.trim();
+  const price = parseFloat(document.getElementById("new-product-price")?.value);
+  const category_id = parseInt(
+    document.getElementById("new-product-category")?.value,
+  );
+  const description =
+    document.getElementById("new-product-description")?.value.trim() || "";
+
+  if (!name || isNaN(price) || !category_id) {
+    showToast("Name, price and category are required.", "error");
     return;
   }
 
-  const body = { name, price };
+  try {
+    const res = await fetch(`${API}/products.php`, {
+      method: "POST",
+      credentials: "include",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ name, price, category_id, description }),
+    });
+    const data = await res.json();
+    if (data.success) {
+      closeModal("modal-add-product");
+      // Clear fields
+      [
+        "new-product-name",
+        "new-product-price",
+        "new-product-description",
+      ].forEach((id) => {
+        const el = document.getElementById(id);
+        if (el) el.value = "";
+      });
+      renderProductsTable();
+      showToast("Product created successfully.", "ok");
+    } else {
+      showToast(data.error || "Failed to create product.", "error");
+    }
+  } catch (err) {
+    console.error("[admin]", err);
+    showToast("Network error.", "error");
+  }
+}
+
+async function saveProduct() {
+  const name = document.getElementById("edit-product-name")?.value.trim();
+  const price = parseFloat(document.getElementById("edit-price")?.value);
+  const description =
+    document.getElementById("edit-description")?.value.trim() || "";
+  const category_id =
+    parseInt(document.getElementById("edit-category-id")?.value) || 0;
+
+  if (!name || isNaN(price)) {
+    showToast("Name and price are required.", "error");
+    return;
+  }
+
+  if (!editingProductId && !category_id) {
+    showToast("Category is required for new products.", "error");
+    return;
+  }
+
+  const body = { name, price, description };
+  if (category_id) body.category_id = category_id;
+
   const method = editingProductId ? "PUT" : "POST";
   const url = editingProductId
     ? `${API}/products.php?id=${editingProductId}`
@@ -675,13 +776,16 @@ async function saveProduct() {
     if (data.success) {
       showProductsList();
       renderProductsTable();
-      alert(editingProductId ? "Product updated." : "Product created.");
+      showToast(
+        editingProductId ? "Product updated." : "Product created.",
+        "ok",
+      );
     } else {
-      alert(data.error || "Save failed.");
+      showToast(data.error || "Save failed.", "error");
     }
   } catch (err) {
     console.error("[admin]", err);
-    alert("Network error.");
+    showToast("Network error.", "error");
   }
 }
 
@@ -695,11 +799,11 @@ async function deleteProduct(id, name) {
     const data = await res.json();
     if (data.success) {
       renderProductsTable();
-      alert("Product deleted.");
-    } else alert(data.error || "Delete failed.");
+      showToast("Product deleted.", "ok");
+    } else showToast(data.error || "Delete failed.", "error");
   } catch (err) {
     console.error("[admin]", err);
-    alert("Network error.");
+    showToast("Network error.", "error");
   }
 }
 
@@ -836,10 +940,13 @@ async function saveCustomerNote() {
       body: JSON.stringify({ admin_notes: notes }),
     });
     const data = await res.json();
-    alert(data.success ? "Note saved." : data.error || "Failed.");
+    showToast(
+      data.success ? "Note saved." : data.error || "Failed.",
+      data.success ? "ok" : "error",
+    );
   } catch (err) {
     console.error("[admin]", err);
-    alert("Network error.");
+    showToast("Network error.", "error");
   }
 }
 
@@ -966,7 +1073,7 @@ async function createPromotion() {
   const expiry = document.getElementById("promo-expiry")?.value;
 
   if (!code || !type || isNaN(value)) {
-    alert("Code, type and value are required.");
+    showToast("Code, type and value are required.", "error");
     return;
   }
 
@@ -988,11 +1095,11 @@ async function createPromotion() {
     if (data.success) {
       closeModal("modal-add-promo");
       renderPromotions();
-      alert("Promotion created.");
-    } else alert(data.error || "Failed.");
+      showToast("Promotion created.", "ok");
+    } else showToast(data.error || "Failed.", "error");
   } catch (err) {
     console.error("[admin]", err);
-    alert("Network error.");
+    showToast("Network error.", "error");
   }
 }
 
@@ -1006,10 +1113,10 @@ async function togglePromo(id, currentActive) {
     });
     const data = await res.json();
     if (data.success) renderPromotions();
-    else alert(data.error || "Failed.");
+    else showToast(data.error || "Failed.", "error");
   } catch (err) {
     console.error("[admin]", err);
-    alert("Network error.");
+    showToast("Network error.", "error");
   }
 }
 
@@ -1023,11 +1130,11 @@ async function deletePromo(id, code) {
     const data = await res.json();
     if (data.success) {
       renderPromotions();
-      alert("Promotion deleted.");
-    } else alert(data.error || "Failed.");
+      showToast("Promotion deleted.", "ok");
+    } else showToast(data.error || "Failed.", "error");
   } catch (err) {
     console.error("[admin]", err);
-    alert("Network error.");
+    showToast("Network error.", "error");
   }
 }
 
@@ -1102,7 +1209,7 @@ function filterInventoryByStatus(s) {
 async function updateStock(sizeId) {
   const qty = parseInt(document.getElementById(`inv-qty-${sizeId}`)?.value, 10);
   if (isNaN(qty) || qty < 0) {
-    alert("Enter a valid quantity.");
+    showToast("Enter a valid quantity.", "error");
     return;
   }
   try {
@@ -1115,11 +1222,11 @@ async function updateStock(sizeId) {
     const data = await res.json();
     if (data.success) {
       renderInventory();
-      alert("Stock updated.");
-    } else alert(data.error || "Failed.");
+      showToast("Stock updated.", "ok");
+    } else showToast(data.error || "Failed.", "error");
   } catch (err) {
     console.error("[admin]", err);
-    alert("Network error.");
+    showToast("Network error.", "error");
   }
 }
 
@@ -1127,14 +1234,14 @@ async function updateStock(sizeId) {
    USERS
 ───────────────────────────────────────────── */
 async function renderUsers() {
-  tableLoading("users-body", 6);
+  tableLoading("users-body", 5);
   try {
     const data = await fetchJSON(`${API}/users.php`);
     const body = document.getElementById("users-body");
     if (!body) return;
 
     if (!data.success || !data.users.length) {
-      body.innerHTML = `<tr><td colspan="6" class="text-muted text-sm" style="padding:16px">No staff users found.</td></tr>`;
+      body.innerHTML = `<tr><td colspan="5" class="text-muted text-sm" style="padding:16px">No staff users found.</td></tr>`;
     } else {
       const roleClass = { admin: "role-admin", staff: "role-staff" };
       body.innerHTML = data.users
@@ -1149,7 +1256,6 @@ async function renderUsers() {
           </td>
           <td class="text-muted">${u.email}</td>
           <td><span class="role-badge ${roleClass[u.role] || "role-staff"}">${u.role}</span></td>
-          <td>${statusBadge(u.is_verified ? "Active" : "Pending")}</td>
           <td class="text-muted">${new Date(u.created_at).toLocaleDateString("en-PH", { month: "short", day: "numeric", year: "numeric" })}</td>
           <td>
             <div class="flex-center gap-8">
@@ -1162,7 +1268,7 @@ async function renderUsers() {
     }
   } catch (err) {
     console.error("[admin]", err);
-    tableError("users-body", 6);
+    tableError("users-body", 5);
   }
 }
 
@@ -1171,7 +1277,7 @@ async function addStaff() {
   const email = document.getElementById("new-staff-email")?.value.trim();
   const role = document.getElementById("new-staff-role")?.value || "staff";
   if (!name || !email) {
-    alert("Name and email are required.");
+    showToast("Name and email are required.", "error");
     return;
   }
 
@@ -1186,11 +1292,11 @@ async function addStaff() {
     if (data.success) {
       closeModal("modal-add-staff");
       renderUsers();
-      alert("Staff member added.");
-    } else alert(data.error || "Failed.");
+      showToast("Staff member added.", "ok");
+    } else showToast(data.error || "Failed.", "error");
   } catch (err) {
     console.error("[admin]", err);
-    alert("Network error.");
+    showToast("Network error.", "error");
   }
 }
 
@@ -1204,11 +1310,11 @@ async function deleteUser(id, name) {
     const data = await res.json();
     if (data.success) {
       renderUsers();
-      alert("User removed.");
-    } else alert(data.error || "Failed.");
+      showToast("User removed.", "ok");
+    } else showToast(data.error || "Failed.", "error");
   } catch (err) {
     console.error("[admin]", err);
-    alert("Network error.");
+    showToast("Network error.", "error");
   }
 }
 
@@ -1219,7 +1325,7 @@ let contactStatusFilter = "";
 let contactPage = 1;
 
 async function renderContactMessages() {
-  tableLoading("contact-body", 6);
+  tableLoading("contact-body", 7);
   const params = new URLSearchParams({
     page: contactPage,
     limit: 20,
@@ -1231,29 +1337,58 @@ async function renderContactMessages() {
     if (!body) return;
 
     if (!data.success || !data.messages.length) {
-      body.innerHTML = `<tr><td colspan="6" class="text-muted text-sm" style="padding:16px">No messages found.</td></tr>`;
+      body.innerHTML = `<tr><td colspan="7" class="text-muted text-sm" style="padding:16px">No messages found.</td></tr>`;
     } else {
       body.innerHTML = data.messages
         .map(
           (m) => `
         <tr style="cursor:pointer;${m.status === "unread" ? "font-weight:600;" : ""}">
-          <td style="color:var(--brown-400)">${m.name}</td>
-          <td class="text-muted">${m.email}</td>
-          <td>${m.subject}</td>
-          <td class="text-muted text-sm" style="max-width:220px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${m.message}</td>
+          <td style="color:var(--brown-400)">${escapeHtml(m.name)}</td>
+          <td class="text-muted">${escapeHtml(m.email)}</td>
+          <td>${escapeHtml(m.subject)}</td>
+          <td class="text-muted text-sm" style="max-width:220px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escapeHtml(m.message)}</td>
           <td>${statusBadge(m.status)}</td>
           <td class="text-muted">${new Date(m.sent_at).toLocaleDateString("en-PH", { month: "short", day: "numeric", year: "numeric" })}</td>
           <td>
             <div class="flex-center gap-6">
               <button class="btn btn-outline btn-sm" onclick="viewContactMessage(${m.message_id})">View</button>
-              ${m.status !== "replied" ? `<button class="btn btn-outline btn-sm" onclick="markMessage(${m.message_id},'replied')">Replied</button>` : ""}
+              <button class="btn btn-primary btn-sm reply-contact-btn" data-id="${m.message_id}" data-email="${escapeHtml(m.email)}" data-subject="${escapeHtml(m.subject)}">
+                <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-right:3px"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>Reply
+              </button>
               ${m.status === "unread" ? `<button class="btn btn-outline btn-sm" onclick="markMessage(${m.message_id},'read')">Mark Read</button>` : ""}
             </div>
           </td>
         </tr>`,
         )
         .join("");
+
+      // Attach event listeners to the dynamically created reply buttons
+      document.querySelectorAll(".reply-contact-btn").forEach((btn) => {
+        btn.addEventListener("click", (e) => {
+          e.stopPropagation();
+          const id = parseInt(btn.dataset.id);
+          const email = btn.dataset.email;
+          const subject = btn.dataset.subject;
+          openReplyModal(id, email, subject);
+        });
+      });
+
+      renderPagination(
+        "contact-pagination",
+        data.total,
+        contactPage,
+        20,
+        `function(p){contactPage=p;renderContactMessages();}`,
+      );
     }
+    document.querySelectorAll(".reply-contact-btn").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        const id = parseInt(btn.dataset.id);
+        const email = btn.dataset.email;
+        const subject = btn.dataset.subject;
+        openReplyModal(id, email, subject);
+      });
+    });
 
     renderPagination(
       "contact-pagination",
@@ -1264,7 +1399,7 @@ async function renderContactMessages() {
     );
   } catch (err) {
     console.error("[admin]", err);
-    tableError("contact-body", 6);
+    tableError("contact-body", 7);
   }
 }
 
@@ -1279,9 +1414,26 @@ async function viewContactMessage(id) {
     const data = await fetchJSON(`${API}/contact-messages.php?id=${id}`);
     if (!data.success) return;
     const m = data.message;
-    alert(
-      `From: ${m.name} <${m.email}>\nSubject: ${m.subject}\n\n${m.message}`,
-    );
+    // Show in a simple overlay instead of alert
+    const existing = document.getElementById("_msg-overlay");
+    if (existing) existing.remove();
+    const overlay = document.createElement("div");
+    overlay.id = "_msg-overlay";
+    overlay.style.cssText =
+      "position:fixed;inset:0;background:rgba(28,17,9,.45);z-index:9000;display:flex;align-items:center;justify-content:center";
+    overlay.innerHTML = `<div style="background:#fff;border-radius:4px;padding:28px 32px;max-width:520px;width:90%;box-shadow:0 8px 32px rgba(28,17,9,.18)">
+      <div style="font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--brown-100);margin-bottom:6px">Contact Message</div>
+      <div style="font-weight:500;color:var(--brown-400);font-size:16px;margin-bottom:4px">${m.subject}</div>
+      <div style="color:var(--brown-200);font-size:13px;margin-bottom:14px">${m.name} &lt;${m.email}&gt;</div>
+      <div style="font-size:13.5px;color:var(--brown-300);line-height:1.7;white-space:pre-wrap;border-top:1px solid var(--beige-200);padding-top:12px">${m.message}</div>
+      <div style="margin-top:20px;text-align:right">
+        <button onclick="document.getElementById('_msg-overlay').remove()" style="background:var(--brown-400);color:#fff;border:none;border-radius:4px;padding:8px 18px;font-size:13px;cursor:pointer">Close</button>
+      </div>
+    </div>`;
+    overlay.addEventListener("click", (e) => {
+      if (e.target === overlay) overlay.remove();
+    });
+    document.body.appendChild(overlay);
     if (m.status === "unread") markMessage(id, "read");
   } catch (err) {
     console.error("[admin]", err);
@@ -1302,6 +1454,49 @@ async function markMessage(id, status) {
   }
 }
 
+function openReplyModal(id, email, subject) {
+  document.getElementById("reply-message-id").value = id;
+  document.getElementById("reply-to").value = email;
+  document.getElementById("reply-subject").value = "Re: " + subject;
+  document.getElementById("reply-body").value = "";
+  openModal("modal-reply-contact");
+}
+
+async function sendContactReply() {
+  const id = document.getElementById("reply-message-id").value;
+  const subject = document.getElementById("reply-subject").value.trim();
+  const body = document.getElementById("reply-body").value.trim();
+
+  if (!subject || !body) {
+    showToast("Subject and message are required.", "error");
+    return;
+  }
+
+  try {
+    const response = await fetch("/styled/php/admin/reply-contact.php", {
+      method: "POST",
+      credentials: "include",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        message_id: id,
+        reply_subject: subject,
+        reply_body: body,
+      }),
+    });
+    const data = await response.json();
+    if (data.success) {
+      closeModal("modal-reply-contact");
+      showToast("Reply sent successfully.", "ok");
+      renderContactMessages(); // refresh the list
+    } else {
+      showToast(data.error || "Failed to send reply.", "error");
+    }
+  } catch (err) {
+    console.error("sendContactReply error:", err);
+    showToast("Network error. Could not send reply.", "error");
+  }
+}
+
 /* ─────────────────────────────────────────────
    SETTINGS
 ───────────────────────────────────────────── */
@@ -1314,6 +1509,46 @@ function switchSettings(section, btn) {
     .forEach((b) => b.classList.remove("active"));
   document.getElementById("settings-" + section)?.classList.add("active");
   if (btn) btn.classList.add("active");
+}
+
+function saveSettings(section) {
+  // Collect all inputs/selects/textareas within the active settings section
+  const container = document.getElementById("settings-" + section);
+  if (!container) return;
+  const saved = {};
+  container
+    .querySelectorAll(
+      "input[type='text'], input[type='email'], input[type='number'], input[type='tel'], textarea, select",
+    )
+    .forEach((el) => {
+      if (el.id) saved[el.id] = el.value;
+    });
+  container.querySelectorAll("input[type='checkbox']").forEach((el) => {
+    if (el.id) saved[el.id] = el.checked;
+  });
+  try {
+    localStorage.setItem("styled_settings_" + section, JSON.stringify(saved));
+  } catch (e) {}
+  showToast("Settings saved.", "ok");
+}
+
+function loadSettings() {
+  ["general", "payments", "shipping", "notifications", "email"].forEach(
+    (section) => {
+      try {
+        const saved = JSON.parse(
+          localStorage.getItem("styled_settings_" + section) || "null",
+        );
+        if (!saved) return;
+        Object.entries(saved).forEach(([id, val]) => {
+          const el = document.getElementById(id);
+          if (!el) return;
+          if (el.type === "checkbox") el.checked = val;
+          else el.value = val;
+        });
+      } catch (e) {}
+    },
+  );
 }
 
 /* ─────────────────────────────────────────────
@@ -1600,6 +1835,7 @@ async function populateUserInfo() {
 ───────────────────────────────────────────── */
 function init() {
   populateUserInfo();
+  loadSettings();
   renderDashboard();
 }
 

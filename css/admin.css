@@ -1907,3 +1907,34 @@ code {
   border: 1px solid var(--beige-200);
   padding: 2px 6px !important;
 }
+
+/* ─── Toast notification ─────────────────────────────────────────────────── */
+.toast {
+  position: fixed;
+  bottom: 24px;
+  right: 28px;
+  background: var(--brown-400);
+  color: #fff;
+  padding: 11px 20px;
+  border-radius: 4px;
+  font-size: 13.5px;
+  font-family: var(--font-body);
+  box-shadow: 0 4px 16px rgba(28, 17, 9, 0.22);
+  opacity: 0;
+  transform: translateY(10px);
+  transition:
+    opacity 0.22s ease,
+    transform 0.22s ease;
+  pointer-events: none;
+  z-index: 9999;
+}
+.toast.show {
+  opacity: 1;
+  transform: translateY(0);
+}
+.toast.ok {
+  background: #3a7c52;
+}
+.toast.error {
+  background: #b94040;
+}

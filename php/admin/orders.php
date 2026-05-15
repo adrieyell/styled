@@ -94,7 +94,7 @@ if ($method === 'GET') {
 
     $stmt = $pdo->prepare("
         SELECT o.order_id, o.order_number, o.status, o.payment_method,
-               o.total_amount, o.created_at, o.tracking_number,
+               o.grand_total AS total_amount, o.created_at, o.tracking_number,
                o.estimated_delivery,
                u.full_name AS customer_name, u.email AS customer_email
         FROM orders o

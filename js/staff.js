@@ -1,10 +1,29 @@
-/* ============================================
-   STYLED STAFF DASHBOARD — staff.js
-   All mock arrays removed. Data fetched from same
-   admin APIs with role-restricted access.
-   ============================================ */
-
 "use strict";
+
+function showToast(msg, type = "") {
+  let t = document.getElementById("_staff_toast");
+  if (!t) {
+    t = document.createElement("div");
+    t.id = "_staff_toast";
+    t.className = "toast";
+    document.body.appendChild(t);
+  }
+  t.textContent = msg;
+  t.className = "toast" + (type ? " " + type : "");
+  t.classList.add("show");
+  clearTimeout(t._timer);
+  t._timer = setTimeout(() => t.classList.remove("show"), 3000);
+}
+
+function escapeHtml(str) {
+  if (!str) return "";
+  return str.replace(/[&<>]/g, function (m) {
+    if (m === "&") return "&amp;";
+    if (m === "<") return "&lt;";
+    if (m === ">") return "&gt;";
+    return m;
+  });
+}
 
 async function fetchJSON(url, options = {}) {
   const res = await fetch(url, { credentials: "include", ...options });
@@ -909,23 +928,56 @@ async function renderContactMessages() {
       body.innerHTML = data.messages
         .map(
           (m) => `
-        <tr style="${m.status === "unread" ? "font-weight:600;" : ""}">
-          <td style="color:var(--brown-400)">${m.name}</td>
-          <td class="text-muted">${m.email}</td>
-          <td>${m.subject}</td>
-          <td class="text-muted text-sm" style="max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${m.message}</td>
-          <td>${statusBadge(m.status)}</td>
-          <td class="text-muted">${new Date(m.sent_at).toLocaleDateString("en-PH", { month: "short", day: "numeric", year: "numeric" })}</td>
-          <td>
-            <div class="flex-center gap-6">
-              <button class="btn btn-outline btn-sm" onclick="viewContactMessage(${m.message_id})">View</button>
-              ${m.status === "unread" ? `<button class="btn btn-outline btn-sm" onclick="markMessage(${m.message_id},'read')">Mark Read</button>` : ""}
-            </div>
-          </td>
-        </tr>`,
+      <tr style="${m.status === "unread" ? "font-weight:600;" : ""}">
+        <td style="color:var(--brown-400)">${escapeHtml(m.name)}</td>
+        <td class="text-muted">${escapeHtml(m.email)}</td>
+        <td>${escapeHtml(m.subject)}</td>
+        <td class="text-muted text-sm" style="max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escapeHtml(m.message)}</td>
+        <td>${statusBadge(m.status)}</td>
+        <td class="text-muted">${new Date(m.sent_at).toLocaleDateString("en-PH", { month: "short", day: "numeric", year: "numeric" })}</td>
+        <td>
+          <div class="flex-center gap-6">
+            <button class="btn btn-outline btn-sm" onclick="viewContactMessage(${m.message_id})">View</button>
+            <button class="btn btn-primary btn-sm reply-contact-btn" data-id="${m.message_id}" data-email="${escapeHtml(m.email)}" data-subject="${escapeHtml(m.subject)}">
+              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-right:3px"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>Reply
+            </button>
+            ${m.status === "unread" ? `<button class="btn btn-outline btn-sm" onclick="markMessage(${m.message_id},'read')">Mark Read</button>` : ""}
+          </div>
+        </td>
+      </tr>
+    `,
         )
         .join("");
+
+      // Attach reply button listeners
+      document.querySelectorAll(".reply-contact-btn").forEach((btn) => {
+        btn.addEventListener("click", (e) => {
+          e.stopPropagation();
+          openReplyModal(
+            parseInt(btn.dataset.id),
+            btn.dataset.email,
+            btn.dataset.subject,
+          );
+        });
+      });
+
+      renderPagination(
+        "contact-pagination",
+        data.total,
+        contactPage,
+        20,
+        `function(p){contactPage=p;renderContactMessages();}`,
+      );
     }
+    document.querySelectorAll(".reply-contact-btn").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        openReplyModal(
+          parseInt(btn.dataset.id),
+          btn.dataset.email,
+          btn.dataset.subject,
+        );
+      });
+    });
 
     renderPagination(
       "contact-pagination",
@@ -951,9 +1003,31 @@ async function viewContactMessage(id) {
     const data = await fetchJSON(`${API}/contact-messages.php?id=${id}`);
     if (!data.success) return;
     const m = data.message;
-    alert(
-      `From: ${m.name} <${m.email}>\nSubject: ${m.subject}\n\n${m.message}`,
-    );
+
+    // Remove any existing overlay
+    const existing = document.getElementById("_msg-overlay");
+    if (existing) existing.remove();
+
+    const overlay = document.createElement("div");
+    overlay.id = "_msg-overlay";
+    overlay.style.cssText =
+      "position:fixed;inset:0;background:rgba(28,17,9,.45);z-index:9000;display:flex;align-items:center;justify-content:center";
+    overlay.innerHTML = `
+      <div style="background:#fff;border-radius:4px;padding:28px 32px;max-width:520px;width:90%;box-shadow:0 8px 32px rgba(28,17,9,.18)">
+        <div style="font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--brown-100);margin-bottom:6px">Contact Message</div>
+        <div style="font-weight:500;color:var(--brown-400);font-size:16px;margin-bottom:4px">${escapeHtml(m.subject)}</div>
+        <div style="color:var(--brown-200);font-size:13px;margin-bottom:14px">${escapeHtml(m.name)} &lt;${escapeHtml(m.email)}&gt;</div>
+        <div style="font-size:13.5px;color:var(--brown-300);line-height:1.7;white-space:pre-wrap;border-top:1px solid var(--beige-200);padding-top:12px">${escapeHtml(m.message)}</div>
+        <div style="margin-top:20px;text-align:right">
+          <button onclick="document.getElementById('_msg-overlay').remove()" style="background:var(--brown-400);color:#fff;border:none;border-radius:4px;padding:8px 18px;font-size:13px;cursor:pointer">Close</button>
+        </div>
+      </div>
+    `;
+    overlay.addEventListener("click", (e) => {
+      if (e.target === overlay) overlay.remove();
+    });
+    document.body.appendChild(overlay);
+
     if (m.status === "unread") markMessage(id, "read");
   } catch (err) {
     console.error("[staff]", err);
@@ -971,6 +1045,49 @@ async function markMessage(id, status) {
     renderContactMessages();
   } catch (err) {
     console.error("[staff]", err);
+  }
+}
+
+function openReplyModal(id, email, subject) {
+  document.getElementById("reply-message-id").value = id;
+  document.getElementById("reply-to").value = email;
+  document.getElementById("reply-subject").value = "Re: " + subject;
+  document.getElementById("reply-body").value = "";
+  openModal("modal-reply-contact");
+}
+
+async function sendContactReply() {
+  const id = document.getElementById("reply-message-id").value;
+  const subject = document.getElementById("reply-subject").value.trim();
+  const body = document.getElementById("reply-body").value.trim();
+
+  if (!subject || !body) {
+    showToast("Subject and message are required.", "error");
+    return;
+  }
+
+  try {
+    const res = await fetch("/styled/php/admin/reply-contact.php", {
+      method: "POST",
+      credentials: "include",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        message_id: id,
+        reply_subject: subject,
+        reply_body: body,
+      }),
+    });
+    const data = await res.json();
+    if (data.success) {
+      closeModal("modal-reply-contact");
+      showToast("Reply sent successfully.", "ok");
+      renderContactMessages();
+    } else {
+      showToast(data.error || "Failed to send reply.", "error");
+    }
+  } catch (err) {
+    console.error(err);
+    showToast("Network error. Could not send reply.", "error");
   }
 }
 

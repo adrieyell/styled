@@ -106,6 +106,82 @@
      MODALS
 ══════════════════════════════════════════════════════ -->
 
+    <!-- Reply Contact Message Modal -->
+    <div class="modal-overlay" id="modal-reply-contact">
+      <div class="modal">
+        <div class="modal-header">
+          <div class="modal-title">Reply to Message</div>
+          <button
+            class="btn btn-ghost btn-icon"
+            onclick="closeModal('modal-reply-contact')"
+          >
+            <svg
+              width="16"
+              height="16"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+            >
+              <line x1="18" y1="6" x2="6" y2="18" />
+              <line x1="6" y1="6" x2="18" y2="18" />
+            </svg>
+          </button>
+        </div>
+        <div class="modal-body">
+          <input type="hidden" id="reply-message-id" />
+          <div class="form-grid">
+            <div class="form-field full">
+              <label class="form-label">To</label>
+              <input
+                class="form-input"
+                type="text"
+                id="reply-to"
+                readonly
+                style="background: var(--beige-100); color: var(--brown-200)"
+              />
+            </div>
+            <div class="form-field full">
+              <label class="form-label">Subject</label>
+              <input class="form-input" type="text" id="reply-subject" />
+            </div>
+            <div class="form-field full">
+              <label class="form-label">Message</label>
+              <textarea
+                class="form-textarea"
+                id="reply-body"
+                rows="6"
+                placeholder="Write your reply…"
+              ></textarea>
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button
+            class="btn btn-outline"
+            onclick="closeModal('modal-reply-contact')"
+          >
+            Cancel
+          </button>
+          <button class="btn btn-primary" onclick="sendContactReply()">
+            <svg
+              width="13"
+              height="13"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              style="margin-right: 4px"
+            >
+              <line x1="22" y1="2" x2="11" y2="13" />
+              <polygon points="22 2 15 22 11 13 2 9 22 2" />
+            </svg>
+            Send Reply
+          </button>
+        </div>
+      </div>
+    </div>
+
     <!-- Add Product Modal -->
     <div class="modal-overlay" id="modal-add-product">
       <div class="modal">
@@ -135,32 +211,36 @@
               <input
                 class="form-input"
                 type="text"
+                id="new-product-name"
                 placeholder="e.g. Black Lace Tank"
               />
             </div>
             <div class="form-field">
               <label class="form-label">Price (₱)</label>
-              <input class="form-input" type="number" placeholder="0.00" />
+              <input
+                class="form-input"
+                type="number"
+                id="new-product-price"
+                placeholder="0.00"
+              />
             </div>
             <div class="form-field">
               <label class="form-label">Compare Price (₱)</label>
-              <input class="form-input" type="number" placeholder="0.00" />
+              <input
+                class="form-input"
+                type="number"
+                id="new-product-compare-price"
+                placeholder="0.00"
+              />
             </div>
             <div class="form-field">
               <label class="form-label">Category</label>
-              <select class="form-select">
-                <option>Outerwear</option>
-                <option>Knitwear</option>
-                <option>Bottoms</option>
-                <option>Dresses</option>
-                <option>Accessories</option>
-              </select>
-            </div>
-            <div class="form-field">
-              <label class="form-label">Status</label>
-              <select class="form-select">
-                <option>Active</option>
-                <option>Draft</option>
+              <select class="form-select" id="new-product-category">
+                <option value="1">Tops</option>
+                <option value="2">Bottoms</option>
+                <option value="3">Dresses</option>
+                <option value="4">Outerwear</option>
+                <option value="5">Accessories</option>
               </select>
             </div>
             <div class="form-field full">
@@ -168,30 +248,9 @@
               <textarea
                 class="form-textarea"
                 rows="3"
+                id="new-product-description"
                 placeholder="Product description..."
               ></textarea>
-            </div>
-            <div class="form-field full">
-              <label class="form-label">Images</label>
-              <div class="upload-area">
-                <svg
-                  width="24"
-                  height="24"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  stroke-width="1.5"
-                  style="color: var(--brown-100); margin: 0 auto 8px"
-                >
-                  <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
-                  <polyline points="17 8 12 3 7 8" />
-                  <line x1="12" y1="3" x2="12" y2="15" />
-                </svg>
-                <div style="font-size: 13px; color: var(--brown-200)">
-                  Drag & drop or click to upload
-                </div>
-                <div class="text-sm text-muted mt-4">PNG, JPG up to 10MB</div>
-              </div>
             </div>
           </div>
         </div>
@@ -202,7 +261,9 @@
           >
             Cancel
           </button>
-          <button class="btn btn-primary">Save Product</button>
+          <button class="btn btn-primary" onclick="createProduct()">
+            Save Product
+          </button>
         </div>
       </div>
     </div>
@@ -236,44 +297,47 @@
               <input
                 class="form-input"
                 type="text"
+                id="promo-code"
                 placeholder="e.g. SUMMER25"
               />
             </div>
             <div class="form-field">
               <label class="form-label">Type</label>
-              <select class="form-select">
-                <option>Percentage (%)</option>
-                <option>Fixed Amount (₱)</option>
-                <option>Free Shipping</option>
+              <select class="form-select" id="promo-type">
+                <option value="percent">Percentage (%)</option>
+                <option value="fixed">Fixed Amount (₱)</option>
               </select>
             </div>
             <div class="form-field">
               <label class="form-label">Discount Value</label>
-              <input class="form-input" type="number" placeholder="e.g. 20" />
+              <input
+                class="form-input"
+                type="number"
+                id="promo-value"
+                placeholder="e.g. 20"
+              />
             </div>
             <div class="form-field">
               <label class="form-label">Min. Spend (₱)</label>
-              <input class="form-input" type="number" placeholder="0.00" />
+              <input
+                class="form-input"
+                type="number"
+                id="promo-min-order"
+                placeholder="0.00"
+              />
             </div>
             <div class="form-field">
               <label class="form-label">Expiry Date</label>
-              <input class="form-input" type="date" />
+              <input class="form-input" type="date" id="promo-expiry" />
             </div>
             <div class="form-field">
               <label class="form-label">Usage Limit</label>
-              <input class="form-input" type="number" placeholder="Unlimited" />
-            </div>
-            <div class="form-field full">
-              <label class="toggle-wrap" style="gap: 12px">
-                <span class="toggle"
-                  ><input type="checkbox" checked /><span
-                    class="toggle-slider"
-                  ></span
-                ></span>
-                <span style="font-size: 13.5px; color: var(--brown-300)"
-                  >Auto-apply at checkout</span
-                >
-              </label>
+              <input
+                class="form-input"
+                type="number"
+                id="promo-limit"
+                placeholder="Unlimited"
+              />
             </div>
           </div>
         </div>
@@ -284,7 +348,9 @@
           >
             Cancel
           </button>
-          <button class="btn btn-primary">Create Promotion</button>
+          <button class="btn btn-primary" onclick="createPromotion()">
+            Create Promotion
+          </button>
         </div>
       </div>
     </div>
@@ -313,34 +379,29 @@
         </div>
         <div class="modal-body">
           <div class="form-grid">
-            <div class="form-field">
-              <label class="form-label">First Name</label>
-              <input class="form-input" type="text" placeholder="First name" />
-            </div>
-            <div class="form-field">
-              <label class="form-label">Last Name</label>
-              <input class="form-input" type="text" placeholder="Last name" />
+            <div class="form-field full">
+              <label class="form-label">Full Name</label>
+              <input
+                class="form-input"
+                type="text"
+                id="new-staff-name"
+                placeholder="Full name"
+              />
             </div>
             <div class="form-field full">
               <label class="form-label">Email</label>
               <input
                 class="form-input"
                 type="email"
+                id="new-staff-email"
                 placeholder="staff@styled.com"
               />
             </div>
             <div class="form-field">
               <label class="form-label">Role</label>
-              <select class="form-select">
-                <option>Admin</option>
-                <option>Staff</option>
-              </select>
-            </div>
-            <div class="form-field">
-              <label class="form-label">Status</label>
-              <select class="form-select">
-                <option>Active</option>
-                <option>Inactive</option>
+              <select class="form-select" id="new-staff-role">
+                <option value="admin">Admin</option>
+                <option value="staff" selected>Staff</option>
               </select>
             </div>
           </div>
@@ -352,7 +413,9 @@
           >
             Cancel
           </button>
-          <button class="btn btn-primary">Send Invite</button>
+          <button class="btn btn-primary" onclick="addStaff()">
+            Send Invite
+          </button>
         </div>
       </div>
     </div>
@@ -576,12 +639,13 @@
             >
               <select
                 class="filter-select"
+                id="analytics-date-filter"
                 style="height: 36px; font-size: 13px"
+                onchange="onAnalyticsDateChange(this.value)"
               >
-                <option>Last 7 days</option>
-                <option>Last 30 days</option>
-                <option>This month</option>
-                <option>Custom range</option>
+                <option value="7">Last 7 days</option>
+                <option value="30">Last 30 days</option>
+                <option value="90">This month</option>
               </select>
             </div>
             <button
@@ -684,8 +748,8 @@
                   </svg>
                 </div>
                 <div class="stat-label">Total Revenue</div>
-                <div class="stat-value">₱1,248,900</div>
-                <div class="stat-change up">
+                <div class="stat-value" id="stat-revenue">—</div>
+                <div class="stat-change up" id="stat-revenue-change">
                   <svg
                     width="12"
                     height="12"
@@ -696,7 +760,7 @@
                   >
                     <polyline points="18 15 12 9 6 15" />
                   </svg>
-                  +18.4% vs last 7 days
+                  Loading…
                 </div>
               </div>
               <div class="stat-card">
@@ -716,7 +780,7 @@
                   </svg>
                 </div>
                 <div class="stat-label">Orders</div>
-                <div class="stat-value">312</div>
+                <div class="stat-value" id="stat-orders">—</div>
                 <div class="stat-change up">
                   <svg
                     width="12"
@@ -728,7 +792,7 @@
                   >
                     <polyline points="18 15 12 9 6 15" />
                   </svg>
-                  +12.4% vs last 7 days
+                  vs last period
                 </div>
               </div>
               <div class="stat-card">
@@ -746,7 +810,7 @@
                   </svg>
                 </div>
                 <div class="stat-label">Avg. Order Value</div>
-                <div class="stat-value">₱4,003</div>
+                <div class="stat-value" id="stat-avg-order">—</div>
                 <div class="stat-change up">
                   <svg
                     width="12"
@@ -758,7 +822,7 @@
                   >
                     <polyline points="18 15 12 9 6 15" />
                   </svg>
-                  +8.7% vs last 7 days
+                  from analytics
                 </div>
               </div>
               <div class="stat-card">
@@ -775,7 +839,7 @@
                   </svg>
                 </div>
                 <div class="stat-label">Conversion Rate</div>
-                <div class="stat-value">2.31%</div>
+                <div class="stat-value" id="stat-conversion">—</div>
                 <div class="stat-change down">
                   <svg
                     width="12"
@@ -1224,9 +1288,31 @@
                   Edit Product
                 </div>
                 <div style="margin-left: auto; display: flex; gap: 8px">
-                  <button class="btn btn-danger btn-sm">Delete Product</button>
-                  <button class="btn btn-outline btn-sm">Cancel</button>
-                  <button class="btn btn-primary btn-sm">Save Changes</button>
+                  <button
+                    class="btn btn-danger btn-sm"
+                    onclick="
+                      editingProductId &&
+                        deleteProduct(
+                          editingProductId,
+                          document.getElementById('editor-product-name')
+                            .textContent,
+                        )
+                    "
+                  >
+                    Delete Product
+                  </button>
+                  <button
+                    class="btn btn-outline btn-sm"
+                    onclick="showProductsList()"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    class="btn btn-primary btn-sm"
+                    onclick="saveProduct()"
+                  >
+                    Save Changes
+                  </button>
                 </div>
               </div>
 
@@ -1283,10 +1369,8 @@
                         <textarea
                           class="form-textarea"
                           rows="4"
-                          id="edit-product-desc"
-                        >
-A timeless oversized wool coat crafted from premium blended wool. Designed for elegance, warmth, and versatility.</textarea
-                        >
+                          id="edit-description"
+                        ></textarea>
                       </div>
                       <div class="form-grid">
                         <div class="form-field">
@@ -1294,7 +1378,6 @@ A timeless oversized wool coat crafted from premium blended wool. Designed for e
                           <input
                             class="form-input"
                             type="number"
-                            value="24500"
                             id="edit-price"
                           />
                         </div>
@@ -1303,25 +1386,17 @@ A timeless oversized wool coat crafted from premium blended wool. Designed for e
                           <input
                             class="form-input"
                             type="number"
-                            value="30000"
                             id="edit-compare-price"
                           />
                         </div>
                         <div class="form-field">
                           <label class="form-label">Category</label>
-                          <select class="form-select">
-                            <option selected>Outerwear</option>
-                            <option>Knitwear</option>
-                            <option>Bottoms</option>
-                            <option>Dresses</option>
-                            <option>Accessories</option>
-                          </select>
-                        </div>
-                        <div class="form-field">
-                          <label class="form-label">Status</label>
-                          <select class="form-select">
-                            <option selected>Active</option>
-                            <option>Draft</option>
+                          <select class="form-select" id="edit-category-id">
+                            <option value="1">Tops</option>
+                            <option value="2">Bottoms</option>
+                            <option value="3">Dresses</option>
+                            <option value="4">Outerwear</option>
+                            <option value="5">Accessories</option>
                           </select>
                         </div>
                       </div>
@@ -1774,7 +1849,15 @@ Shop the Oversized Wool Coat at Styled — timeless luxury fashion for every mom
                         class="form-textarea"
                         placeholder="Add internal note…"
                         rows="2"
+                        id="profile-admin-notes"
                       ></textarea>
+                      <button
+                        class="btn btn-primary btn-sm"
+                        style="margin-top: 8px"
+                        onclick="saveCustomerNote()"
+                      >
+                        Save Note
+                      </button>
                     </div>
                   </div>
                   <div class="card">
@@ -2207,12 +2290,6 @@ Shop the Oversized Wool Coat at Styled — timeless luxury fashion for every mom
                 >
                   Email Templates
                 </button>
-                <button
-                  class="settings-nav-item"
-                  onclick="switchSettings('domain', this)"
-                >
-                  Domain
-                </button>
               </div>
 
               <div style="display: flex; flex-direction: column; gap: 16px">
@@ -2254,7 +2331,12 @@ Shop the Oversized Wool Coat at Styled — timeless luxury fashion for every mom
                     </div>
                   </div>
                   <div style="margin-top: 16px; text-align: right">
-                    <button class="btn btn-primary btn-sm">Save Changes</button>
+                    <button
+                      class="btn btn-primary btn-sm"
+                      onclick="saveSettings('general')"
+                    >
+                      Save Changes
+                    </button>
                   </div>
                 </div>
 
@@ -2269,21 +2351,6 @@ Shop the Oversized Wool Coat at Styled — timeless luxury fashion for every mom
                         </div>
                         <div class="text-sm text-muted">
                           Mobile wallet payments
-                        </div>
-                      </div>
-                      <label class="toggle"
-                        ><input type="checkbox" checked /><span
-                          class="toggle-slider"
-                        ></span
-                      ></label>
-                    </div>
-                    <div class="metric-row">
-                      <div>
-                        <div style="font-weight: 500; font-size: 13.5px">
-                          Maya
-                        </div>
-                        <div class="text-sm text-muted">
-                          Digital wallet & cards
                         </div>
                       </div>
                       <label class="toggle"
@@ -2315,11 +2382,19 @@ Shop the Oversized Wool Coat at Styled — timeless luxury fashion for every mom
                         </div>
                       </div>
                       <label class="toggle"
-                        ><input type="checkbox" /><span
+                        ><input type="checkbox" checked /><span
                           class="toggle-slider"
                         ></span
                       ></label>
                     </div>
+                  </div>
+                  <div style="margin-top: 16px; text-align: right">
+                    <button
+                      class="btn btn-primary btn-sm"
+                      onclick="saveSettings('payment')"
+                    >
+                      Save Changes
+                    </button>
                   </div>
                 </div>
 
@@ -2380,6 +2455,14 @@ Shop the Oversized Wool Coat at Styled — timeless luxury fashion for every mom
                         <option>Prices exclude tax</option>
                       </select>
                     </div>
+                  </div>
+                  <div style="margin-top: 16px; text-align: right">
+                    <button
+                      class="btn btn-primary btn-sm"
+                      onclick="saveSettings('shipping')"
+                    >
+                      Save Changes
+                    </button>
                   </div>
                 </div>
 
@@ -2487,8 +2570,7 @@ Shop the Oversized Wool Coat at Styled — timeless luxury fashion for every mom
                       <th>Name</th>
                       <th>Email</th>
                       <th>Role</th>
-                      <th>Status</th>
-                      <th>Last Active</th>
+                      <th>Joined</th>
                       <th></th>
                     </tr>
                   </thead>
@@ -2498,66 +2580,65 @@ Shop the Oversized Wool Coat at Styled — timeless luxury fashion for every mom
             </div>
           </div>
           <!-- /users -->
-        </div>
 
-        <!-- contact messages -->
-        <div class="page" id="page-contact">
-          <div class="page-header">
-            <div class="page-header-left">
-              <h2 class="section-title">Contact Messages</h2>
-              <p class="section-subtitle">
-                Messages submitted through the contact form
-              </p>
+          <!-- contact messages (inside page-body) -->
+          <div class="page" id="page-contact">
+            <div class="page-header">
+              <div class="page-header-left">
+                <h2 class="section-title">Contact Messages</h2>
+                <p class="section-subtitle">
+                  Messages submitted through the contact form
+                </p>
+              </div>
+              <div class="page-header-right">
+                <select
+                  class="filter-select"
+                  onchange="filterContactMessages(this.value)"
+                  style="height: 36px"
+                >
+                  <option value="">All Messages</option>
+                  <option value="unread">Unread</option>
+                  <option value="read">Read</option>
+                  <option value="replied">Replied</option>
+                </select>
+              </div>
             </div>
-            <div class="page-header-right">
-              <select
-                class="filter-select"
-                onchange="filterContactMessages(this.value)"
-                style="height: 36px"
-              >
-                <option value="">All Messages</option>
-                <option value="unread">Unread</option>
-                <option value="read">Read</option>
-                <option value="replied">Replied</option>
-              </select>
+
+            <div class="card" style="margin-top: 20px">
+              <div class="table-wrap">
+                <table class="data-table">
+                  <thead>
+                    <tr>
+                      <th>Name</th>
+                      <th>Email</th>
+                      <th>Subject</th>
+                      <th>Message</th>
+                      <th>Status</th>
+                      <th>Date</th>
+                      <th>Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody id="contact-body">
+                    <tr>
+                      <td
+                        colspan="7"
+                        style="
+                          text-align: center;
+                          color: var(--brown-100);
+                          padding: 24px;
+                        "
+                      >
+                        Loading…
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+              <div class="pagination" id="contact-pagination"></div>
             </div>
           </div>
-
-          <div class="card" style="margin-top: 20px">
-            <div class="table-wrap">
-              <table class="data-table">
-                <thead>
-                  <tr>
-                    <th>Name</th>
-                    <th>Email</th>
-                    <th>Subject</th>
-                    <th>Message</th>
-                    <th>Status</th>
-                    <th>Date</th>
-                    <th>Actions</th>
-                  </tr>
-                </thead>
-                <tbody id="contact-body">
-                  <tr>
-                    <td
-                      colspan="7"
-                      style="
-                        text-align: center;
-                        color: var(--brown-100);
-                        padding: 24px;
-                      "
-                    >
-                      Loading…
-                    </td>
-                  </tr>
-                </tbody>
-              </table>
-            </div>
-            <div class="pagination" id="contact-pagination"></div>
-          </div>
+          <!-- /contact messages -->
         </div>
-        <!-- /contact messages -->
-
         <!-- /page-body -->
       </div>
       <!-- /main-content -->
