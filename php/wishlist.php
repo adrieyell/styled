@@ -12,6 +12,13 @@ require_once __DIR__ . '/db.php';
 
 header('Content-Type: application/json');
 
+// Helper to fix image URL (same as in products.php)
+function fixImageUrl($url) {
+    if (empty($url)) return '/styled/assets/images/placeholder.jpg';
+    if (strpos($url, '/styled/') === 0) return $url;
+    return '/styled/' . ltrim($url, '/');
+}
+
 // ── Auth guard ────────────────────────────────────────────────────────────────
 if (empty($_SESSION['user_id'])) {
     ob_end_clean();
@@ -41,7 +48,7 @@ function fetch_wishlist_items(PDO $pdo, int $user_id): array {
                     (SELECT pi.image_url
                      FROM product_images pi
                      WHERE pi.product_id = p.product_id
-                     ORDER BY pi.image_id ASC
+                     ORDER BY pi.is_primary DESC, pi.image_id ASC
                      LIMIT 1),
                     ""
                 ) AS img,
@@ -57,11 +64,13 @@ function fetch_wishlist_items(PDO $pdo, int $user_id): array {
 
     $items = [];
     foreach ($rows as $row) {
+        // Fix image URL
+        $imgUrl = fixImageUrl($row['img']);
         $items[] = [
             'product_id'  => (int) $row['product_id'],
             'name'        => $row['name'],
             'price'       => '₱' . number_format((float) $row['price'], 2),
-            'img'         => $row['img'],
+            'img'         => $imgUrl,
             'category'    => $row['category'],
             'description' => $row['description'] ?? '',
         ];

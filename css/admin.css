@@ -1938,3 +1938,175 @@ code {
 .toast.error {
   background: #b94040;
 }
+
+#image-manager {
+  padding: 12px 0;
+}
+
+#existing-images-grid,
+#new-image-previews {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.image-card {
+  position: relative;
+  width: 120px;
+  border: 2px solid #ddd;
+  border-radius: 8px;
+  overflow: hidden;
+  background: #fafafa;
+}
+
+.image-card--primary {
+  border-color: #7c3aed;
+}
+
+.image-card--new {
+  border-style: dashed;
+  border-color: #6b7280;
+}
+
+.image-card img {
+  width: 100%;
+  height: 100px;
+  object-fit: cover;
+  display: block;
+}
+
+.image-card__badge {
+  position: absolute;
+  top: 4px;
+  left: 4px;
+  background: #7c3aed;
+  color: #fff;
+  font-size: 10px;
+  padding: 2px 5px;
+  border-radius: 4px;
+  font-weight: 600;
+  min-width: 4px;
+}
+
+.image-card__actions {
+  display: flex;
+  gap: 4px;
+  padding: 4px;
+  justify-content: center;
+  background: #f3f4f6;
+}
+
+.btn-make-primary,
+.btn-delete-image,
+.btn-remove-new {
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  font-size: 12px;
+  padding: 2px 4px;
+  border-radius: 4px;
+  transition: background 0.15s;
+}
+
+.btn-make-primary:hover {
+  background: #ede9fe;
+  color: #7c3aed;
+}
+.btn-delete-image:hover,
+.btn-remove-new:hover {
+  background: #fee2e2;
+  color: #dc2626;
+}
+
+.upload-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+  padding: 8px 14px;
+  border: 1px dashed #9ca3af;
+  border-radius: 8px;
+  font-size: 13px;
+  color: #6b7280;
+  transition:
+    border-color 0.15s,
+    color 0.15s;
+  margin-bottom: 8px;
+}
+
+.upload-label:hover {
+  border-color: #7c3aed;
+  color: #7c3aed;
+}
+.upload-label input[type="file"] {
+  display: none;
+}
+
+.no-images-msg {
+  color: #9ca3af;
+  font-size: 13px;
+}
+
+.product-image-thumb {
+  position: relative;
+  width: 80px;
+  height: 80px;
+  border-radius: 6px;
+  overflow: hidden;
+  border: 1px solid var(--beige-300);
+  background: var(--beige-100);
+  transition: all 0.2s;
+}
+.product-image-thumb.is-primary {
+  border: 2px solid var(--gold);
+}
+.product-image-thumb:hover .image-overlay {
+  opacity: 1;
+}
+.image-overlay {
+  position: absolute;
+  inset: 0;
+  background: rgba(28, 17, 9, 0.6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  opacity: 0;
+  transition: opacity 0.2s;
+}
+.image-btn {
+  background: #fff;
+  border: none;
+  border-radius: 20px;
+  width: 28px;
+  height: 28px;
+  font-size: 14px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s;
+}
+.image-btn:hover {
+  transform: scale(1.05);
+}
+.make-primary-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+.delete-image-btn:hover {
+  background: var(--red);
+  color: #fff;
+}
+.primary-badge {
+  position: absolute;
+  bottom: 4px;
+  left: 4px;
+  background: var(--gold);
+  color: #fff;
+  font-size: 9px;
+  padding: 2px 6px;
+  border-radius: 10px;
+  font-weight: 500;
+}

@@ -86,14 +86,34 @@ function showProductsError(message) {
         Try again
       </button>
     </div>`;
+
+  grid.querySelectorAll(".product-card").forEach((card) => {
+    card.addEventListener("click", async (e) => {
+      if (e.target.closest(".wish-btn") || e.target.closest(".btn-cart"))
+        return;
+      const productId = card.dataset.productId;
+      if (!productId) return;
+
+      try {
+        const res = await fetch(`/styled/php/products.php?id=${productId}`);
+        const data = await res.json();
+        if (data.success && data.product) {
+          openProductModal(data.product, data.product.category_slug);
+        } else {
+          showToast("Product details not available.");
+        }
+      } catch (err) {
+        console.error("Failed to load product:", err);
+        showToast("Error loading product.");
+      }
+    });
+  });
 }
 
-// Render Products
 async function renderProducts(cat) {
   const grid = document.getElementById("products-grid");
   const titleEl = document.getElementById("products-cat-title");
 
-  // Show static title immediately while we wait for the API
   const staticCat = CATEGORIES[cat];
   if (titleEl && staticCat) titleEl.textContent = staticCat.label;
 
@@ -103,7 +123,6 @@ async function renderProducts(cat) {
   let usedFallback = false;
 
   try {
-    // Pass price filter to the API when a range is active
     let min_price, max_price;
     if (activePriceRange !== "all") {
       [min_price, max_price] = activePriceRange.split("-").map(Number);
@@ -112,7 +131,6 @@ async function renderProducts(cat) {
     const raw = await fetchProducts({ category: cat, min_price, max_price });
     products = raw.map(normaliseProduct);
 
-    // Keep cache and search index fresh
     _updateProductCache(products);
     searchIndex = buildSearchIndex();
 
@@ -122,12 +140,10 @@ async function renderProducts(cat) {
   } catch (err) {
     console.warn("products.php fetch failed — using static fallback:", err);
     usedFallback = true;
-
     if (!staticCat) {
       showProductsError("Category not found.");
       return;
     }
-    // Build fallback products in the same normalised shape
     products = staticCat.products.map((p) => ({
       ...p,
       img: p.img,
@@ -135,14 +151,14 @@ async function renderProducts(cat) {
     }));
   }
 
-  // Client-side price filter (covers fallback path; API already filters on success)
+  // Client-side price filter (for fallback)
   const filtered = products.filter((p) => {
     const priceValue = p.price_num != null ? p.price_num : parsePrice(p.price);
     return productMatchesPrice(String(priceValue), activePriceRange);
   });
 
   if (filtered.length === 0) {
-    grid.innerHTML = `<div style="grid-column:1/-1;text-align:center;padding:60px 0;color:var(--text-muted);font-size:13px;letter-spacing:1px;">No products match this price range.</div>`;
+    grid.innerHTML = `<div style="grid-column:1/-1;text-align:center;padding:60px 0;color:var(--text-muted);">No products match this price range.</div>`;
     return;
   }
 
@@ -150,96 +166,176 @@ async function renderProducts(cat) {
 
   grid.innerHTML = filtered
     .map((p) => {
+      const imgSrc = p.primary_image || p.img || p.image || "";
+      // Format price with ₱
+      let formattedPrice = p.price;
+      if (typeof formattedPrice === "number") {
+        formattedPrice = `₱${formattedPrice.toFixed(2)}`;
+      } else if (
+        typeof formattedPrice === "string" &&
+        !formattedPrice.startsWith("₱")
+      ) {
+        formattedPrice = `₱${parseFloat(formattedPrice).toFixed(2)}`;
+      }
       const dotColors = p.colors || colors;
-      const imgSrc = p.img || p.image || "";
+
       return `
-    <div class="product-card" data-product-name="${p.name.replace(/"/g, "&quot;")}" data-category="${cat}">
-      <div class="product-img-wrap">
-        <button class="wish-btn ${isInWishlist(p.name) ? "active" : ""}" data-product-name="${p.name.replace(/"/g, "&quot;")}" data-product='${JSON.stringify({ name: p.name, price: p.price, img: imgSrc, description: p.description }).replace(/'/g, "&#39;")}'>
-          <svg class="wish-icon" viewBox="0 0 24 24"><path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.6l-1-1a5.5 5.5 0 0 0-7.8 7.8l1 1L12 21l7.8-7.8 1-1a5.5 5.5 0 0 0 0-7.6z" fill="currentColor"/></svg>
-        </button>
-        <img src="${imgSrc}" alt="${p.name}" loading="lazy" />
-      </div>
-      <p class="product-name">${p.name}</p>
-      <p class="product-price">${p.price}</p>
-      <div class="color-dots">
-        ${dotColors.map((c) => `<span class="color-dot" style="background:${c}"></span>`).join("")}
-      </div>
-      <button class="btn-cart" data-product='${JSON.stringify(p).replace(/'/g, "&#39;")}'>
-        <svg class="cart-btn-icon" viewBox="0 0 24 24"><path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z" fill="currentColor"/><line x1="3" y1="6" x2="21" y2="6" stroke="white" stroke-width="1.5"/><path d="M16 10a4 4 0 0 1-8 0" fill="none" stroke="white" stroke-width="1.5"/></svg>
-        Add to Cart
-      </button>
-    </div>
-  `;
+       <div class="product-card" data-product-id="${p.product_id}" data-product-name="${p.name.replace(/"/g, "&quot;")}" data-category="${cat}">
+          <div class="product-img-wrap">
+            <button class="wish-btn ${isInWishlist(p.name) ? "active" : ""}" 
+                    data-product-name="${p.name.replace(/"/g, "&quot;")}" 
+                    data-product='${JSON.stringify({ name: p.name, price: formattedPrice, img: imgSrc, description: p.description }).replace(/'/g, "&#39;")}'>
+              <svg class="wish-icon" viewBox="0 0 24 24"><path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.6l-1-1a5.5 5.5 0 0 0-7.8 7.8l1 1L12 21l7.8-7.8 1-1a5.5 5.5 0 0 0 0-7.6z" fill="currentColor"/></svg>
+            </button>
+            <img src="${imgSrc}" alt="${p.name}" loading="lazy" onerror="this.src='/styled/assets/images/placeholder.jpg'" />
+          </div>
+          <p class="product-name">${p.name}</p>
+          <p class="product-price">${formattedPrice}</p>
+          <div class="color-dots">
+            ${dotColors.map((c) => `<span class="color-dot" style="background:${c}"></span>`).join("")}
+          </div>
+          <button class="btn-cart" data-product-id="${p.product_id}" data-product-category="${cat}" data-product='${JSON.stringify({ ...p, price: formattedPrice }).replace(/'/g, "&#39;")}'>
+            <svg class="cart-btn-icon" viewBox="0 0 24 24"><path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z" fill="currentColor"/><line x1="3" y1="6" x2="21" y2="6" stroke="white" stroke-width="1.5"/><path d="M16 10a4 4 0 0 1-8 0" fill="none" stroke="white" stroke-width="1.5"/></svg>
+            Add to Cart
+          </button>
+        </div>
+      `;
     })
     .join("");
 
-  // Product card click → open modal (but not on button clicks)
+  // ── Wishlist button handler ─────────────────────────────
+  const wishlistHandler = (e) => {
+    e.stopPropagation();
+    const btn = e.currentTarget;
+    const productData = JSON.parse(btn.dataset.product.replace(/&#39;/g, "'"));
+    toggleWishlistItem(productData);
+    btn.classList.toggle("active", isInWishlist(productData.name));
+  };
+
+  grid.querySelectorAll(".wish-btn").forEach((btn) => {
+    btn.removeEventListener("click", wishlistHandler);
+    btn.addEventListener("click", wishlistHandler);
+  });
+
+  // ── Product card click (opens modal) ────────────────────
   grid.querySelectorAll(".product-card").forEach((card) => {
-    card.addEventListener("click", (e) => {
+    card.addEventListener("click", async (e) => {
       if (e.target.closest(".wish-btn") || e.target.closest(".btn-cart"))
         return;
-      const productName = card.dataset.productName;
-      const categoryKey = card.dataset.category;
-      const product = findCachedProduct(productName, categoryKey);
-      if (product) openProductModal(product, categoryKey);
+      const productId = card.dataset.productId;
+      if (!productId) return;
+      try {
+        const res = await fetch(`/styled/php/products.php?id=${productId}`);
+        const data = await res.json();
+        if (data.success && data.product) {
+          const prod = data.product;
+          let modalPrice = prod.price;
+          if (typeof modalPrice === "number") {
+            modalPrice = `₱${modalPrice.toFixed(2)}`;
+          } else if (
+            typeof modalPrice === "string" &&
+            !modalPrice.startsWith("₱")
+          ) {
+            modalPrice = `₱${parseFloat(modalPrice).toFixed(2)}`;
+          }
+          const modalProduct = {
+            product_id: prod.product_id,
+            name: prod.name,
+            price: modalPrice,
+            img:
+              prod.images?.find((img) => img.is_primary)?.image_url ||
+              prod.primary_image ||
+              "",
+            description: prod.description,
+            colors: ["#2c1f14", "#7a6a5a", "#c9b99a"],
+          };
+          openProductModal(modalProduct, data.product.category_slug);
+        } else {
+          showToast("Product details not available.");
+        }
+      } catch (err) {
+        console.error("Failed to load product:", err);
+        showToast("Error loading product.");
+      }
     });
   });
 
-  // Wishlist button
-  grid.querySelectorAll(".wish-btn").forEach((btn) => {
-    btn.addEventListener("click", (e) => {
-      e.stopPropagation();
-      const product = JSON.parse(btn.dataset.product.replace(/&#39;/g, "'"));
-      toggleWishlistItem(product);
-      btn.classList.toggle("active", isInWishlist(product.name));
-    });
-  });
+  // ── Add to Cart button handler ──────────────────────────
+  const cartButtonHandler = async (e) => {
+    e.stopPropagation();
+    const btn = e.currentTarget;
+    const productId = btn.dataset.productId;
+    const category = btn.dataset.productCategory;
+    const user = getCurrentUser();
 
-  // Add to Cart button
-  // For categories with sizing → open the modal so the user picks a size first.
-  // For accessories (no size) → add directly to cart.
-  grid.querySelectorAll(".btn-cart").forEach((btn) => {
-    btn.addEventListener("click", (e) => {
-      e.stopPropagation();
-      const product = JSON.parse(btn.dataset.product.replace(/&#39;/g, "'"));
+    if (!user) {
+      showToast("Please login to add to cart");
+      return;
+    }
 
-      // If this category has sizing, open the modal so the user picks a size first
-      if (!NO_SIZE_CATEGORIES.has(cat)) {
-        const card = btn.closest(".product-card");
-        const productName = card.dataset.productName;
-        // findCachedProduct covers both the API cache and static fallback data,
-        // but static products lack product_id; fall back to the btn's own data-product
-        const found = findCachedProduct(productName, cat) || product;
-        if (found) openProductModal(found, cat);
-        return;
+    // If the category has size variants, open the modal to let user choose a size.
+    if (!NO_SIZE_CATEGORIES.has(category)) {
+      // Re‑fetch the full product from API to ensure we have all details (including available sizes)
+      try {
+        const res = await fetch(`/styled/php/products.php?id=${productId}`);
+        const data = await res.json();
+        if (data.success && data.product) {
+          const prod = data.product;
+          let modalPrice = prod.price;
+          if (typeof modalPrice === "number") {
+            modalPrice = `₱${modalPrice.toFixed(2)}`;
+          } else if (
+            typeof modalPrice === "string" &&
+            !modalPrice.startsWith("₱")
+          ) {
+            modalPrice = `₱${parseFloat(modalPrice).toFixed(2)}`;
+          }
+          const modalProduct = {
+            product_id: prod.product_id,
+            name: prod.name,
+            price: modalPrice,
+            img:
+              prod.images?.find((img) => img.is_primary)?.image_url ||
+              prod.primary_image ||
+              "",
+            description: prod.description,
+            colors: ["#2c1f14", "#7a6a5a", "#c9b99a"],
+          };
+          openProductModal(modalProduct, category);
+        } else {
+          showToast("Could not load product details.");
+        }
+      } catch (err) {
+        console.error("Failed to load product for modal:", err);
+        showToast("Error loading product details.");
       }
-
-      // Accessories: add directly (no size needed)
-      const user = getCurrentUser();
-      if (!user) {
-        showToast("Please login to add to cart");
-        return;
-      }
-      if (!product.product_id) {
-        showToast("Could not add item — please try again.");
-        return;
-      }
-      (async () => {
-        await saveCart({ product_id: product.product_id, size: "", qty: 1 });
-        await getCart();
-      })();
-
+    } else {
+      // Accessories: add directly to cart (no size needed)
+      await saveCart({ product_id: productId, size: "", qty: 1 });
+      await getCart();
+      showToast("Added to cart!");
       btn.innerHTML = `<svg style="width:14px;height:14px;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>Added!`;
-      btn.style.background = "#2c1f14";
-      btn.style.color = "white";
+      btn.style.background = "#3a6b4a";
       setTimeout(() => {
         btn.innerHTML = `<svg class="cart-btn-icon" viewBox="0 0 24 24"><path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z" fill="currentColor"/><line x1="3" y1="6" x2="21" y2="6" stroke="white" stroke-width="1.5"/><path d="M16 10a4 4 0 0 1-8 0" fill="none" stroke="white" stroke-width="1.5"/></svg>Add to Cart`;
         btn.style.background = "";
-        btn.style.color = "";
       }, 1500);
-    });
+    }
+  };
+
+  grid.querySelectorAll(".btn-cart").forEach((btn) => {
+    btn.removeEventListener("click", cartButtonHandler);
+    btn.addEventListener("click", cartButtonHandler);
   });
+}
+
+function wishlistClickHandler(e) {
+  e.stopPropagation();
+  const btn = e.currentTarget;
+  const productData = JSON.parse(btn.dataset.product.replace(/&#39;/g, "'"));
+  toggleWishlistItem(productData);
+  // Update button active state immediately (optimistic)
+  btn.classList.toggle("active", isInWishlist(productData.name));
 }
 
 // Price Filter

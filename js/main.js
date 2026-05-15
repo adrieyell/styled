@@ -422,13 +422,14 @@ async function fetchProducts(filters = {}) {
  * (cart, wishlist, modal) which expects `img` not `image`.
  */
 function normaliseProduct(p) {
+  const primaryImg = p.primary_image || p.image || "";
   return {
     product_id: p.product_id,
     name: p.name,
     price: p.price,
     price_num: p.price_num,
-    img: p.image,
-    image: p.image,
+    img: primaryImg,
+    image: primaryImg,
     description: p.description || "",
     category: p.category,
     category_name: p.category_name,

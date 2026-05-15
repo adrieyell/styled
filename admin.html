@@ -225,15 +225,6 @@
               />
             </div>
             <div class="form-field">
-              <label class="form-label">Compare Price (₱)</label>
-              <input
-                class="form-input"
-                type="number"
-                id="new-product-compare-price"
-                placeholder="0.00"
-              />
-            </div>
-            <div class="form-field">
               <label class="form-label">Category</label>
               <select class="form-select" id="new-product-category">
                 <option value="1">Tops</option>
@@ -252,6 +243,47 @@
                 placeholder="Product description..."
               ></textarea>
             </div>
+            <!-- 👇 NEW IMAGE UPLOAD SECTION -->
+            <div class="form-field full">
+              <label class="form-label">Product Images</label>
+              <div class="upload-area" style="margin-bottom: 8px">
+                <input
+                  type="file"
+                  id="new-product-images"
+                  accept="image/jpeg,image/png,image/webp"
+                  multiple
+                  style="display: none"
+                />
+                <button
+                  type="button"
+                  class="btn btn-outline btn-sm"
+                  onclick="
+                    document.getElementById('new-product-images').click()
+                  "
+                >
+                  Select Images (multiple allowed)
+                </button>
+                <div
+                  style="
+                    font-size: 12px;
+                    color: var(--brown-100);
+                    margin-top: 6px;
+                  "
+                >
+                  First image will be the primary.
+                </div>
+              </div>
+              <div
+                id="new-product-image-preview"
+                style="
+                  display: flex;
+                  gap: 8px;
+                  flex-wrap: wrap;
+                  margin-top: 8px;
+                "
+              ></div>
+            </div>
+            <!-- 👆 END NEW SECTION -->
           </div>
         </div>
         <div class="modal-footer">
@@ -1213,10 +1245,10 @@
                   onchange="filterProductsByCategory(this.value)"
                 >
                   <option value="">All Categories</option>
-                  <option>Outerwear</option>
-                  <option>Knitwear</option>
+                  <option>Tops</option>
                   <option>Bottoms</option>
                   <option>Dresses</option>
+                  <option>Outerwear</option>
                   <option>Accessories</option>
                 </select>
                 <button
@@ -1402,8 +1434,12 @@
                       </div>
                     </div>
                     <div class="card">
-                      <div class="card-title mb-16">Images</div>
-                      <div class="upload-area">
+                      <div class="card-title mb-16">Product Images</div>
+                      <div
+                        class="upload-area"
+                        id="image-upload-area"
+                        style="margin-bottom: 16px"
+                      >
                         <svg
                           width="24"
                           height="24"
@@ -1417,67 +1453,54 @@
                           <polyline points="17 8 12 3 7 8" />
                           <line x1="12" y1="3" x2="12" y2="15" />
                         </svg>
-                        <div style="font-size: 13px; color: var(--brown-200)">
-                          Add more images — drag & drop or click to upload
+                        <div
+                          style="
+                            font-size: 13px;
+                            color: var(--brown-200);
+                            margin-bottom: 8px;
+                          "
+                        >
+                          Add new images — drag & drop or click to select (JPG,
+                          PNG, WEBP)
                         </div>
+                        <input
+                          type="file"
+                          id="new-product-images"
+                          accept="image/jpeg,image/png,image/webp"
+                          multiple
+                          style="display: none"
+                        />
+                        <button
+                          class="btn btn-outline btn-sm"
+                          onclick="
+                            document
+                              .getElementById('new-product-images')
+                              .click()
+                          "
+                        >
+                          Select Images
+                        </button>
                       </div>
+
                       <div
+                        id="product-images-container"
                         style="
                           display: flex;
-                          gap: 8px;
-                          margin-top: 12px;
+                          gap: 12px;
                           flex-wrap: wrap;
+                          margin-top: 12px;
                         "
-                        id="product-image-previews"
                       >
-                        <div
-                          style="
-                            width: 60px;
-                            height: 72px;
-                            border-radius: 4px;
-                            background: var(--beige-200);
-                            display: flex;
-                            align-items: center;
-                            justify-content: center;
-                            font-size: 10px;
-                            color: var(--brown-100);
-                            text-align: center;
-                          "
+                        <!-- Images will be displayed here dynamically -->
+                      </div>
+
+                      <div style="margin-top: 16px; text-align: right">
+                        <button
+                          class="btn btn-primary btn-sm"
+                          onclick="saveProductImages()"
                         >
-                          Image 1
-                        </div>
-                        <div
-                          style="
-                            width: 60px;
-                            height: 72px;
-                            border-radius: 4px;
-                            background: var(--beige-200);
-                            display: flex;
-                            align-items: center;
-                            justify-content: center;
-                            font-size: 10px;
-                            color: var(--brown-100);
-                            text-align: center;
-                          "
-                        >
-                          Image 2
-                        </div>
-                        <div
-                          style="
-                            width: 60px;
-                            height: 72px;
-                            border-radius: 4px;
-                            background: var(--beige-200);
-                            display: flex;
-                            align-items: center;
-                            justify-content: center;
-                            font-size: 10px;
-                            color: var(--brown-100);
-                            text-align: center;
-                          "
-                        >
-                          Image 3
-                        </div>
+                          Save Images
+                        </button>
                       </div>
                     </div>
                   </div>
@@ -1560,97 +1583,27 @@
                     <thead>
                       <tr>
                         <th>Size</th>
-                        <th>Color</th>
-                        <th>SKU</th>
                         <th>Stock</th>
-                        <th>Price</th>
+                        <th>SKU</th>
+                        <th></th>
                       </tr>
                     </thead>
-                    <tbody>
-                      <tr>
-                        <td>XS</td>
-                        <td>Camel</td>
-                        <td>OWC-XS-CAM</td>
-                        <td>
-                          <input
-                            class="form-input"
-                            style="width: 70px; height: 30px; padding: 0 8px"
-                            value="3"
-                          />
-                        </td>
-                        <td>₱24,500</td>
-                      </tr>
-                      <tr>
-                        <td>S</td>
-                        <td>Camel</td>
-                        <td>OWC-S-CAM</td>
-                        <td>
-                          <input
-                            class="form-input"
-                            style="width: 70px; height: 30px; padding: 0 8px"
-                            value="4"
-                          />
-                        </td>
-                        <td>₱24,500</td>
-                      </tr>
-                      <tr>
-                        <td>M</td>
-                        <td>Camel</td>
-                        <td>OWC-M-CAM</td>
-                        <td>
-                          <input
-                            class="form-input"
-                            style="width: 70px; height: 30px; padding: 0 8px"
-                            value="6"
-                          />
-                        </td>
-                        <td>₱24,500</td>
-                      </tr>
-                      <tr>
-                        <td>L</td>
-                        <td>Camel</td>
-                        <td>OWC-L-CAM</td>
-                        <td>
-                          <input
-                            class="form-input"
-                            style="width: 70px; height: 30px; padding: 0 8px"
-                            value="4"
-                          />
-                        </td>
-                        <td>₱24,500</td>
-                      </tr>
-                      <tr>
-                        <td>XL</td>
-                        <td>Camel</td>
-                        <td>OWC-XL-CAM</td>
-                        <td>
-                          <input
-                            class="form-input"
-                            style="width: 70px; height: 30px; padding: 0 8px"
-                            value="1"
-                          />
-                        </td>
-                        <td>₱24,500</td>
-                      </tr>
-                    </tbody>
+                    <tbody id="variants-table-body"></tbody>
                   </table>
                   <button
                     class="btn btn-outline btn-sm mt-16"
-                    style="margin-top: 16px"
+                    onclick="addVariantRow()"
                   >
-                    <svg
-                      width="13"
-                      height="13"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="currentColor"
-                      stroke-width="2"
-                    >
-                      <line x1="12" y1="5" x2="12" y2="19" />
-                      <line x1="5" y1="12" x2="19" y2="12" />
-                    </svg>
-                    Add Variant
+                    + Add Variant
                   </button>
+                  <div style="margin-top: 16px; text-align: right">
+                    <button
+                      class="btn btn-primary btn-sm"
+                      onclick="saveVariants()"
+                    >
+                      Save Variants
+                    </button>
+                  </div>
                 </div>
               </div>
 

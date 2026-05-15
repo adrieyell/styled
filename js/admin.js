@@ -1,5 +1,11 @@
 "use strict";
 
+let currentVariants = [];
+
+// Make sure no direct DELETE calls are made
+window.deleteImageDirect = function () {
+  showToast('Use the "Save Images" button to confirm deletion.', "error");
+};
 function escapeHtml(str) {
   if (!str) return "";
   return str
@@ -703,31 +709,52 @@ async function createProduct() {
   );
   const description =
     document.getElementById("new-product-description")?.value.trim() || "";
+  const imagesInput = document.getElementById("new-product-images");
+  const files = imagesInput ? Array.from(imagesInput.files) : [];
 
   if (!name || isNaN(price) || !category_id) {
     showToast("Name, price and category are required.", "error");
     return;
   }
 
+  if (files.length === 0) {
+    showToast("Please select at least one product image.", "error");
+    return;
+  }
+
+  // Build FormData
+  const formData = new FormData();
+  formData.append("name", name);
+  formData.append("price", price);
+  formData.append("category_id", category_id);
+  formData.append("description", description);
+  for (let i = 0; i < files.length; i++) {
+    formData.append("images[]", files[i]);
+  }
+
   try {
     const res = await fetch(`${API}/products.php`, {
       method: "POST",
       credentials: "include",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ name, price, category_id, description }),
+      body: formData,
     });
     const data = await res.json();
     if (data.success) {
       closeModal("modal-add-product");
-      // Clear fields
-      [
+      const fieldsToClear = [
         "new-product-name",
         "new-product-price",
         "new-product-description",
-      ].forEach((id) => {
+      ];
+      fieldsToClear.forEach((id) => {
         const el = document.getElementById(id);
         if (el) el.value = "";
       });
+      if (imagesInput) imagesInput.value = "";
+      const previewContainer = document.getElementById(
+        "new-product-image-preview",
+      );
+      if (previewContainer) previewContainer.innerHTML = "";
       renderProductsTable();
       showToast("Product created successfully.", "ok");
     } else {
@@ -1830,6 +1857,290 @@ async function populateUserInfo() {
   }
 }
 
+// ─────────────────────────────────────────────
+// PRODUCT IMAGES MANAGEMENT
+// ─────────────────────────────────────────────
+let productImagesState = []; // { image_id, image_url, is_primary }
+let imagesToDelete = [];
+let newPrimaryId = null;
+
+function displayProductImages(images) {
+  const container = document.getElementById("product-images-container");
+  if (!container) return;
+
+  productImagesState = images.map((img) => ({ ...img }));
+  imagesToDelete = [];
+  newPrimaryId = null;
+
+  if (!productImagesState.length) {
+    container.innerHTML =
+      '<div class="text-muted text-sm" style="padding: 12px; text-align: center;">No images yet. Upload some above.</div>';
+    return;
+  }
+
+  container.innerHTML = productImagesState
+    .map(
+      (img) => `
+        <div class="product-image-thumb" data-image-id="${img.image_id}" data-primary="${img.is_primary}">
+            <img src="/styled/${img.image_url}" alt="Product image" style="width: 100%; height: 100%; object-fit: cover; border-radius: 4px;">
+            <div class="image-overlay">
+                <button class="image-btn make-primary-btn" onclick="markImageAsPrimary(${img.image_id})" ${img.is_primary ? "disabled" : ""}>
+                    ★
+                </button>
+                <button class="image-btn delete-image-btn" onclick="markImageForDelete(${img.image_id})">
+                    ✕
+                </button>
+            </div>
+            ${img.is_primary ? '<span class="primary-badge">Primary</span>' : ""}
+        </div>
+    `,
+    )
+    .join("");
+}
+
+function markImageAsPrimary(imageId) {
+  newPrimaryId = imageId;
+  // Update UI
+  document.querySelectorAll(".product-image-thumb").forEach((el) => {
+    const id = parseInt(el.dataset.imageId);
+    if (id === imageId) {
+      el.dataset.primary = "1";
+      el.classList.add("is-primary");
+      const badge =
+        el.querySelector(".primary-badge") || document.createElement("span");
+      if (!badge.classList.contains("primary-badge")) {
+        badge.className = "primary-badge";
+        badge.textContent = "Primary";
+        el.appendChild(badge);
+      }
+      const makePrimaryBtn = el.querySelector(".make-primary-btn");
+      if (makePrimaryBtn) makePrimaryBtn.disabled = true;
+    } else {
+      el.dataset.primary = "0";
+      el.classList.remove("is-primary");
+      const badge = el.querySelector(".primary-badge");
+      if (badge) badge.remove();
+      const btn = el.querySelector(".make-primary-btn");
+      if (btn) btn.disabled = false;
+    }
+  });
+}
+
+function markImageForDelete(imageId) {
+  if (!imagesToDelete.includes(imageId)) {
+    imagesToDelete.push(imageId);
+  }
+  // Remove from UI
+  const thumb = document.querySelector(
+    `.product-image-thumb[data-image-id="${imageId}"]`,
+  );
+  if (thumb) thumb.remove();
+  // Remove from state
+  productImagesState = productImagesState.filter(
+    (img) => img.image_id !== imageId,
+  );
+}
+
+async function saveProductImages() {
+  if (!editingProductId) {
+    showToast("Save the product first before managing images.", "error");
+    return;
+  }
+
+  const fileInput = document.getElementById("new-product-images");
+  const files = fileInput ? Array.from(fileInput.files) : [];
+
+  // Build actions array
+  const actions = [];
+
+  // Deletions
+  imagesToDelete.forEach((imgId) => {
+    actions.push({ action: "delete", image_id: imgId });
+  });
+
+  // Primary change
+  if (newPrimaryId !== null) {
+    actions.push({ action: "set_primary", image_id: newPrimaryId });
+  }
+
+  const formData = new FormData();
+  formData.append("images_actions", JSON.stringify(actions));
+
+  // Append new files
+  files.forEach((file) => {
+    formData.append("new_images[]", file);
+  });
+
+  try {
+    const res = await fetch(`${API}/products.php?id=${editingProductId}`, {
+      method: "PUT",
+      credentials: "include",
+      body: formData,
+    });
+    const data = await res.json();
+    if (data.success) {
+      showToast("Product images updated.", "ok");
+      // Refresh images display
+      const refreshData = await fetchJSON(
+        `${API}/products.php?id=${editingProductId}`,
+      );
+      if (refreshData.success) {
+        displayProductImages(refreshData.product.images || []);
+        // Clear file input
+        if (fileInput) fileInput.value = "";
+        imagesToDelete = [];
+        newPrimaryId = null;
+      }
+    } else {
+      showToast(data.error || "Failed to update images.", "error");
+    }
+  } catch (err) {
+    console.error("[admin]", err);
+    showToast("Network error.", "error");
+  }
+}
+
+function renderVariants(sizes) {
+  const tbody = document.getElementById("variants-table-body");
+  if (!tbody) return;
+  tbody.innerHTML = "";
+  (sizes || []).forEach((size, idx) => {
+    const row = `
+      <tr>
+        <td>
+          <select class="form-select" data-variant-idx="${idx}" data-field="size" style="width:80px">
+            <option value="XS" ${size.size === "XS" ? "selected" : ""}>XS</option>
+            <option value="S" ${size.size === "S" ? "selected" : ""}>S</option>
+            <option value="M" ${size.size === "M" ? "selected" : ""}>M</option>
+            <option value="L" ${size.size === "L" ? "selected" : ""}>L</option>
+            <option value="XL" ${size.size === "XL" ? "selected" : ""}>XL</option>
+            <option value="XXL" ${size.size === "XXL" ? "selected" : ""}>XXL</option>
+          </select>
+        </td>
+        <td><input type="number" class="form-input" data-variant-idx="${idx}" data-field="stock" value="${size.stock_qty || 0}" style="width:80px"></td>
+        <td><input type="text" class="form-input" data-variant-idx="${idx}" data-field="sku" value="${size.sku || ""}" placeholder="SKU"></td>
+        <td><button class="btn btn-ghost btn-sm" onclick="removeVariant(${idx})">✕</button></td>
+      </tr>
+    `;
+    tbody.insertAdjacentHTML("beforeend", row);
+  });
+}
+
+function addVariantRow() {
+  currentVariants.push({ size: "M", stock_qty: 0, sku: "" });
+  renderVariants(currentVariants);
+}
+
+function removeVariant(idx) {
+  currentVariants.splice(idx, 1);
+  renderVariants(currentVariants);
+}
+
+async function saveVariants() {
+  if (!editingProductId) {
+    showToast("Save product first.", "error");
+    return;
+  }
+  const rows = document.querySelectorAll("#variants-table-body tr");
+  const variants = [];
+  rows.forEach((row) => {
+    const sizeSelect = row.querySelector('[data-field="size"]');
+    const stockInput = row.querySelector('[data-field="stock"]');
+    const skuInput = row.querySelector('[data-field="sku"]');
+    if (sizeSelect && stockInput) {
+      variants.push({
+        size: sizeSelect.value,
+        stock_qty: parseInt(stockInput.value) || 0,
+        sku: skuInput ? skuInput.value : "",
+      });
+    }
+  });
+  try {
+    const res = await fetch(`${API}/products.php?id=${editingProductId}`, {
+      method: "PUT",
+      credentials: "include",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ variants }),
+    });
+    const data = await res.json();
+    if (data.success) {
+      showToast("Variants saved.", "ok");
+      currentVariants = variants; // Keep local state in sync
+      renderProductsTable(); // refresh stock display in product list
+    } else showToast(data.error || "Failed", "error");
+  } catch (err) {
+    showToast("Network error", "error");
+  }
+}
+
+// Override openProductEditor to load and display images
+const originalOpenProductEditor = openProductEditor;
+openProductEditor = async function (id) {
+  editingProductId = id || null;
+  document.getElementById("products-list-view").style.display = "none";
+  document.getElementById("products-editor-view").style.display = "";
+
+  if (!id) {
+    document.getElementById("editor-product-name").textContent = "New Product";
+    [
+      "edit-product-name",
+      "edit-price",
+      "edit-description",
+      "edit-category-id",
+    ].forEach((f) => {
+      const el = document.getElementById(f);
+      if (el) el.value = "";
+    });
+    // Clear images container
+    const container = document.getElementById("product-images-container");
+    if (container)
+      container.innerHTML =
+        '<div class="text-muted text-sm">Save product first to add images.</div>';
+    // Clear variants
+    currentVariants = [];
+    renderVariants(currentVariants);
+    return;
+  }
+
+  try {
+    const data = await fetchJSON(`${API}/products.php?id=${id}`);
+    if (!data.success) return;
+    const p = data.product;
+    document.getElementById("editor-product-name").textContent = p.name;
+    const nameEl = document.getElementById("edit-product-name");
+    const priceEl = document.getElementById("edit-price");
+    const descEl = document.getElementById("edit-description");
+    const catEl = document.getElementById("edit-category-id");
+    if (nameEl) nameEl.value = p.name;
+    if (priceEl) priceEl.value = p.price;
+    if (descEl) descEl.value = p.description || "";
+    if (catEl) catEl.value = p.category_id || "";
+
+    // Display images
+    displayProductImages(p.images || []);
+
+    // Load variants into currentVariants and render
+    if (p.sizes && p.sizes.length) {
+      currentVariants = p.sizes.map((s) => ({
+        size: s.size,
+        stock_qty: s.stock_qty,
+        sku: s.sku || "",
+      }));
+    } else {
+      currentVariants = [];
+    }
+    renderVariants(currentVariants);
+
+    switchProductTab(
+      "general",
+      document.querySelector("#product-editor-tabs .pill-tab"),
+    );
+  } catch (err) {
+    console.error("[admin]", err);
+    showToast("Failed to load product details.", "error");
+  }
+};
+
 /* ─────────────────────────────────────────────
    INIT
 ───────────────────────────────────────────── */
@@ -1837,6 +2148,34 @@ function init() {
   populateUserInfo();
   loadSettings();
   renderDashboard();
+
+  // Preview selected images in the "Add Product" modal
+  const imageInput = document.getElementById("new-product-images");
+  if (imageInput) {
+    imageInput.addEventListener("change", function (e) {
+      const container = document.getElementById("new-product-image-preview");
+      if (!container) return;
+      container.innerHTML = "";
+      const files = Array.from(e.target.files);
+      files.forEach((file, idx) => {
+        const reader = new FileReader();
+        reader.onload = function (ev) {
+          const img = document.createElement("img");
+          img.src = ev.target.result;
+          img.style.width = "60px";
+          img.style.height = "60px";
+          img.style.objectFit = "cover";
+          img.style.borderRadius = "4px";
+          img.style.margin = "4px";
+          img.style.border =
+            idx === 0 ? "2px solid var(--gold)" : "1px solid var(--beige-300)";
+          img.title = idx === 0 ? "Primary image" : "";
+          container.appendChild(img);
+        };
+        reader.readAsDataURL(file);
+      });
+    });
+  }
 }
 
 document.addEventListener("DOMContentLoaded", init);

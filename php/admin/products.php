@@ -1,7 +1,7 @@
 <?php
 // ============================================
 // PRODUCTS API — php/admin/products.php
-// FIXED: Removed 'color' column (doesn't exist)
+// Complete product images + variant management
 // ============================================
 
 header('Content-Type: application/json');
@@ -17,13 +17,19 @@ if ($method === 'GET') {
 
     // Single product
     if (!empty($_GET['id'])) {
+        $id = (int) $_GET['id'];
+        if ($id <= 0) {
+            http_response_code(400);
+            echo json_encode(['success' => false, 'error' => 'Invalid product id.']);
+            exit;
+        }
         $stmt = $pdo->prepare("
             SELECT p.*, c.name AS category_name
             FROM products p
             LEFT JOIN categories c ON c.category_id = p.category_id
             WHERE p.product_id = ?
         ");
-        $stmt->execute([(int) $_GET['id']]);
+        $stmt->execute([$id]);
         $product = $stmt->fetch();
 
         if (!$product) {
@@ -37,8 +43,13 @@ if ($method === 'GET') {
         $sizes->execute([$product['product_id']]);
         $product['sizes'] = $sizes->fetchAll();
 
-        // Images
-        $imgs = $pdo->prepare("SELECT * FROM product_images WHERE product_id = ? ORDER BY sort_order ASC");
+        // Images — order by primary first, then image_id
+        $imgs = $pdo->prepare("
+            SELECT image_id, image_url, is_primary
+            FROM product_images
+            WHERE product_id = ?
+            ORDER BY is_primary DESC, image_id ASC
+        ");
         $imgs->execute([$product['product_id']]);
         $product['images'] = $imgs->fetchAll();
 
@@ -46,7 +57,7 @@ if ($method === 'GET') {
         exit;
     }
 
-    // List
+    // List products (admin sees all, no status filter)
     $page     = max(1, (int) ($_GET['page']     ?? 1));
     $limit    = min(50, max(1, (int) ($_GET['limit'] ?? 8)));
     $offset   = ($page - 1) * $limit;
@@ -75,7 +86,6 @@ if ($method === 'GET') {
     $totalStmt->execute($params);
     $totalCount = (int) $totalStmt->fetchColumn();
 
-    // REMOVED: p.color (doesn't exist in your table)
     $stmt = $pdo->prepare("
         SELECT p.product_id, p.name, p.price,
                c.name AS category,
@@ -92,7 +102,6 @@ if ($method === 'GET') {
     
     $products = $stmt->fetchAll();
     
-    // Add calculated status based on stock
     foreach ($products as &$product) {
         $stock = (int) $product['stock'];
         if ($stock == 0) {
@@ -114,14 +123,25 @@ if ($method === 'GET') {
     exit;
 }
 
-// ── POST: Create (admin only) ─────────────────────────────────────────────────
+// ── POST: Create product with multiple images (admin only) ───────────────────
 if ($method === 'POST') {
     requireAuth('admin');
 
-    $name        = trim($_POST['name']        ?? '');
-    $category_id = (int) ($_POST['category_id'] ?? 0);
-    $price       = (float) ($_POST['price']    ?? 0);
-    $description = trim($_POST['description'] ?? '');
+    // Check for JSON or multipart
+    $isJson = strpos($_SERVER['CONTENT_TYPE'] ?? '', 'application/json') !== false;
+    
+    if ($isJson) {
+        $body = json_decode(file_get_contents('php://input'), true) ?? [];
+        $name        = trim($body['name']        ?? '');
+        $category_id = (int) ($body['category_id'] ?? 0);
+        $price       = (float) ($body['price']    ?? 0);
+        $description = trim($body['description'] ?? '');
+    } else {
+        $name        = trim($_POST['name']        ?? '');
+        $category_id = (int) ($_POST['category_id'] ?? 0);
+        $price       = (float) ($_POST['price']    ?? 0);
+        $description = trim($_POST['description'] ?? '');
+    }
 
     if (!$name || !$category_id || !$price) {
         http_response_code(400);
@@ -129,81 +149,165 @@ if ($method === 'POST') {
         exit;
     }
 
-    // Handle image upload
-    $imagePath = null;
-    if (!empty($_FILES['image']['tmp_name'])) {
-        $uploadDir = __DIR__ . '/../../assets/images/products/';
-        if (!is_dir($uploadDir)) mkdir($uploadDir, 0775, true);
-        $ext       = strtolower(pathinfo($_FILES['image']['name'], PATHINFO_EXTENSION));
-        $allowed   = ['jpg', 'jpeg', 'png', 'webp'];
-        if (!in_array($ext, $allowed)) {
-            http_response_code(400);
-            echo json_encode(['success' => false, 'error' => 'Invalid image type.']);
-            exit;
-        }
-        $filename  = uniqid('prod_') . '.' . $ext;
-        move_uploaded_file($_FILES['image']['tmp_name'], $uploadDir . $filename);
-        $imagePath = 'assets/images/products/' . $filename;
-    }
-
-    // REMOVED: color column
+    // Insert product
     $stmt = $pdo->prepare("
-        INSERT INTO products (name, category_id, price, description, image_url, created_at)
-        VALUES (:name, :category_id, :price, :description, :image_url, NOW())
+        INSERT INTO products (name, category_id, price, description, created_at)
+        VALUES (:name, :category_id, :price, :description, NOW())
     ");
     $stmt->execute([
         ':name'        => $name,
         ':category_id' => $category_id,
         ':price'       => $price,
         ':description' => $description,
-        ':image_url'   => $imagePath,
     ]);
+    $productId = (int) $pdo->lastInsertId();
 
-    echo json_encode(['success' => true, 'product_id' => (int) $pdo->lastInsertId()]);
+    // Handle multiple image uploads (key = 'images[]')
+    if (!empty($_FILES['images']['tmp_name'][0])) {
+        $uploadDir = __DIR__ . '/../../assets/images/products/';
+        if (!is_dir($uploadDir)) mkdir($uploadDir, 0775, true);
+        
+        $allowed = ['jpg', 'jpeg', 'png', 'webp'];
+        $isFirst = true;
+        
+        foreach ($_FILES['images']['tmp_name'] as $index => $tmpName) {
+            if (empty($tmpName)) continue;
+            
+            $ext = strtolower(pathinfo($_FILES['images']['name'][$index], PATHINFO_EXTENSION));
+            if (!in_array($ext, $allowed)) continue;
+            
+            $filename = uniqid('prod_') . '.' . $ext;
+            move_uploaded_file($tmpName, $uploadDir . $filename);
+            $imageUrl = 'assets/images/products/' . $filename;
+            
+            // First image becomes primary by default
+            $isPrimary = $isFirst ? 1 : 0;
+            $isFirst = false;
+            
+            $imgStmt = $pdo->prepare("INSERT INTO product_images (product_id, image_url, is_primary) VALUES (?, ?, ?)");
+            $imgStmt->execute([$productId, $imageUrl, $isPrimary]);
+        }
+    }
+
+    echo json_encode(['success' => true, 'product_id' => $productId]);
     exit;
 }
 
-// ── PUT: Update (admin only) ──────────────────────────────────────────────────
+// ── PUT: Update product + images + variants (admin only) ─────────────────────
 if ($method === 'PUT') {
     requireAuth('admin');
-
+    
     $id = (int) ($_GET['id'] ?? 0);
     if (!$id) {
         http_response_code(400);
         echo json_encode(['success' => false, 'error' => 'Missing product id.']);
         exit;
     }
-
-    $body   = json_decode(file_get_contents('php://input'), true) ?? [];
-    $fields = [];
-    $params = [];
-
-    if (isset($body['name'])) {
-        $fields[] = 'name = ?';
-        $params[] = $body['name'];
+    
+    // Handle multipart vs JSON
+    $isMultipart = !empty($_FILES);
+    $imagesActions = [];
+    $body = [];
+    
+    if ($isMultipart) {
+        // Get images actions from JSON string field
+        if (!empty($_POST['images_actions'])) {
+            $imagesActions = json_decode($_POST['images_actions'], true) ?: [];
+        }
+        // For product fields, we need to read from $_POST (not JSON)
+        // But product fields are usually sent via JSON PUT, not multipart.
+        // However, for image updates we only expect images_actions.
+    } else {
+        $body = json_decode(file_get_contents('php://input'), true) ?? [];
+        $imagesActions = $body['images'] ?? [];
+        
+        // Update product fields from JSON
+        $fields = [];
+        $params = [];
+        if (isset($body['name'])) {
+            $fields[] = 'name = ?';
+            $params[] = $body['name'];
+        }
+        if (isset($body['description'])) {
+            $fields[] = 'description = ?';
+            $params[] = $body['description'];
+        }
+        if (isset($body['price'])) {
+            $fields[] = 'price = ?';
+            $params[] = (float) $body['price'];
+        }
+        if (isset($body['category_id'])) {
+            $fields[] = 'category_id = ?';
+            $params[] = (int) $body['category_id'];
+        }
+        if (!empty($fields)) {
+            $params[] = $id;
+            $pdo->prepare("UPDATE products SET " . implode(', ', $fields) . " WHERE product_id = ?")->execute($params);
+        }
+        
+        // ── Update variants (sizes) ─────────────────────────────────────────
+        if (isset($body['variants']) && is_array($body['variants'])) {
+            // Delete existing sizes for this product
+            $pdo->prepare("DELETE FROM product_sizes WHERE product_id = ?")->execute([$id]);
+            // Insert new ones
+            $insert = $pdo->prepare("INSERT INTO product_sizes (product_id, size, stock_qty, sku) VALUES (?, ?, ?, ?)");
+            foreach ($body['variants'] as $v) {
+                if (!empty($v['size'])) {
+                    $insert->execute([$id, $v['size'], (int)($v['stock_qty'] ?? 0), $v['sku'] ?? null]);
+                }
+            }
+        }
     }
-    if (isset($body['description'])) {
-        $fields[] = 'description = ?';
-        $params[] = $body['description'];
+    
+    // Process image actions (both JSON and multipart)
+    foreach ($imagesActions as $action) {
+        $actionType = $action['action'] ?? '';
+        $imageId = (int) ($action['image_id'] ?? 0);
+        
+        if ($actionType === 'delete' && $imageId) {
+            $pdo->prepare("DELETE FROM product_images WHERE image_id = ? AND product_id = ?")->execute([$imageId, $id]);
+        }
+        elseif ($actionType === 'set_primary' && $imageId) {
+            $pdo->prepare("UPDATE product_images SET is_primary = 0 WHERE product_id = ?")->execute([$id]);
+            $pdo->prepare("UPDATE product_images SET is_primary = 1 WHERE image_id = ?")->execute([$imageId]);
+        }
+        elseif ($actionType === 'add' && !empty($action['image_url'])) {
+            $isPrimary = isset($action['is_primary']) ? (int) $action['is_primary'] : 0;
+            $pdo->prepare("INSERT INTO product_images (product_id, image_url, is_primary) VALUES (?, ?, ?)")
+                ->execute([$id, $action['image_url'], $isPrimary]);
+        }
     }
-    if (isset($body['price'])) {
-        $fields[] = 'price = ?';
-        $params[] = (float) $body['price'];
+    
+    // Process newly uploaded files from multipart request (key = 'new_images[]')
+    if ($isMultipart && !empty($_FILES['new_images']['tmp_name'][0])) {
+        $uploadDir = __DIR__ . '/../../assets/images/products/';
+        if (!is_dir($uploadDir)) mkdir($uploadDir, 0775, true);
+        
+        $allowed = ['jpg', 'jpeg', 'png', 'webp'];
+        // Check if any images exist to determine primary
+        $existingCount = $pdo->prepare("SELECT COUNT(*) FROM product_images WHERE product_id = ?");
+        $existingCount->execute([$id]);
+        $hasImages = $existingCount->fetchColumn() > 0;
+        
+        foreach ($_FILES['new_images']['tmp_name'] as $index => $tmpName) {
+            if (empty($tmpName)) continue;
+            
+            $ext = strtolower(pathinfo($_FILES['new_images']['name'][$index], PATHINFO_EXTENSION));
+            if (!in_array($ext, $allowed)) continue;
+            
+            $filename = uniqid('prod_') . '.' . $ext;
+            move_uploaded_file($tmpName, $uploadDir . $filename);
+            $imageUrl = 'assets/images/products/' . $filename;
+            
+            // If no images yet, this becomes primary
+            $isPrimary = $hasImages ? 0 : 1;
+            $hasImages = true;
+            
+            $pdo->prepare("INSERT INTO product_images (product_id, image_url, is_primary) VALUES (?, ?, ?)")
+                ->execute([$id, $imageUrl, $isPrimary]);
+        }
     }
-    if (isset($body['category_id'])) {
-        $fields[] = 'category_id = ?';
-        $params[] = (int) $body['category_id'];
-    }
-
-    if (empty($fields)) {
-        http_response_code(400);
-        echo json_encode(['success' => false, 'error' => 'Nothing to update.']);
-        exit;
-    }
-
-    $params[] = $id;
-    $pdo->prepare("UPDATE products SET " . implode(', ', $fields) . " WHERE product_id = ?")->execute($params);
-
+    
     echo json_encode(['success' => true]);
     exit;
 }
@@ -213,17 +317,27 @@ if ($method === 'DELETE') {
     requireAuth('admin');
 
     $id = (int) ($_GET['id'] ?? 0);
-    if (!$id) {
+    if ($id <= 0) {
         http_response_code(400);
-        echo json_encode(['success' => false, 'error' => 'Missing product id.']);
+        echo json_encode(['success' => false, 'error' => 'Missing or invalid product id.']);
         exit;
     }
 
+    // Check if product exists
+    $check = $pdo->prepare("SELECT product_id FROM products WHERE product_id = ?");
+    $check->execute([$id]);
+    if (!$check->fetch()) {
+        http_response_code(404);
+        echo json_encode(['success' => false, 'error' => 'Product not found.']);
+        exit;
+    }
+
+    // Delete (images will cascade due to foreign key constraint)
     $pdo->prepare("DELETE FROM products WHERE product_id = ?")->execute([$id]);
+
     echo json_encode(['success' => true]);
     exit;
 }
 
 http_response_code(405);
 echo json_encode(['error' => 'Method not allowed']);
-?>
