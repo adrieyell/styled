@@ -1,138 +1,169 @@
 <?php
-require_once '../php/config.php'; // adjust to your actual config path
+// ============================================
+// CUSTOMER ORDERS API — php/orders.php
+// ============================================
 
+ini_set('display_errors', 0);
+error_reporting(E_ALL);
+session_start();
 header('Content-Type: application/json');
-header('Access-Control-Allow-Origin: *');
 
-function json_error(string $msg, int $code = 400): never {
-    http_response_code($code);
-    echo json_encode(['success' => false, 'error' => $msg]);
+require_once __DIR__ . '/db.php';
+
+$pdo = getPDO();
+$method = $_SERVER['REQUEST_METHOD'];
+
+// Auth check
+if (empty($_SESSION['user_id'])) {
+    http_response_code(401);
+    echo json_encode(['error' => 'Unauthorized', 'logged_in' => false]);
+    exit;
+}
+$user_id = (int) $_SESSION['user_id'];
+
+if ($method !== 'GET') {
+    http_response_code(405);
+    echo json_encode(['error' => 'Method not allowed']);
     exit;
 }
 
-function json_ok(mixed $data): never {
-    echo json_encode(['success' => true, 'data' => $data]);
+function formatPrice($num) {
+    return '₱' . number_format((float)$num, 2);
+}
+
+// Single order
+if (!empty($_GET['id'])) {
+    $order_number = trim($_GET['id']);
+    $stmt = $pdo->prepare("
+        SELECT o.order_id, o.order_number, o.status, o.payment_method,
+               o.grand_total AS total, o.created_at, o.tracking_number,
+               a.street, a.city, a.province, a.zip_code
+        FROM orders o
+        LEFT JOIN addresses a ON a.address_id = o.address_id
+        WHERE o.order_number = ? AND o.user_id = ?
+    ");
+    $stmt->execute([$order_number, $user_id]);
+    $order = $stmt->fetch(PDO::FETCH_ASSOC);
+    if (!$order) {
+        http_response_code(404);
+        echo json_encode(['success' => false, 'error' => 'Order not found.']);
+        exit;
+    }
+
+    // Items
+    $itemsStmt = $pdo->prepare("
+        SELECT oi.product_id, oi.qty, oi.unit_price, oi.size,
+               COALESCE(p.name, 'Product') AS product_name,
+               COALESCE(
+                   (SELECT pi.image_url FROM product_images pi
+                    WHERE pi.product_id = p.product_id AND pi.is_primary = 1 LIMIT 1),
+                   ''
+               ) AS img
+        FROM order_items oi
+        LEFT JOIN products p ON p.product_id = oi.product_id
+        WHERE oi.order_id = ?
+    ");
+    $itemsStmt->execute([$order['order_id']]);
+    $items = $itemsStmt->fetchAll();
+
+    $subtotal = 0;
+    foreach ($items as &$item) {
+        $item['price'] = formatPrice($item['unit_price']);
+        $subtotal += $item['unit_price'] * $item['qty'];
+    }
+
+    // Payment method display
+    $paymentMap = [
+        'cod' => 'Cash on Delivery',
+        'gcash' => 'GCash',
+        'card' => 'Credit/Debit Card',
+        'bank_transfer' => 'Bank Transfer'
+    ];
+    $paymentDisplay = $paymentMap[strtolower($order['payment_method'])] ?? ucfirst($order['payment_method']);
+    if (empty($paymentDisplay)) $paymentDisplay = '—';
+
+    $shippingFee = max(0, $order['total'] - $subtotal);
+    $address = implode(', ', array_filter([$order['street'], $order['city'], $order['province'], $order['zip_code']]));
+
+    // Timeline
+    $timelineStmt = $pdo->prepare("
+        SELECT step_label, occurred_at, note
+        FROM order_timeline
+        WHERE order_id = ?
+        ORDER BY occurred_at ASC
+    ");
+    $timelineStmt->execute([$order['order_id']]);
+    $timeline = $timelineStmt->fetchAll();
+    $steps = [];
+    foreach ($timeline as $t) {
+        $steps[] = [
+            'label' => $t['step_label'],
+            'date' => date('M d, Y', strtotime($t['occurred_at'])),
+            'done' => true,
+            'active' => false,
+        ];
+    }
+
+    $orderData = [
+        'id' => $order['order_number'],
+        'date' => date('M d, Y', strtotime($order['created_at'])),
+        'total' => formatPrice($order['total']),
+        'totalNum' => (float) $order['total'],
+        'status' => ucfirst($order['status']),
+        'payment' => $paymentDisplay,
+        'items' => $items,
+        'shipping' => [
+            'address' => $address ?: '—',
+            'cost' => $shippingFee,
+            'cost_display' => $shippingFee == 0 ? 'FREE' : formatPrice($shippingFee)
+        ],
+        'subtotal' => formatPrice($subtotal),
+        'subtotalNum' => $subtotal,
+        'tracking' => [
+            'steps' => $steps,
+            'tracking_number' => $order['tracking_number'] ?? null,
+            'estimated_delivery' => null,
+        ]
+    ];
+
+    echo json_encode(['success' => true, 'order' => $orderData]);
     exit;
 }
 
-$method     = $_SERVER['REQUEST_METHOD'];
-$product_id = isset($_GET['id']) ? (int)$_GET['id'] : null;
+// List orders
+$stmt = $pdo->prepare("
+    SELECT order_id, order_number, status, grand_total AS total, created_at
+    FROM orders
+    WHERE user_id = ?
+    ORDER BY created_at DESC
+");
+$stmt->execute([$user_id]);
+$rows = $stmt->fetchAll();
 
-// ── GET /products.php?id=X  →  single product with full images gallery ────────
-if ($method === 'GET' && $product_id) {
-    $stmt = $db->prepare(
-        "SELECT p.*, c.name AS category_name, c.slug AS category_slug
-         FROM   products p
-         JOIN   categories c ON c.category_id = p.category_id
-         WHERE  p.product_id = ? AND p.is_active = 1 AND p.status = 'active'"
-    );
-    $stmt->bind_param('i', $product_id);
-    $stmt->execute();
-    $product = $stmt->get_result()->fetch_assoc();
-    if (!$product) json_error('Product not found.', 404);
+$orders = [];
+foreach ($rows as $row) {
+    $imgStmt = $pdo->prepare("
+        SELECT COALESCE(p.name, 'Product') AS name,
+               COALESCE(
+                   (SELECT pi.image_url FROM product_images pi
+                    WHERE pi.product_id = oi.product_id AND pi.is_primary = 1 LIMIT 1),
+                   ''
+               ) AS img
+        FROM order_items oi
+        LEFT JOIN products p ON p.product_id = oi.product_id
+        WHERE oi.order_id = ?
+        LIMIT 1
+    ");
+    $imgStmt->execute([$row['order_id']]);
+    $firstItem = $imgStmt->fetch();
 
-    // All images (primary first)
-    $stmt2 = $db->prepare(
-        "SELECT image_id, image_url, is_primary
-         FROM   product_images
-         WHERE  product_id = ?
-         ORDER  BY is_primary DESC, image_id ASC"
-    );
-    $stmt2->bind_param('i', $product_id);
-    $stmt2->execute();
-    $images = $stmt2->get_result()->fetch_all(MYSQLI_ASSOC);
-
-    $product['images']        = $images;
-    // Convenience fields used by the legacy frontend
-    $product['primary_image'] = $images[0]['image_url'] ?? null;
-    $product['image_urls']    = array_column($images, 'image_url');
-
-    // Sizes / stock
-    $stmt3 = $db->prepare(
-        "SELECT size, stock_qty, sku
-         FROM   product_sizes
-         WHERE  product_id = ?
-         ORDER  BY FIELD(size,'XS','S','M','L','XL','XXL')"
-    );
-    $stmt3->bind_param('i', $product_id);
-    $stmt3->execute();
-    $product['sizes'] = $stmt3->get_result()->fetch_all(MYSQLI_ASSOC);
-
-    json_ok($product);
+    $orders[] = [
+        'id' => $row['order_number'],
+        'date' => date('M d, Y', strtotime($row['created_at'])),
+        'total' => formatPrice($row['total']),
+        'status' => ucfirst($row['status']),
+        'items' => $firstItem ? [$firstItem] : [],
+    ];
 }
 
-// ── GET /products.php  →  product listing with primary image + image count ────
-if ($method === 'GET') {
-    $where  = ["p.is_active = 1", "p.status = 'active'"];
-    $params = [];
-    $types  = '';
-
-    if (!empty($_GET['category'])) {
-        $where[]  = 'c.slug = ?';
-        $params[] = $_GET['category'];
-        $types   .= 's';
-    }
-    if (!empty($_GET['search'])) {
-        $where[]  = 'p.name LIKE ?';
-        $params[] = '%' . $db->real_escape_string($_GET['search']) . '%';
-        $types   .= 's';
-    }
-    if (!empty($_GET['min_price'])) {
-        $where[]  = 'COALESCE(p.sale_price, p.price) >= ?';
-        $params[] = (float)$_GET['min_price'];
-        $types   .= 'd';
-    }
-    if (!empty($_GET['max_price'])) {
-        $where[]  = 'COALESCE(p.sale_price, p.price) <= ?';
-        $params[] = (float)$_GET['max_price'];
-        $types   .= 'd';
-    }
-
-    $limit  = min((int)($_GET['limit'] ?? 20), 100);
-    $offset = (int)($_GET['offset']    ?? 0);
-
-    $sql = "SELECT p.*,
-                   c.name AS category_name,
-                   c.slug AS category_slug,
-                   pi.image_url AS primary_image,
-                   (SELECT COUNT(*) FROM product_images WHERE product_id = p.product_id) AS image_count
-            FROM   products p
-            JOIN   categories c ON c.category_id = p.category_id
-            LEFT JOIN product_images pi ON pi.product_id = p.product_id AND pi.is_primary = 1
-            WHERE  " . implode(' AND ', $where) . "
-            ORDER  BY p.created_at DESC
-            LIMIT  ? OFFSET ?";
-
-    $params[] = $limit;
-    $params[] = $offset;
-    $types   .= 'ii';
-
-    $stmt = $db->prepare($sql);
-    $stmt->bind_param($types, ...$params);
-    $stmt->execute();
-    $products = $stmt->get_result()->fetch_all(MYSQLI_ASSOC);
-
-    // Total count for pagination
-    $count_sql = "SELECT COUNT(*) AS total
-                  FROM   products p
-                  JOIN   categories c ON c.category_id = p.category_id
-                  WHERE  " . implode(' AND ', $where);
-    // Remove the last two params (limit/offset) for count query
-    $count_params = array_slice($params, 0, -2);
-    $count_types  = substr($types, 0, -2);
-    $cstmt = $db->prepare($count_sql);
-    if ($count_types) {
-        $cstmt->bind_param($count_types, ...$count_params);
-    }
-    $cstmt->execute();
-    $total = $cstmt->get_result()->fetch_assoc()['total'];
-
-    json_ok([
-        'products' => $products,
-        'total'    => (int)$total,
-        'limit'    => $limit,
-        'offset'   => $offset,
-    ]);
-}
-
-json_error('Method not allowed.', 405);
+echo json_encode(['success' => true, 'orders' => $orders]);

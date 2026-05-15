@@ -262,7 +262,7 @@ function updateTotals(subtotal) {
 async function applyPromo() {
   const code = document.getElementById("co-promo").value.trim().toUpperCase();
   if (!code) {
-    alert("Please enter a promo code.");
+    showToast("Please enter a promo code.", "error");
     return;
   }
   const cart = await getCart();
@@ -282,14 +282,14 @@ async function applyPromo() {
         discount_value: data.discount_value,
       };
       updateTotals(subtotal);
-      alert(data.message);
+      showToast(data.message, "ok");
     } else {
       appliedPromo = null;
       updateTotals(subtotal);
-      alert(data.message);
+      showToast(data.message, "error");
     }
   } catch (err) {
-    alert("Could not validate promo code. Please try again.");
+    showToast("Could not validate promo code. Please try again.", "error");
   }
 }
 

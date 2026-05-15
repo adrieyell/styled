@@ -67,7 +67,7 @@ if ($method === 'POST') {
         exit;
     }
 
-    // Generate a temporary password; in production, send an invite email instead
+    // Generate a temporary password
     $tempPassword = bin2hex(random_bytes(8));
     $hash         = password_hash($tempPassword, PASSWORD_DEFAULT);
     $role         = in_array($body['role'] ?? '', ['admin', 'staff']) ? $body['role'] : 'staff';
@@ -91,13 +91,15 @@ if ($method === 'POST') {
         VALUES (?, ?, 0, 1, 0, 0)
     ")->execute([$newUserId, $role]);
 
-    // TODO: Send invite email with $tempPassword
-    // mail($body['email'], 'You\'ve been invited to Styled Admin', "Temp password: $tempPassword");
+    // Send invitation email
+    require_once __DIR__ . '/../email-functions.php';
+    $emailSent = send_staff_invite_email($body['email'], $body['full_name'], $tempPassword, $role);
 
     echo json_encode([
         'success'  => true,
         'user_id'  => $newUserId,
-        'note'     => 'Temporary password generated. Implement email invite to deliver it.',
+        'email_sent' => $emailSent,
+        'message'  => $emailSent ? 'Staff added and invitation sent.' : 'Staff added but invitation email failed.',
     ]);
     exit;
 }

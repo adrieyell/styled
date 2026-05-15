@@ -19,7 +19,6 @@ if ($_SERVER['REQUEST_METHOD'] !== 'GET') {
 $pdo = getPDO();
 
 // ── Total revenue (delivered + shipped orders, not cancelled/refunded) ────────
-// FIXED: changed total_amount to grand_total
 $rev = $pdo->query("
     SELECT
         COALESCE(SUM(grand_total), 0)  AS total_revenue,
@@ -30,7 +29,6 @@ $rev = $pdo->query("
 ")->fetch();
 
 // ── Revenue by day (last 14 days) ─────────────────────────────────────────────
-// FIXED: changed total_amount to grand_total
 $revByDay = $pdo->query("
     SELECT
         DATE(created_at)            AS date,
@@ -85,7 +83,6 @@ $salesByCategory = array_map(fn($r) => [
 ], $catSales);
 
 // ── Top products ──────────────────────────────────────────────────────────────
-// FIXED: changed total_amount to grand_total in revenue calculation
 $topProducts = $pdo->query("
     SELECT
         p.product_id,
@@ -107,14 +104,60 @@ $convRate   = $totalUsers > 0
     ? round(((int) $rev['total_orders'] / $totalUsers) * 100, 2)
     : 0;
 
+// ── Percentage changes vs previous period ─────────────────────────────────────
+$today = date('Y-m-d');
+$sevenDaysAgo = date('Y-m-d', strtotime('-7 days'));
+$fourteenDaysAgo = date('Y-m-d', strtotime('-14 days'));
+
+// Revenue current vs previous
+$revChange = $pdo->prepare("
+    SELECT COALESCE(SUM(grand_total), 0) AS revenue
+    FROM orders
+    WHERE status NOT IN ('cancelled', 'refunded')
+      AND created_at >= ? AND created_at < ?
+");
+$revChange->execute([$fourteenDaysAgo, $sevenDaysAgo]);
+$prevRevenue = (float) $revChange->fetchColumn();
+
+$revChange->execute([$sevenDaysAgo, $today]);
+$currRevenue = (float) $revChange->fetchColumn();
+
+$revenueChangePercent = 0;
+if ($prevRevenue > 0) {
+    $revenueChangePercent = round((($currRevenue - $prevRevenue) / $prevRevenue) * 100, 1);
+} elseif ($currRevenue > 0) {
+    $revenueChangePercent = 100;
+}
+
+// Orders current vs previous
+$ordersChange = $pdo->prepare("
+    SELECT COUNT(*) AS cnt
+    FROM orders
+    WHERE status NOT IN ('cancelled', 'refunded')
+      AND created_at >= ? AND created_at < ?
+");
+$ordersChange->execute([$fourteenDaysAgo, $sevenDaysAgo]);
+$prevOrders = (int) $ordersChange->fetchColumn();
+
+$ordersChange->execute([$sevenDaysAgo, $today]);
+$currOrders = (int) $ordersChange->fetchColumn();
+
+$ordersChangePercent = 0;
+if ($prevOrders > 0) {
+    $ordersChangePercent = round((($currOrders - $prevOrders) / $prevOrders) * 100, 1);
+} elseif ($currOrders > 0) {
+    $ordersChangePercent = 100;
+}
+
 echo json_encode([
-    'total_revenue'      => (float) $rev['total_revenue'],
-    'total_orders'       => (int)   $rev['total_orders'],
-    'avg_order_value'    => (float) $rev['avg_order_value'],
-    'conversion_rate'    => $convRate,
-    'revenue_by_day'     => $revByDay,
-    'orders_by_status'   => $ordersByStatus,
-    'sales_by_category'  => $salesByCategory,
-    'top_products'       => $topProducts,
+    'total_revenue'           => (float) $rev['total_revenue'],
+    'total_orders'            => (int)   $rev['total_orders'],
+    'avg_order_value'         => (float) $rev['avg_order_value'],
+    'conversion_rate'         => $convRate,
+    'revenue_by_day'          => $revByDay,
+    'orders_by_status'        => $ordersByStatus,
+    'sales_by_category'       => $salesByCategory,
+    'top_products'            => $topProducts,
+    'revenue_change_percent'  => $revenueChangePercent,
+    'orders_change_percent'   => $ordersChangePercent,
 ]);
-?>

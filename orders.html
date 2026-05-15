@@ -195,10 +195,6 @@
             <p class="oe-title">You haven't placed any orders yet.</p>
             <a href="index.html" class="oe-cta">Start Shopping</a>
           </div>
-
-          <button class="btn-signout-bottom" id="signout-btn-list">
-            Sign Out
-          </button>
         </div>
 
         <!-- ── ORDER DETAIL VIEW ── -->
@@ -376,7 +372,7 @@
           }
         });
 
-        // ── 3. Wire both "Sign Out" buttons to the PHP logout endpoint ─────
+        // ── 3. Wire the sidebar "Sign Out" button to the PHP logout endpoint ──
         function doSignOut() {
           fetch("/styled/php/auth/logout.php", {
             method: "GET",
@@ -388,9 +384,7 @@
         }
 
         var btnSidebar = document.getElementById("os-signout");
-        var btnList = document.getElementById("signout-btn-list");
         if (btnSidebar) btnSidebar.addEventListener("click", doSignOut);
-        if (btnList) btnList.addEventListener("click", doSignOut);
       });
     </script>
   </body>

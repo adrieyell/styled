@@ -722,45 +722,6 @@
            1. DASHBOARD
       ═══════════════════════════════════ -->
           <div class="page active" id="page-dashboard">
-            <!-- Alert -->
-            <div class="alert alert-warning" style="margin-bottom: 20px">
-              <svg
-                width="16"
-                height="16"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                stroke-width="2"
-                style="flex-shrink: 0; margin-top: 1px"
-              >
-                <circle cx="12" cy="12" r="10" />
-                <line x1="12" y1="8" x2="12" y2="12" />
-                <line x1="12" y1="16" x2="12.01" y2="16" />
-              </svg>
-              <span
-                ><strong>5 orders</strong> need fulfillment.
-                <button
-                  onclick="
-                    navigate(
-                      'orders',
-                      document.querySelector('[onclick*=orders]'),
-                    )
-                  "
-                  style="
-                    background: none;
-                    border: none;
-                    cursor: pointer;
-                    color: var(--gold);
-                    font-weight: 500;
-                    font-size: 13.5px;
-                    padding: 0;
-                  "
-                >
-                  View orders →
-                </button></span
-              >
-            </div>
-
             <!-- Stats -->
             <div class="stats-grid">
               <div class="stat-card">
@@ -813,19 +774,7 @@
                 </div>
                 <div class="stat-label">Orders</div>
                 <div class="stat-value" id="stat-orders">—</div>
-                <div class="stat-change up">
-                  <svg
-                    width="12"
-                    height="12"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    stroke-width="2.5"
-                  >
-                    <polyline points="18 15 12 9 6 15" />
-                  </svg>
-                  vs last period
-                </div>
+                <div class="stat-change up" id="stat-orders-change"></div>
               </div>
               <div class="stat-card">
                 <div class="stat-icon">
@@ -2239,12 +2188,6 @@ Shop the Oversized Wool Coat at Styled — timeless luxury fashion for every mom
                 </button>
                 <button
                   class="settings-nav-item"
-                  onclick="switchSettings('email', this)"
-                >
-                  Email Templates
-                </button>
-                <button
-                  class="settings-nav-item"
                   onclick="switchSettings('domain', this)"
                 >
                   Domain
@@ -2446,39 +2389,6 @@ Shop the Oversized Wool Coat at Styled — timeless luxury fashion for every mom
                     >
                       Save Changes
                     </button>
-                  </div>
-                </div>
-
-                <!-- Email -->
-                <div class="settings-section card" id="settings-email">
-                  <div class="card-title mb-16">Email Templates</div>
-                  <div style="display: flex; flex-direction: column; gap: 10px">
-                    <div class="metric-row">
-                      <span style="font-size: 13.5px">Order Confirmation</span
-                      ><button class="btn btn-outline btn-sm">
-                        Edit Template
-                      </button>
-                    </div>
-                    <div class="metric-row">
-                      <span style="font-size: 13.5px"
-                        >Shipping Notification</span
-                      ><button class="btn btn-outline btn-sm">
-                        Edit Template
-                      </button>
-                    </div>
-                    <div class="metric-row">
-                      <span style="font-size: 13.5px"
-                        >Delivery Confirmation</span
-                      ><button class="btn btn-outline btn-sm">
-                        Edit Template
-                      </button>
-                    </div>
-                    <div class="metric-row">
-                      <span style="font-size: 13.5px">Refund Confirmation</span
-                      ><button class="btn btn-outline btn-sm">
-                        Edit Template
-                      </button>
-                    </div>
                   </div>
                 </div>
 

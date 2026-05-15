@@ -46,7 +46,7 @@ function generate_order_number(PDO $pdo): string {
         $order_number = "STY-{$date}-{$rand}";
         $stmt = $pdo->prepare('SELECT 1 FROM orders WHERE order_number = :on');
         $stmt->execute([':on' => $order_number]);
-    } while ($stmt->fetch()); // retry on the rare collision
+    } while ($stmt->fetch());
     return $order_number;
 }
 
@@ -57,51 +57,61 @@ if ($_mailerAvailable) {
     require_once __DIR__ . '/../vendor/autoload.php';
 }
 
+/**
+ * Send order confirmation email (FIXED: recalculate subtotal from items)
+ */
 function send_order_confirmation(
     string $toEmail,
     string $toName,
     string $orderNumber,
     array  $items,
     PDO    $pdo,
-    float  $subtotal,
+    float  $subtotal,        // kept for compatibility, but we recalc inside
     float  $shippingFee,
     float  $grandTotal,
     string $paymentMethod,
     array  $shippingAddress
 ): void {
+    // Recalculate subtotal from items to ensure consistency with displayed rows
+    $recalcSubtotal = 0;
+    foreach ($items as $item) {
+        $recalcSubtotal += $item['unit_price'] * $item['qty'];
+    }
+    // Use the recalculated value for display, but keep passed shipping/grand if needed
+    $subtotal = $recalcSubtotal;
+    
     // Build items HTML rows
     $itemsHtml = '';
     foreach ($items as $item) {
-        // Get product name from DB
         $stmt = $pdo->prepare('SELECT name FROM products WHERE product_id = :pid LIMIT 1');
         $stmt->execute([':pid' => $item['product_id']]);
         $product = $stmt->fetch(PDO::FETCH_ASSOC);
         $name    = $product ? htmlspecialchars($product['name']) : 'Product #' . $item['product_id'];
         $size    = $item['size'] ? ' (' . htmlspecialchars($item['size']) . ')' : '';
-        $lineTotal = '₱' . number_format($item['unit_price'] * $item['qty'], 2);
-        $unitPrice = '₱' . number_format($item['unit_price'], 2);
+        $lineTotal = $item['unit_price'] * $item['qty'];
+        $unitPrice = $item['unit_price'];
 
         $itemsHtml .= "
         <tr>
             <td style='padding:10px 8px;border-bottom:1px solid #f0ebe5;'>{$name}{$size}</td>
             <td style='padding:10px 8px;border-bottom:1px solid #f0ebe5;text-align:center;'>{$item['qty']}</td>
-            <td style='padding:10px 8px;border-bottom:1px solid #f0ebe5;text-align:right;'>{$unitPrice}</td>
-            <td style='padding:10px 8px;border-bottom:1px solid #f0ebe5;text-align:right;'>{$lineTotal}</td>
+            <td style='padding:10px 8px;border-bottom:1px solid #f0ebe5;text-align:right;'>₱" . number_format($unitPrice, 2) . "</td>
+            <td style='padding:10px 8px;border-bottom:1px solid #f0ebe5;text-align:right;'>₱" . number_format($lineTotal, 2) . "</td>
         </tr>";
     }
 
-    $shippingDisplay = $shippingFee === 0.0 ? 'FREE' : '₱' . number_format($shippingFee, 2);
+    $shippingDisplay = $shippingFee == 0.0 ? 'FREE' : '₱' . number_format($shippingFee, 2);
     $subtotalDisplay = '₱' . number_format($subtotal, 2);
     $grandDisplay    = '₱' . number_format($grandTotal, 2);
-    $paymentMap     = ['card' => 'Credit / Debit Card', 'gcash' => 'GCash', 'cod' => 'Cash on Delivery'];
-    $paymentDisplay = $paymentMap[strtolower($paymentMethod)] ?? ucfirst($paymentMethod);
+    $paymentMap      = ['card' => 'Credit / Debit Card', 'gcash' => 'GCash', 'cod' => 'Cash on Delivery'];
+    $paymentDisplay  = $paymentMap[strtolower($paymentMethod)] ?? ucfirst($paymentMethod);
 
     $addrLine = implode(', ', array_filter([
         $shippingAddress['street'] ?? '',
         $shippingAddress['city']   ?? '',
         $shippingAddress['province'] ?? '',
         $shippingAddress['zip_code'] ?? '',
-    ]));
+    ])) . ', Philippines';
 
     $firstName = htmlspecialchars($toName);
 
@@ -166,7 +176,7 @@ function send_order_confirmation(
                   <tr>
                     <td width="50%" style="vertical-align:top;padding-right:16px;">
                       <p style="margin:0 0 6px;font-weight:500;color:#7a6a5a;text-transform:uppercase;font-size:11px;letter-spacing:1px;">Shipping To</p>
-                      <p style="margin:0;line-height:1.6;">{$addrLine}<br>Philippines</p>
+                      <p style="margin:0;line-height:1.6;">{$addrLine}</p>
                     </td>
                     <td width="50%" style="vertical-align:top;">
                       <p style="margin:0 0 6px;font-weight:500;color:#7a6a5a;text-transform:uppercase;font-size:11px;letter-spacing:1px;">Payment Method</p>
@@ -188,7 +198,7 @@ function send_order_confirmation(
             </tr>
 
           </table>
-        </td></tr>
+        </td>
       </table>
     </body>
     </html>
@@ -216,16 +226,16 @@ function send_order_confirmation(
     $mail->isHTML(true);
     $mail->Subject = "Your Styled Order {$orderNumber} is Confirmed!";
     $mail->Body    = $html;
-    $mail->AltBody = "Hi {$toName}, your order {$orderNumber} has been confirmed. Total: {$grandDisplay}. Payment: {$paymentDisplay}. Ship to: {$addrLine}.";
+    $mail->AltBody = "Hi {$toName}, your order {$orderNumber} has been confirmed. Subtotal: {$subtotalDisplay}, Shipping: {$shippingDisplay}, Total: {$grandDisplay}. Payment: {$paymentDisplay}. Ship to: {$addrLine}.";
 
     $mail->send();
 }
 
+// ── Rest of checkout logic unchanged ─────────────────────────────────────────
 try {
     $pdo  = getPDO();
     $body = get_json_body();
 
-    // ── 1. Validate required top-level keys ───────────────────────────────────
     $items           = $body['items']            ?? [];
     $shipping_address = $body['shipping_address'] ?? [];
     $payment_method  = trim($body['payment_method'] ?? '');
@@ -255,7 +265,6 @@ try {
         exit;
     }
 
-    // ── 2. Validate & normalise items ─────────────────────────────────────────
     $validated_items = [];
     foreach ($items as $item) {
         $product_id = isset($item['product_id']) ? (int) $item['product_id'] : 0;
@@ -278,7 +287,6 @@ try {
         ];
     }
 
-    // ── 3. Calculate totals ───────────────────────────────────────────────────
     $subtotal = 0.0;
     foreach ($validated_items as $item) {
         $subtotal += $item['unit_price'] * $item['qty'];
@@ -287,10 +295,8 @@ try {
     $shipping_fee = $subtotal >= 1000 ? 0.0 : 150.0;
     $grand_total  = round($subtotal + $shipping_fee, 2);
 
-    // ── 4. Start transaction ──────────────────────────────────────────────────
     $pdo->beginTransaction();
 
-    // ── 5. Create or get address ──────────────────────────────────────────────
     $street   = trim($shipping_address['street']);
     $city     = trim($shipping_address['city']);
     $province = trim($shipping_address['province']);
@@ -323,7 +329,7 @@ try {
         );
         $ins_addr->execute([
             ':uid'      => $user_id,
-            ':label'    => 'Shipping',   // default label for checkout-created addresses
+            ':label'    => 'Shipping',
             ':street'   => $street,
             ':city'     => $city,
             ':province' => $province,
@@ -332,10 +338,8 @@ try {
         $address_id = (int) $pdo->lastInsertId();
     }
 
-    // ── 6. Generate unique order number ──────────────────────────────────────
     $order_number = generate_order_number($pdo);
 
-    // ── 7. Resolve promo_id (if a promo code was supplied) ───────────────────
     $promo_id = null;
     if ($promo_code !== '') {
         $promo_stmt = $pdo->prepare(
@@ -348,7 +352,6 @@ try {
         }
     }
 
-    // ── 8. Insert into orders ─────────────────────────────────────────────────
     $ins_order = $pdo->prepare(
         'INSERT INTO orders
              (user_id, address_id, order_number, subtotal, shipping_fee,
@@ -363,14 +366,13 @@ try {
         ':order_number'   => $order_number,
         ':subtotal'       => round($subtotal, 2),
         ':shipping_fee'   => $shipping_fee,
-        ':discount'       => 0.00,   // promo discount logic can be added here later
+        ':discount'       => 0.00,
         ':grand_total'    => $grand_total,
         ':payment_method' => $payment_method,
         ':promo_id'       => $promo_id,
     ]);
     $order_id = (int) $pdo->lastInsertId();
 
-    // ── 9. Insert order items ─────────────────────────────────────────────────
     $ins_item = $pdo->prepare(
         'INSERT INTO order_items (order_id, product_id, size, qty, unit_price)
          VALUES (:order_id, :product_id, :size, :qty, :unit_price)'
@@ -385,15 +387,11 @@ try {
         ]);
     }
 
-    // ── 10. Clear the user's cart ─────────────────────────────────────────────
     $del_cart = $pdo->prepare('DELETE FROM cart WHERE user_id = :uid');
     $del_cart->execute([':uid' => $user_id]);
 
-    // ── 11. Commit ────────────────────────────────────────────────────────────
     $pdo->commit();
 
-    // ── 12. Send confirmation email ───────────────────────────────────────────
-    // Fetch the customer's email and name for the confirmation
     $user_stmt = $pdo->prepare('SELECT email, full_name FROM users WHERE user_id = :uid LIMIT 1');
     $user_stmt->execute([':uid' => $user_id]);
     $user_row = $user_stmt->fetch(PDO::FETCH_ASSOC);
@@ -413,7 +411,6 @@ try {
                 $shipping_address
             );
         } catch (Throwable $mailErr) {
-            // Don't fail the order if email fails — just log it
             error_log('Order confirmation email failed: ' . $mailErr->getMessage());
         }
     }

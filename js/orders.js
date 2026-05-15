@@ -4,6 +4,7 @@ function getStatusClass(status) {
     Processing: "status-processing",
     Shipped: "status-shipped",
     Cancelled: "status-cancelled",
+    Pending: "status-pending",
   };
   return map[status] || "status-processing";
 }
@@ -15,9 +16,8 @@ function initUserInfo() {
     window.location.href = "auth.html";
     return;
   }
-
   const nameEl = document.getElementById("os-name");
-  const avatarEl = document.getElementById("os-avatar");
+  const avatarEl = document.getElementById("os-avatar"); // ← fixed
   if (nameEl)
     nameEl.innerHTML = `<em>${user.name?.split(" ")[0] || "there"}</em>`;
   if (avatarEl) {
@@ -32,76 +32,66 @@ function initUserInfo() {
   }
 }
 
-// ── FETCH ORDERS FROM API ────────────────────
+// ── FETCH ORDERS (list) ─────────────────────
 async function fetchOrders() {
-  const res = await fetch("php/orders.php", { credentials: "include" });
-
-  if (res.status === 401) {
-    window.location.href = "auth.html";
+  try {
+    const res = await fetch("php/orders.php", { credentials: "include" });
+    if (res.status === 401) {
+      window.location.href = "auth.html";
+      return [];
+    }
+    const data = await res.json();
+    return data.orders || [];
+  } catch (err) {
+    console.error("fetchOrders error:", err);
     return [];
   }
-
-  if (!res.ok) {
-    console.error("Orders API error:", res.status);
-    return [];
-  }
-
-  const data = await res.json();
-  return data.orders || [];
 }
 
-// ── FETCH SINGLE ORDER FROM API ──────────────
+// ── FETCH SINGLE ORDER (full detail) ────────
 async function fetchOrder(orderId) {
-  const res = await fetch(`php/orders.php?id=${encodeURIComponent(orderId)}`, {
-    credentials: "include",
-  });
-
-  if (res.status === 401) {
-    window.location.href = "auth.html";
+  try {
+    const res = await fetch(
+      `php/orders.php?id=${encodeURIComponent(orderId)}`,
+      { credentials: "include" },
+    );
+    if (res.status === 401) {
+      window.location.href = "auth.html";
+      return null;
+    }
+    const data = await res.json();
+    return data.order || null;
+  } catch (err) {
+    console.error("fetchOrder error:", err);
     return null;
   }
-
-  if (!res.ok) {
-    console.error("Order detail API error:", res.status);
-    return null;
-  }
-
-  const data = await res.json();
-  return data.order || null;
 }
 
-// ── RENDER ORDER LIST ────────────────────────
+// ── RENDER ORDER LIST ───────────────────────
 async function renderOrderList() {
   const container = document.getElementById("orders-container");
   const emptyEl = document.getElementById("orders-empty");
-
   if (container) {
     container.style.display = "flex";
     container.innerHTML = `<p style="color:#8c6d57;padding:2rem 0;text-align:center;width:100%">Loading orders…</p>`;
   }
-
   const orders = await fetchOrders();
-
   if (!orders || orders.length === 0) {
-    container.style.display = "none";
-    emptyEl.style.display = "flex";
+    if (container) container.style.display = "none";
+    if (emptyEl) emptyEl.style.display = "flex";
     return;
   }
-
-  container.style.display = "flex";
-  emptyEl.style.display = "none";
+  if (container) container.style.display = "flex";
+  if (emptyEl) emptyEl.style.display = "none";
 
   container.innerHTML = orders
     .map((order) => {
       const firstItem = order.items?.[0];
       const thumbSrc = firstItem?.img || "";
       const itemCount = order.items?.length || 1;
-      const statusClass = getStatusClass(order.status);
-
       const thumbHTML = thumbSrc
         ? `<img class="order-thumb" src="${thumbSrc}" alt="${firstItem?.name || ""}" onerror="this.style.display='none'" />`
         : `<div class="order-thumb-placeholder"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2"><path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/></svg></div>`;
-
       return `
       <div class="order-row" data-order-id="${order.id}">
         ${thumbHTML}
@@ -110,7 +100,7 @@ async function renderOrderList() {
           <p class="order-meta">${order.date} &bull; ${itemCount} item${itemCount !== 1 ? "s" : ""}</p>
         </div>
         <p class="order-price">${order.total}</p>
-        <span class="order-status ${statusClass}">${order.status}</span>
+        <span class="order-status ${getStatusClass(order.status)}">${order.status}</span>
         <div class="order-arrow">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7">
             <polyline points="9 18 15 12 9 6"/>
@@ -121,93 +111,118 @@ async function renderOrderList() {
     })
     .join("");
 
-  container.querySelectorAll(".order-row").forEach((row) => {
+  // 🔧 FIX: Always fetch full order details – never use the list object
+  document.querySelectorAll(".order-row").forEach((row) => {
     row.addEventListener("click", async () => {
       const orderId = row.dataset.orderId;
-      // Try already-fetched list first; fall back to individual API call
-      let order = orders.find((o) => o.id === orderId);
-      if (!order) {
-        order = await fetchOrder(orderId);
+      // Always fetch the full order from the server
+      const fullOrder = await fetchOrder(orderId);
+      if (fullOrder) {
+        openOrderDetail(fullOrder);
+      } else {
+        console.error("Failed to load order details for", orderId);
       }
-      if (order) openOrderDetail(order);
     });
   });
 }
-
-// ── RENDER ORDER DETAIL ──────────────────────
+function buildTrackingFromStatus(status, orderDate) {
+  const statusMap = {
+    Pending: 1,
+    Processing: 2,
+    Shipped: 3,
+    "Out for Delivery": 4,
+    Delivered: 5,
+    Cancelled: 1,
+  };
+  const stepLabels = [
+    "Order Placed",
+    "Processing",
+    "Shipped",
+    "Out for Delivery",
+    "Delivered",
+  ];
+  let doneCount = statusMap[status] || 1;
+  const steps = stepLabels.map((label, i) => {
+    let date = "—";
+    if (i === 0 && orderDate) date = orderDate;
+    return {
+      label: label,
+      date: date,
+      done: i + 1 <= doneCount,
+      active: i + 1 === doneCount && doneCount !== 5,
+    };
+  });
+  return { steps, tracking_number: null, estimated_delivery: null };
+}
+// ── RENDER ORDER DETAIL (uses full API response) ──
 function openOrderDetail(order) {
   document.getElementById("view-list").style.display = "none";
   document.getElementById("view-detail").style.display = "block";
   window.scrollTo({ top: 0, behavior: "smooth" });
 
-  // Header
   document.getElementById("od-num").textContent = order.id;
   const statusBadge = document.getElementById("od-status-badge");
   statusBadge.textContent = order.status;
   statusBadge.className = `od-status-badge ${getStatusClass(order.status)}`;
 
-  // Meta row
   document.getElementById("od-date").textContent = order.date;
   const itemCount = order.items?.length || 1;
   document.getElementById("od-items-count").textContent =
     `${itemCount} item${itemCount !== 1 ? "s" : ""}`;
   document.getElementById("od-total").textContent = order.total;
 
-  // Tracking stepper
-  // order.tracking is now { steps: [...], tracking_number, estimated_delivery }
-  // Keep backward compat: if it's still a plain array (mock data), wrap it.
-  const trackingData = normaliseTracking(order.tracking);
-  renderTrackingStepper(trackingData);
-
-  // Items list
-  renderOrderItems(order.items || []);
-
-  // Payment method
   const paymentEl = document.getElementById("od-payment");
   if (paymentEl) paymentEl.textContent = order.payment || "—";
-
-  // Address
-  const addressEl = document.getElementById("od-address");
-  addressEl.innerHTML = (order.shipping?.address || "—").replace(/\n/g, "<br>");
-
-  // Totals
-  const subtotal = order.totalNum - (order.shipping?.cost || 0);
-  const shipping = order.shipping?.cost || 0;
+  const trackingData = buildTrackingFromStatus(order.status, order.date);
+  renderTrackingStepper(trackingData);
+  renderOrderItems(order.items || []);
+  document.getElementById("od-address").innerHTML = (
+    order.shipping?.address || "—"
+  ).replace(/\n/g, "<br>");
   document.getElementById("od-subtotal").textContent =
-    "₱" + subtotal.toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+    order.subtotal || "₱0.00";
   document.getElementById("od-shipping").textContent =
-    shipping === 0 ? "FREE" : "₱" + shipping.toFixed(2);
+    order.shipping?.cost_display || "FREE";
   document.getElementById("od-grand").textContent = order.total;
 }
 
-// ── Normalise tracking payload ───────────────
-// API returns: { steps: [...], tracking_number, estimated_delivery }
-// Old mock data / legacy: plain array of step objects
-// Returns a unified object: { steps, tracking_number, estimated_delivery }
+function renderOrderItems(items) {
+  const list = document.getElementById("od-items-list");
+  if (!list) return;
+  if (!items.length) {
+    list.innerHTML = '<div class="od-item-row">No items found.</div>';
+    return;
+  }
+  list.innerHTML = items
+    .map(
+      (item) => `
+    <div class="od-item-row">
+      <img class="od-item-img" src="${item.img || ""}" alt="${item.product_name || "Product"}" onerror="this.style.opacity='0'" />
+      <div class="od-item-info">
+        <p class="od-item-name">${item.product_name || "Product"}</p>
+        <div class="od-item-meta">
+          ${item.size && item.size !== "—" ? `<span>Size: ${item.size}</span>` : ""}
+          <span>Qty: ${item.qty || 1}</span>
+        </div>
+      </div>
+      <p class="od-item-price">${item.price || "₱0.00"}</p>
+    </div>
+  `,
+    )
+    .join("");
+}
+
 function normaliseTracking(raw) {
-  if (!raw) {
+  if (!raw || !raw.steps || raw.steps.length === 0) {
     return {
       steps: buildFallbackSteps("pending"),
       tracking_number: null,
       estimated_delivery: null,
     };
   }
-  if (Array.isArray(raw)) {
-    // Legacy plain array — wrap it
-    return { steps: raw, tracking_number: null, estimated_delivery: null };
-  }
-  if (raw.steps && Array.isArray(raw.steps)) {
-    return raw;
-  }
-  // Unexpected shape — fall back
-  return {
-    steps: buildFallbackSteps("pending"),
-    tracking_number: null,
-    estimated_delivery: null,
-  };
+  return raw;
 }
 
-// ── Fallback stepper data (mock) used only when API is unavailable ────────────
 function buildFallbackSteps(status) {
   const statusMap = {
     pending: 1,
@@ -232,21 +247,16 @@ function buildFallbackSteps(status) {
   }));
 }
 
-// ── RENDER TRACKING STEPPER ──────────────────
 function renderTrackingStepper(trackingData) {
   const stepper = document.getElementById("tracking-stepper");
   if (!stepper) return;
-
   const steps = trackingData.steps || [];
   const trackingNumber = trackingData.tracking_number;
   const estimatedDelivery = trackingData.estimated_delivery;
-
-  // Determine the last done/active index
   let activeIdx = -1;
   steps.forEach((s, i) => {
     if (s.done || s.active) activeIdx = i;
   });
-
   const stepsHTML = steps
     .map((step, i) => {
       const isDone = i < activeIdx;
@@ -256,58 +266,14 @@ function renderTrackingStepper(trackingData) {
         : isActive
           ? "ts-step active"
           : "ts-step";
-
-      return `
-      <div class="${cls}">
-        <div class="ts-dot">
-          <svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5">
-            <polyline points="20 6 9 17 4 12"/>
-          </svg>
-        </div>
-        <p class="ts-label">${step.label}</p>
-        <p class="ts-date">${step.date !== "—" ? step.date : ""}</p>
-      </div>
-    `;
+      return `<div class="${cls}"><div class="ts-dot"><svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg></div><p class="ts-label">${step.label}</p><p class="ts-date">${step.date !== "—" ? step.date : ""}</p></div>`;
     })
     .join("");
-
-  // Tracking number + estimated delivery bar (shown only when data exists)
   let metaHTML = "";
   if (trackingNumber || estimatedDelivery) {
-    const tnPart = trackingNumber
-      ? `<span class="ts-meta-item"><span class="ts-meta-label">Tracking #</span><strong>${trackingNumber}</strong></span>`
-      : "";
-    const edPart = estimatedDelivery
-      ? `<span class="ts-meta-item"><span class="ts-meta-label">Est. Delivery</span><strong>${estimatedDelivery}</strong></span>`
-      : "";
-    metaHTML = `<div class="ts-meta-bar">${tnPart}${edPart}</div>`;
+    metaHTML = `<div class="ts-meta-bar">${trackingNumber ? `<span class="ts-meta-item"><span class="ts-meta-label">Tracking #</span><strong>${trackingNumber}</strong></span>` : ""}${estimatedDelivery ? `<span class="ts-meta-item"><span class="ts-meta-label">Est. Delivery</span><strong>${estimatedDelivery}</strong></span>` : ""}</div>`;
   }
-
   stepper.innerHTML = metaHTML + stepsHTML;
-}
-
-function renderOrderItems(items) {
-  const list = document.getElementById("od-items-list");
-  if (!list) return;
-
-  list.innerHTML = items
-    .map(
-      (item) => `
-    <div class="od-item-row">
-      <img class="od-item-img" src="${item.img || ""}" alt="${item.name}" onerror="this.style.opacity='0'" />
-      <div class="od-item-info">
-        <p class="od-item-name">${item.name}</p>
-        <div class="od-item-meta">
-          ${item.color ? `<span><span class="od-item-swatch" style="background:${item.color}"></span></span>` : ""}
-          ${item.size && item.size !== "—" ? `<span>Size: ${item.size}</span>` : ""}
-          <span>Qty: ${item.qty || 1}</span>
-        </div>
-      </div>
-      <p class="od-item-price">${item.price}</p>
-    </div>
-  `,
-    )
-    .join("");
 }
 
 // ── BACK BUTTON ──────────────────────────────
@@ -319,47 +285,40 @@ document.getElementById("back-btn")?.addEventListener("click", () => {
 
 // ── SIGN OUT ─────────────────────────────────
 function handleSignOut() {
-  localStorage.removeItem("styled_user");
-  window.location.href = "auth.html";
+  fetch("/styled/php/auth/logout.php", {
+    method: "GET",
+    credentials: "include",
+  }).finally(() => {
+    localStorage.removeItem("styled_user");
+    window.location.href = "auth.html";
+  });
 }
-
 document.getElementById("os-signout")?.addEventListener("click", handleSignOut);
-document
-  .getElementById("signout-btn-list")
-  ?.addEventListener("click", handleSignOut);
 
-// ── SIDEBAR TAB ACTIVE STATES ────────────────
+// ── TABS ─────────────────────────────────────
 const tabOrders = document.getElementById("tab-orders");
 const tabWishlist = document.getElementById("tab-wishlist");
-
 function setActiveTab(activeEl) {
   document
     .querySelectorAll(".os-nav-item")
     .forEach((el) => el.classList.remove("active"));
   if (activeEl) activeEl.classList.add("active");
 }
-
 tabOrders?.addEventListener("click", (e) => {
   e.preventDefault();
   setActiveTab(tabOrders);
   document.getElementById("view-list").style.display = "block";
   document.getElementById("view-detail").style.display = "none";
 });
-
 tabWishlist?.addEventListener("click", (e) => {
   e.preventDefault();
   setActiveTab(tabWishlist);
   openWishlistPanel();
 });
 
-// ── INIT ─────────────────────────────────────
-// renderOrderList() is intentionally NOT called here.
-// orders.html calls window.initOrdersPage() after checkAuthStatus() confirms
-// a valid session, so the orders API request is never made unauthenticated.
 window.initOrdersPage = function () {
   initUserInfo();
   renderOrderList();
-
   setActiveTab(tabOrders);
   setTimeout(() => setActiveTab(document.getElementById("tab-orders")), 300);
 };

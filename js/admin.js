@@ -230,15 +230,15 @@ async function renderDashboard() {
       body.innerHTML = data.orders
         .map(
           (o) => `
-        <tr style="cursor:pointer" onclick="openOrderDetail('${o.order_number}')">
-          <td><span style="font-weight:500;color:var(--brown-400)">#${o.order_number}</span></td>
-          <td>${o.customer_name || "—"}</td>
-          <td class="text-muted">${new Date(o.created_at).toLocaleDateString("en-PH", { month: "short", day: "numeric", year: "numeric" })}</td>
-          <td>${statusBadge(o.status)}</td>
-          <td>${statusBadge(o.payment_method === "cod" ? "Pending" : "Paid")}</td>
-          <td style="font-weight:500">${formatPrice(o.total_amount)}</td>
-          <td><button class="ellipsis-btn">···</button></td>
-        </tr>`,
+                    <tr style="cursor:pointer" onclick="openOrderDetail('${o.order_number}')">
+                        <td><span style="font-weight:500;color:var(--brown-400)">#${o.order_number}</span></td>
+                        <td>${o.customer_name || "—"}</td>
+                        <td class="text-muted">${new Date(o.created_at).toLocaleDateString("en-PH", { month: "short", day: "numeric", year: "numeric" })}</td>
+                        <td>${statusBadge(o.status)}</td>
+                        <td>${statusBadge(o.payment_method === "cod" ? "Pending" : "Paid")}</td>
+                        <td style="font-weight:500">${formatPrice(o.total_amount)}</td>
+                        <td><button class="ellipsis-btn">···</button></td>
+                    </tr>`,
         )
         .join("");
     }
@@ -261,6 +261,24 @@ async function renderDashboard() {
     set("stat-avg-order", formatPrice(data.avg_order_value));
     set("stat-conversion", data.conversion_rate + "%");
 
+    // Update revenue change label
+    const revenueChangeEl = document.getElementById("stat-revenue-change");
+    if (revenueChangeEl) {
+      const revChange = data.revenue_change_percent ?? 0;
+      const sign = revChange >= 0 ? "+" : "";
+      revenueChangeEl.innerHTML = `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="18 15 12 9 6 15"/></svg> ${sign}${revChange}% vs last 7 days`;
+      revenueChangeEl.className = `stat-change ${revChange >= 0 ? "up" : "down"}`;
+    }
+
+    // Update orders change label
+    const ordersChangeEl = document.getElementById("stat-orders-change");
+    if (ordersChangeEl) {
+      const ordersChange = data.orders_change_percent ?? 0;
+      const sign = ordersChange >= 0 ? "+" : "";
+      ordersChangeEl.innerHTML = `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="18 15 12 9 6 15"/></svg> ${sign}${ordersChange}% vs last 7 days`;
+      ordersChangeEl.className = `stat-change ${ordersChange >= 0 ? "up" : "down"}`;
+    }
+
     // Top products
     const topProds = document.getElementById("top-products-list");
     if (topProds && data.top_products) {
@@ -268,16 +286,16 @@ async function renderDashboard() {
         .slice(0, 5)
         .map(
           (p) => `
-        <div class="metric-row">
-          <div class="flex-center gap-12">
-            <div class="product-thumb" style="display:flex;align-items:center;justify-content:center"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="color:var(--brown-100)"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/></svg></div>
-            <div>
-              <div style="font-size:13.5px;font-weight:500;color:var(--brown-400)">${p.name}</div>
-              <div class="text-sm text-muted">${p.quantity_sold} sold</div>
-            </div>
-          </div>
-          <div class="text-sm text-muted">${formatPrice(p.revenue)}</div>
-        </div>`,
+                    <div class="metric-row">
+                        <div class="flex-center gap-12">
+                            <div class="product-thumb" style="display:flex;align-items:center;justify-content:center"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="color:var(--brown-100)"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/></svg></div>
+                            <div>
+                                <div style="font-size:13.5px;font-weight:500;color:var(--brown-400)">${p.name}</div>
+                                <div class="text-sm text-muted">${p.quantity_sold} sold</div>
+                            </div>
+                        </div>
+                        <div class="text-sm text-muted">${formatPrice(p.revenue)}</div>
+                    </div>`,
         )
         .join("");
     }
@@ -294,16 +312,16 @@ async function renderDashboard() {
         ? low
             .map(
               (i) => `
-            <div class="metric-row">
-              <div class="flex-center gap-12">
-                <div class="product-thumb" style="display:flex;align-items:center;justify-content:center"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="color:var(--brown-100)"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/></svg></div>
-                <div>
-                  <div style="font-size:13.5px;font-weight:500;color:var(--brown-400)">${i.product_name}</div>
-                  <div class="text-sm text-muted">${i.size} — ${i.category}</div>
-                </div>
-              </div>
-              <div style="font-size:13px;font-weight:500;color:var(--red)">${i.stock_qty} left</div>
-            </div>`,
+                          <div class="metric-row">
+                              <div class="flex-center gap-12">
+                                  <div class="product-thumb" style="display:flex;align-items:center;justify-content:center"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="color:var(--brown-100)"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/></svg></div>
+                                  <div>
+                                      <div style="font-size:13.5px;font-weight:500;color:var(--brown-400)">${i.product_name}</div>
+                                      <div class="text-sm text-muted">${i.size} — ${i.category}</div>
+                                  </div>
+                              </div>
+                              <div style="font-size:13px;font-weight:500;color:var(--red)">${i.stock_qty} left</div>
+                          </div>`,
             )
             .join("")
         : `<div class="text-sm text-muted" style="padding:12px">All stock levels healthy.</div>`;
@@ -1303,8 +1321,16 @@ async function addStaff() {
   const name = document.getElementById("new-staff-name")?.value.trim();
   const email = document.getElementById("new-staff-email")?.value.trim();
   const role = document.getElementById("new-staff-role")?.value || "staff";
+
   if (!name || !email) {
     showToast("Name and email are required.", "error");
+    return;
+  }
+
+  // Validate email format
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  if (!emailRegex.test(email)) {
+    showToast("Please enter a valid email address.", "error");
     return;
   }
 
@@ -1316,11 +1342,31 @@ async function addStaff() {
       body: JSON.stringify({ full_name: name, email, role }),
     });
     const data = await res.json();
+
     if (data.success) {
-      closeModal("modal-add-staff");
+      // Close the modal (correct ID is 'modal-add-user')
+      closeModal("modal-add-user");
+
+      // Clear the form fields for next use
+      document.getElementById("new-staff-name").value = "";
+      document.getElementById("new-staff-email").value = "";
+      document.getElementById("new-staff-role").value = "staff";
+
+      // Refresh the users table
       renderUsers();
-      showToast("Staff member added.", "ok");
-    } else showToast(data.error || "Failed.", "error");
+
+      // Show appropriate toast message
+      if (data.email_sent) {
+        showToast(`Staff added & Invite email sent to ${email}`, "ok");
+      } else {
+        showToast(
+          `Staff added but invitation email failed. Please check SMTP settings.`,
+          "error",
+        );
+      }
+    } else {
+      showToast(data.error || "Failed to add staff member.", "error");
+    }
   } catch (err) {
     console.error("[admin]", err);
     showToast("Network error.", "error");
@@ -1567,7 +1613,7 @@ async function saveSettings(section) {
 }
 
 async function loadSettings() {
-  const sections = ["store", "payment", "shipping", "tax", "email", "domain"];
+  const sections = ["store", "payment", "shipping", "tax", "domain"];
   await Promise.all(
     sections.map(async (section) => {
       try {

@@ -203,9 +203,8 @@ if ($method === 'PUT') {
              VALUES (?, ?, NOW(), ?)'
         )->execute([$orderId, $stepLabel, $note]);
 
-        // If the order is now "shipped" and a tracking number was just provided
-        // (or was already stored), also record an "Out for Delivery" placeholder
-        // only if the admin explicitly passes out_for_delivery = true.
+        // If the order is now "shipped" and the admin explicitly passes out_for_delivery = true,
+        // also record an "Out for Delivery" step.
         if ($newStatus === 'shipped' && !empty($body['out_for_delivery'])) {
             $pdo->prepare(
                 'INSERT INTO order_timeline (order_id, step_label, occurred_at, note)
