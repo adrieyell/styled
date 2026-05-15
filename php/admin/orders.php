@@ -9,7 +9,7 @@
 header('Content-Type: application/json');
 require_once __DIR__ . '/_auth.php';
 require_once __DIR__ . '/../db.php';
-
+require_once __DIR__ . '/../email-functions.php';  
 $user   = requireAuth();
 $method = $_SERVER['REQUEST_METHOD'];
 $pdo    = getPDO();
@@ -179,9 +179,13 @@ if ($method === 'PUT') {
         'UPDATE orders SET ' . implode(', ', $fields) . ' WHERE order_id = ?'
     )->execute($params);
 
-    // ── Insert into order_timeline when status changes ────────────────────────
-    if ($newStatus !== null && $newStatus !== strtolower($currentOrder['status'])) {
+    // ── Store old status for email (before any changes) ──────────────────────
+    $oldStatus = $currentOrder['status'];
 
+    // ── Insert into order_timeline when status changes ────────────────────────
+    $statusChanged = ($newStatus !== null && $newStatus !== strtolower($oldStatus));
+
+    if ($statusChanged) {
         // Map DB status to the canonical stepper label used on the front-end
         $statusToLabel = [
             'pending'    => 'Order Placed',
@@ -212,10 +216,8 @@ if ($method === 'PUT') {
 
     // ── If a tracking number is being saved for the first time, also ensure
     //    the "Shipped" timeline step exists (in case admin skipped that PUT). ──
-    if (
-        $trackingNumber &&
-        empty($currentOrder['tracking_number'])
-    ) {
+    $trackingAdded = ($trackingNumber && empty($currentOrder['tracking_number']));
+    if ($trackingAdded) {
         // Only insert if "Shipped" row not already present
         $exists = $pdo->prepare(
             "SELECT 1 FROM order_timeline
@@ -230,6 +232,13 @@ if ($method === 'PUT') {
                  VALUES (?, 'Shipped', NOW(), ?)"
             )->execute([$orderId, 'Tracking number assigned: ' . $trackingNumber]);
         }
+    }
+
+    // ── SEND EMAIL NOTIFICATION if status changed OR tracking number added ────
+    if ($statusChanged || $trackingAdded) {
+        // Use the new status (or current status if only tracking added)
+        $emailStatus = $newStatus ?? $currentOrder['status'];
+        send_order_status_email($pdo, $orderId, $oldStatus, $emailStatus, $trackingNumber);
     }
 
     echo json_encode(['success' => true]);
