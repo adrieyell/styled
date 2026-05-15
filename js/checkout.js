@@ -1,10 +1,101 @@
 // ============================================
 // CHECKOUT PAGE - Cart, quantities, payment
+// Loads admin settings from public API
 // ============================================
 
-// Tracks the currently applied promo for order placement
-let appliedPromo = null; // { code, discount_type, discount_value }
+let appliedPromo = null;
+let activePaymentMethod = "card";
+let checkoutSettings = {
+  shipping: {},
+  tax: {},
+  payment: {},
+};
+let settingsLoaded = false;
 
+// ── Load settings from public API ───────────────────────────────────────────
+async function loadCheckoutSettings() {
+  try {
+    const [shippingRes, taxRes, paymentRes] = await Promise.all([
+      fetch(`${API_BASE}/php/settings.php?group=shipping`).then((r) =>
+        r.json(),
+      ),
+      fetch(`${API_BASE}/php/settings.php?group=tax`).then((r) => r.json()),
+      fetch(`${API_BASE}/php/settings.php?group=payment`).then((r) => r.json()),
+    ]);
+    if (shippingRes.success) checkoutSettings.shipping = shippingRes.settings;
+    if (taxRes.success) checkoutSettings.tax = taxRes.settings;
+    if (paymentRes.success) checkoutSettings.payment = paymentRes.settings;
+    settingsLoaded = true;
+    updatePaymentTabs();
+  } catch (e) {
+    console.warn("Could not load admin settings, using defaults", e);
+  }
+}
+
+function updatePaymentTabs() {
+  const tabContainer = document.querySelector(".payment-tabs");
+  if (!tabContainer) return;
+
+  const methods = [
+    {
+      id: "card",
+      label: "Credit / Debit Card",
+      enabled: checkoutSettings.payment?.["payment-card"] === "1",
+    },
+    {
+      id: "gcash",
+      label: "GCash",
+      enabled: checkoutSettings.payment?.["payment-gcash"] === "1",
+    },
+    {
+      id: "cod",
+      label: "Cash on Delivery",
+      enabled: checkoutSettings.payment?.["payment-cod"] === "1",
+    },
+  ];
+
+  const enabledMethods = methods.filter((m) => m.enabled);
+  if (enabledMethods.length === 0) {
+    tabContainer.innerHTML = `<button class="payment-tab active" data-method="card">Credit / Debit Card</button>`;
+    activePaymentMethod = "card";
+    showPaymentPanel("card");
+    return;
+  }
+
+  tabContainer.innerHTML = enabledMethods
+    .map(
+      (m, idx) => `
+    <button class="payment-tab ${idx === 0 ? "active" : ""}" data-method="${m.id}" type="button">${m.label}</button>
+  `,
+    )
+    .join("");
+
+  document.querySelectorAll(".payment-tab").forEach((tab) => {
+    tab.addEventListener("click", () => {
+      document
+        .querySelectorAll(".payment-tab")
+        .forEach((t) => t.classList.remove("active"));
+      tab.classList.add("active");
+      activePaymentMethod = tab.dataset.method;
+      showPaymentPanel(activePaymentMethod);
+    });
+  });
+
+  const firstMethod = enabledMethods[0].id;
+  activePaymentMethod = firstMethod;
+  showPaymentPanel(firstMethod);
+}
+
+function showPaymentPanel(method) {
+  document.getElementById("payment-panel-card").style.display =
+    method === "card" ? "block" : "none";
+  document.getElementById("payment-panel-gcash").style.display =
+    method === "gcash" ? "block" : "none";
+  document.getElementById("payment-panel-cod").style.display =
+    method === "cod" ? "block" : "none";
+}
+
+// ── Render cart (uses settings for shipping & tax) ──────────────────────────
 async function renderCart() {
   const cart = await getCart();
   const tbody = document.getElementById("cart-table-body");
@@ -30,8 +121,11 @@ async function renderCart() {
   const firstItem = cart[0];
   document.getElementById("style-tip-img").src =
     firstItem.img || "assets/images/logo_styled.png";
+  const freeThreshold = parseFloat(
+    checkoutSettings.shipping?.["shipping-free-threshold"] || 1000,
+  );
   document.getElementById("style-tip-text").textContent =
-    `You've added ${cart.length} item${cart.length > 1 ? "s" : ""} to your bag. Complete your look by pairing your selections with our curated accessories — free shipping on orders over ₱1000!`;
+    `You've added ${cart.length} item${cart.length > 1 ? "s" : ""} to your bag. Complete your look by pairing your selections with our curated accessories — free shipping on orders over ₱${freeThreshold.toFixed(0)}!`;
 
   let subtotal = 0;
   let totalQty = 0;
@@ -62,7 +156,7 @@ async function renderCart() {
 
   updateTotals(subtotal);
 
-  // Add event listeners
+  // Re-attach events
   document.querySelectorAll(".qty-btn").forEach((btn) => {
     btn.addEventListener("click", async () => {
       const idx = parseInt(btn.dataset.idx);
@@ -94,9 +188,14 @@ async function renderCart() {
   });
 }
 
-// ── TOTALS (subtotal + discount + shipping + grand) ───────────────────────────
 function updateTotals(subtotal) {
-  const shipping = subtotal >= 1000 ? 0 : 150;
+  const freeThreshold = parseFloat(
+    checkoutSettings.shipping?.["shipping-free-threshold"] || 1000,
+  );
+  const standardFee = parseFloat(
+    checkoutSettings.shipping?.["shipping-standard-fee"] || 150,
+  );
+  const shipping = subtotal >= freeThreshold ? 0 : standardFee;
 
   let discount = 0;
   if (appliedPromo) {
@@ -105,27 +204,49 @@ function updateTotals(subtotal) {
     } else {
       discount = appliedPromo.discount_value;
     }
-    discount = Math.min(discount, subtotal); // never exceed subtotal
+    discount = Math.min(discount, subtotal);
   }
 
-  const grand = subtotal - discount + shipping;
+  const taxRate = parseFloat(checkoutSettings.tax?.["tax-vat-rate"] || 0);
+  const taxable = subtotal - discount;
+  const tax = taxable * (taxRate / 100);
+  const grand = subtotal - discount + shipping + tax;
 
   document.getElementById("subtotal-val").textContent = formatPrice(subtotal);
   document.getElementById("shipping-val").textContent =
     shipping === 0 ? "FREE" : formatPrice(shipping);
-  document.getElementById("grand-total-val").textContent = formatPrice(grand);
+
+  // Show/hide tax row
+  let taxRow = document.getElementById("tax-row");
+  if (tax > 0) {
+    if (!taxRow) {
+      const shippingRow = document
+        .getElementById("shipping-val")
+        ?.closest(".total-row");
+      if (shippingRow) {
+        taxRow = document.createElement("div");
+        taxRow.id = "tax-row";
+        taxRow.className = "total-row";
+        taxRow.style.fontSize = "13px";
+        taxRow.innerHTML = `<span>VAT (${taxRate}%)</span><span id="tax-val"></span>`;
+        shippingRow.insertAdjacentElement("afterend", taxRow);
+      }
+    }
+    const taxVal = document.getElementById("tax-val");
+    if (taxVal) taxVal.textContent = formatPrice(tax);
+  } else if (taxRow) taxRow.remove();
 
   // Show/hide discount row
   let discountRow = document.getElementById("discount-row");
   if (appliedPromo && discount > 0) {
     if (!discountRow) {
-      // Inject discount row if not already in HTML
-      const subtotalRow =
-        document.getElementById("subtotal-val")?.closest("tr") ||
-        document.getElementById("subtotal-val")?.parentElement;
+      const subtotalRow = document
+        .getElementById("subtotal-val")
+        ?.closest(".total-row");
       if (subtotalRow) {
-        discountRow = document.createElement(subtotalRow.tagName);
+        discountRow = document.createElement("div");
         discountRow.id = "discount-row";
+        discountRow.className = "total-row";
         discountRow.style.color = "var(--accent, #27ae60)";
         discountRow.innerHTML = `<span>Discount (${appliedPromo.code})</span><span id="discount-val"></span>`;
         subtotalRow.insertAdjacentElement("afterend", discountRow);
@@ -133,33 +254,27 @@ function updateTotals(subtotal) {
     }
     const discountVal = document.getElementById("discount-val");
     if (discountVal) discountVal.textContent = `−${formatPrice(discount)}`;
-  } else if (discountRow) {
-    discountRow.remove();
-  }
+  } else if (discountRow) discountRow.remove();
+
+  document.getElementById("grand-total-val").textContent = formatPrice(grand);
 }
 
-// ── PROMO CODE ────────────────────────────────────────────────────────────────
 async function applyPromo() {
   const code = document.getElementById("co-promo").value.trim().toUpperCase();
-
   if (!code) {
     alert("Please enter a promo code.");
     return;
   }
-
-  // Get current subtotal
   const cart = await getCart();
   let subtotal = 0;
-  cart.forEach((item) => {
-    subtotal += parsePrice(item.price) * (item.qty || 1);
-  });
-
+  cart.forEach(
+    (item) => (subtotal += parsePrice(item.price) * (item.qty || 1)),
+  );
   try {
     const res = await fetch(
       `${API_BASE}/php/promotions.php?code=${encodeURIComponent(code)}&subtotal=${subtotal}`,
     );
     const data = await res.json();
-
     if (data.valid) {
       appliedPromo = {
         code: data.code,
@@ -178,37 +293,6 @@ async function applyPromo() {
   }
 }
 
-// ── PAYMENT METHOD TABS ───────────────────────────────────────────────────────
-let activePaymentMethod = "card";
-
-document.querySelectorAll(".payment-tab").forEach((tab) => {
-  tab.addEventListener("click", () => {
-    document
-      .querySelectorAll(".payment-tab")
-      .forEach((t) => t.classList.remove("active"));
-    tab.classList.add("active");
-    activePaymentMethod = tab.dataset.method;
-    document.getElementById("payment-panel-card").style.display =
-      activePaymentMethod === "card" ? "block" : "none";
-    document.getElementById("payment-panel-gcash").style.display =
-      activePaymentMethod === "gcash" ? "block" : "none";
-    document.getElementById("payment-panel-cod").style.display =
-      activePaymentMethod === "cod" ? "block" : "none";
-  });
-});
-
-function formatCard(input) {
-  let val = input.value.replace(/\D/g, "").substring(0, 16);
-  input.value = val.replace(/(.{4})/g, "$1 ").trim();
-}
-
-function formatExpiry(input) {
-  let val = input.value.replace(/\D/g, "").substring(0, 4);
-  if (val.length >= 3) val = val.substring(0, 2) + " / " + val.substring(2);
-  input.value = val;
-}
-
-// ── PLACE ORDER ───────────────────────────────────────────────────────────────
 async function placeOrder() {
   const cart = await getCart();
   if (cart.length === 0) {
@@ -241,7 +325,6 @@ async function placeOrder() {
     ...baseRequired,
     ...(paymentRequired[activePaymentMethod] || []),
   ];
-
   for (const field of required) {
     const el = document.getElementById(field.id);
     if (!el) continue;
@@ -299,9 +382,7 @@ async function placeOrder() {
         promo_code: appliedPromo?.code || "",
       }),
     });
-
     const data = await res.json();
-
     if (!res.ok || !data.success) {
       alert(data.error || "Something went wrong. Please try again.");
       return;
@@ -327,7 +408,24 @@ async function placeOrder() {
   }
 }
 
-// ── EVENT LISTENERS ───────────────────────────────────────────────────────────
+// ── Initialise ───────────────────────────────────────────────────────────────
+async function initCheckout() {
+  await loadCheckoutSettings();
+  renderCart();
+}
+
+// Event listeners
+document.querySelectorAll(".payment-tab").forEach((tab) => {
+  tab.addEventListener("click", () => {
+    document
+      .querySelectorAll(".payment-tab")
+      .forEach((t) => t.classList.remove("active"));
+    tab.classList.add("active");
+    activePaymentMethod = tab.dataset.method;
+    showPaymentPanel(activePaymentMethod);
+  });
+});
+
 const cardInput = document.getElementById("co-card");
 if (cardInput) cardInput.addEventListener("input", () => formatCard(cardInput));
 
@@ -342,9 +440,19 @@ const placeOrderBtn = document.getElementById("place-order-btn");
 if (placeOrderBtn) placeOrderBtn.addEventListener("click", placeOrder);
 
 document.querySelector(".success-overlay")?.addEventListener("click", (e) => {
-  if (e.target.classList.contains("success-overlay")) {
+  if (e.target.classList.contains("success-overlay"))
     e.target.classList.remove("show");
-  }
 });
 
-renderCart();
+initCheckout();
+
+// Helper functions
+function formatCard(input) {
+  let val = input.value.replace(/\D/g, "").substring(0, 16);
+  input.value = val.replace(/(.{4})/g, "$1 ").trim();
+}
+function formatExpiry(input) {
+  let val = input.value.replace(/\D/g, "").substring(0, 4);
+  if (val.length >= 3) val = val.substring(0, 2) + " / " + val.substring(2);
+  input.value = val;
+}

@@ -2243,6 +2243,12 @@ Shop the Oversized Wool Coat at Styled — timeless luxury fashion for every mom
                 >
                   Email Templates
                 </button>
+                <button
+                  class="settings-nav-item"
+                  onclick="switchSettings('domain', this)"
+                >
+                  Domain
+                </button>
               </div>
 
               <div style="display: flex; flex-direction: column; gap: 16px">
@@ -2252,11 +2258,17 @@ Shop the Oversized Wool Coat at Styled — timeless luxury fashion for every mom
                   <div class="form-grid">
                     <div class="form-field">
                       <label class="form-label">Store Name</label>
-                      <input class="form-input" value="Styled" />
+                      <input
+                        id="store-name"
+                        class="form-input"
+                        type="text"
+                        value="Styled"
+                      />
                     </div>
                     <div class="form-field">
                       <label class="form-label">Store Email</label>
                       <input
+                        id="store-email"
                         class="form-input"
                         type="email"
                         value="hello@styled.com"
@@ -2264,21 +2276,27 @@ Shop the Oversized Wool Coat at Styled — timeless luxury fashion for every mom
                     </div>
                     <div class="form-field">
                       <label class="form-label">Currency</label>
-                      <select class="form-select">
-                        <option selected>Philippine Peso (₱)</option>
-                        <option>USD ($)</option>
+                      <select id="store-currency" class="form-select">
+                        <option value="PHP" selected>
+                          Philippine Peso (₱)
+                        </option>
+                        <option value="USD">USD ($)</option>
                       </select>
                     </div>
                     <div class="form-field">
                       <label class="form-label">Timezone</label>
-                      <select class="form-select">
-                        <option selected>Asia/Manila (GMT+8)</option>
+                      <select id="store-timezone" class="form-select">
+                        <option value="Asia/Manila" selected>
+                          Asia/Manila (GMT+8)
+                        </option>
                       </select>
                     </div>
                     <div class="form-field full">
                       <label class="form-label">Store Address</label>
                       <input
+                        id="store-address"
                         class="form-input"
+                        type="text"
                         value="123 Ayala Avenue, Makati City, Philippines"
                       />
                     </div>
@@ -2286,7 +2304,7 @@ Shop the Oversized Wool Coat at Styled — timeless luxury fashion for every mom
                   <div style="margin-top: 16px; text-align: right">
                     <button
                       class="btn btn-primary btn-sm"
-                      onclick="saveSettings('general')"
+                      onclick="saveSettings('store')"
                     >
                       Save Changes
                     </button>
@@ -2307,9 +2325,10 @@ Shop the Oversized Wool Coat at Styled — timeless luxury fashion for every mom
                         </div>
                       </div>
                       <label class="toggle"
-                        ><input type="checkbox" checked /><span
-                          class="toggle-slider"
-                        ></span
+                        ><input
+                          id="payment-gcash"
+                          type="checkbox"
+                          checked /><span class="toggle-slider"></span
                       ></label>
                     </div>
                     <div class="metric-row">
@@ -2320,9 +2339,10 @@ Shop the Oversized Wool Coat at Styled — timeless luxury fashion for every mom
                         <div class="text-sm text-muted">Via Stripe</div>
                       </div>
                       <label class="toggle"
-                        ><input type="checkbox" checked /><span
-                          class="toggle-slider"
-                        ></span
+                        ><input
+                          id="payment-card"
+                          type="checkbox"
+                          checked /><span class="toggle-slider"></span
                       ></label>
                     </div>
                     <div class="metric-row">
@@ -2335,7 +2355,7 @@ Shop the Oversized Wool Coat at Styled — timeless luxury fashion for every mom
                         </div>
                       </div>
                       <label class="toggle"
-                        ><input type="checkbox" checked /><span
+                        ><input id="payment-cod" type="checkbox" checked /><span
                           class="toggle-slider"
                         ></span
                       ></label>
@@ -2364,6 +2384,7 @@ Shop the Oversized Wool Coat at Styled — timeless luxury fashion for every mom
                       </div>
                     </div>
                     <input
+                      id="shipping-free-threshold"
                       class="form-input"
                       type="number"
                       value="1000"
@@ -2380,6 +2401,7 @@ Shop the Oversized Wool Coat at Styled — timeless luxury fashion for every mom
                       </div>
                     </div>
                     <input
+                      id="shipping-standard-fee"
                       class="form-input"
                       type="number"
                       value="150"
@@ -2387,7 +2409,10 @@ Shop the Oversized Wool Coat at Styled — timeless luxury fashion for every mom
                     />
                   </div>
                   <div style="margin-top: 16px; text-align: right">
-                    <button class="btn btn-primary btn-sm">
+                    <button
+                      class="btn btn-primary btn-sm"
+                      onclick="saveSettings('shipping')"
+                    >
                       Save Shipping
                     </button>
                   </div>
@@ -2399,20 +2424,25 @@ Shop the Oversized Wool Coat at Styled — timeless luxury fashion for every mom
                   <div class="form-grid">
                     <div class="form-field">
                       <label class="form-label">VAT Rate (%)</label>
-                      <input class="form-input" type="number" value="12" />
+                      <input
+                        id="tax-vat-rate"
+                        class="form-input"
+                        type="number"
+                        value="12"
+                      />
                     </div>
                     <div class="form-field">
                       <label class="form-label">Tax Inclusive</label>
-                      <select class="form-select">
-                        <option>Prices include tax</option>
-                        <option>Prices exclude tax</option>
+                      <select id="tax-inclusive" class="form-select">
+                        <option value="inclusive">Prices include tax</option>
+                        <option value="exclusive">Prices exclude tax</option>
                       </select>
                     </div>
                   </div>
                   <div style="margin-top: 16px; text-align: right">
                     <button
                       class="btn btn-primary btn-sm"
-                      onclick="saveSettings('shipping')"
+                      onclick="saveSettings('tax')"
                     >
                       Save Changes
                     </button>
@@ -2457,18 +2487,29 @@ Shop the Oversized Wool Coat at Styled — timeless luxury fashion for every mom
                   <div class="card-title mb-16">Domain Settings</div>
                   <div class="form-field mb-16">
                     <label class="form-label">Custom Domain</label>
-                    <input class="form-input" type="text" value="styled.com" />
+                    <input
+                      id="domain-custom"
+                      class="form-input"
+                      type="text"
+                      value="styled.com"
+                    />
                   </div>
                   <div class="form-field">
                     <label class="form-label">Storefront URL</label>
                     <input
+                      id="domain-storefront-url"
                       class="form-input"
                       type="text"
                       value="https://styled-theta.vercel.app"
                     />
                   </div>
                   <div style="margin-top: 16px; text-align: right">
-                    <button class="btn btn-primary btn-sm">Save Domain</button>
+                    <button
+                      class="btn btn-primary btn-sm"
+                      onclick="saveSettings('domain')"
+                    >
+                      Save Domain
+                    </button>
                   </div>
                 </div>
               </div>

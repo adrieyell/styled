@@ -417,6 +417,44 @@ async function fetchProducts(filters = {}) {
   return json.products;
 }
 
+// ============================================
+// SETTINGS (shipping, tax, payment methods)
+// ============================================
+
+let _settingsCache = {};
+
+/**
+ * Fetch a settings group from the public API.
+ * @param {string} group - store, payment, shipping, tax
+ * @returns {Promise<Object>}
+ */
+async function fetchSettingsGroup(group) {
+  if (_settingsCache[group]) return _settingsCache[group];
+  try {
+    const res = await fetch(`${API_BASE}/php/settings.php?group=${group}`);
+    const data = await res.json();
+    if (data.success) {
+      _settingsCache[group] = data.settings;
+      return _settingsCache[group];
+    }
+  } catch (e) {
+    console.warn(`Failed to load settings group "${group}":`, e);
+  }
+  return {};
+}
+
+/**
+ * Preload all relevant settings (call once on checkout page).
+ */
+async function loadAllSettings() {
+  const [store, payment, shipping, tax] = await Promise.all([
+    fetchSettingsGroup("store"),
+    fetchSettingsGroup("payment"),
+    fetchSettingsGroup("shipping"),
+    fetchSettingsGroup("tax"),
+  ]);
+  return { store, payment, shipping, tax };
+}
 /**
  * Normalise an API product into the legacy shape used everywhere
  * (cart, wishlist, modal) which expects `img` not `image`.

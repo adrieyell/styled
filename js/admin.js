@@ -1538,43 +1538,52 @@ function switchSettings(section, btn) {
   if (btn) btn.classList.add("active");
 }
 
-function saveSettings(section) {
+async function saveSettings(section) {
   // Collect all inputs/selects/textareas within the active settings section
   const container = document.getElementById("settings-" + section);
   if (!container) return;
-  const saved = {};
+  const settings = {};
   container
     .querySelectorAll(
       "input[type='text'], input[type='email'], input[type='number'], input[type='tel'], textarea, select",
     )
     .forEach((el) => {
-      if (el.id) saved[el.id] = el.value;
+      if (el.id) settings[el.id] = el.value;
     });
   container.querySelectorAll("input[type='checkbox']").forEach((el) => {
-    if (el.id) saved[el.id] = el.checked;
+    if (el.id) settings[el.id] = el.checked ? "1" : "0";
   });
   try {
-    localStorage.setItem("styled_settings_" + section, JSON.stringify(saved));
-  } catch (e) {}
-  showToast("Settings saved.", "ok");
+    await fetchJSON(`${API}/settings.php`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ group: section, settings }),
+    });
+    showToast("Settings saved.", "ok");
+  } catch (err) {
+    console.error("[admin] saveSettings:", err);
+    showToast("Failed to save settings.", "error");
+  }
 }
 
-function loadSettings() {
-  ["general", "payments", "shipping", "notifications", "email"].forEach(
-    (section) => {
+async function loadSettings() {
+  const sections = ["store", "payment", "shipping", "tax", "email", "domain"];
+  await Promise.all(
+    sections.map(async (section) => {
       try {
-        const saved = JSON.parse(
-          localStorage.getItem("styled_settings_" + section) || "null",
-        );
-        if (!saved) return;
-        Object.entries(saved).forEach(([id, val]) => {
+        const data = await fetchJSON(`${API}/settings.php?group=${section}`);
+        if (!data.success || !data.settings) return;
+        Object.entries(data.settings).forEach(([id, val]) => {
           const el = document.getElementById(id);
           if (!el) return;
-          if (el.type === "checkbox") el.checked = val;
-          else el.value = val;
+          if (el.type === "checkbox") el.checked = val === "1" || val === true;
+          else el.value = val ?? "";
         });
-      } catch (e) {}
-    },
+      } catch (err) {
+        // Section may have no saved settings yet — silently ignore
+        console.warn(`[admin] loadSettings(${section}):`, err);
+      }
+    }),
   );
 }
 
