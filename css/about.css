@@ -3,7 +3,7 @@
   grid-template-columns: 1fr 1fr;
   min-height: 540px;
   background: var(--cream);
-  position: relative; /* CSS Z-INDEX: establishes stacking context for children */
+  position: relative; 
 }
 .about-hero-text {
   padding: 80px;
@@ -11,7 +11,7 @@
   flex-direction: column;
   justify-content: center;
   position: relative;
-  z-index: var(--z-base); /* CSS Z-INDEX: text layer sits above base */
+  z-index: var(--z-base); 
 }
 .section-eyebrow {
   font-size: 10px;
@@ -36,11 +36,11 @@
   line-height: 1.9;
   margin-bottom: 16px;
   text-align: justify;
-  opacity: 1; /* CSS OPACITY: body copy slightly muted for elegant hierarchy */
+  opacity: 1; 
   transition: opacity 0.3s;
 }
 .about-body:hover {
-  opacity: 1; /* CSS OPACITY: paragraph brightens on hover for subtle interactivity */
+  opacity: 1; 
 }
 .about-tagline {
   font-family: var(--sans);
@@ -51,7 +51,7 @@
 }
 .about-hero-img {
   position: relative;
-  overflow: hidden; /* CSS OVERFLOW: clips the image to its container; prevents bleed on zoom */
+  overflow: hidden; 
 }
 .about-hero-img img {
   width: 100%;
@@ -61,15 +61,15 @@
   display: block;
   transition:
     transform 0.6s ease,
-    opacity 0.4s ease; /* CSS OPACITY: subtle fade on interaction */
+    opacity 0.4s ease; 
   opacity: 0.96;
 }
 .about-hero-img:hover img {
-  transform: scale(1.03); /* gentle zoom, clipped by overflow:hidden */
+  transform: scale(1.03); 
   opacity: 1;
 }
 
-/* ---- TRUST BAR (about — warm-white bg) ---- */
+
 .trust-bar {
   background: var(--warm-white);
 }

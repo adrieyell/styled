@@ -1,5 +1,7 @@
 "use strict";
 
+console.log("renderAnalytics() called");
+
 let currentVariants = [];
 
 // Make sure no direct DELETE calls are made
@@ -217,15 +219,18 @@ function onAnalyticsDateChange(days) {
 }
 
 async function renderDashboard() {
-  // Recent orders
+  // ─────────────────────────────────────────────
+  // 1. RECENT ORDERS (no early return)
+  // ─────────────────────────────────────────────
   tableLoading("dashboard-orders-body", 7);
   try {
     const data = await fetchJSON(`${API}/orders.php?page=1&limit=5`);
     const body = document.getElementById("dashboard-orders-body");
-    if (!body) return;
 
-    if (!data.success || !data.orders.length) {
-      body.innerHTML = `<tr><td colspan="7" class="text-muted text-sm" style="padding:16px">No orders yet.</td></tr>`;
+    if (!body) {
+      // element missing → skip, but don't break
+    } else if (!data.success || !data.orders.length) {
+      body.innerHTML = `<tr><td colspan="7" class="text-muted text-sm" style="padding:16px">No orders yet. </td></tr>`;
     } else {
       body.innerHTML = data.orders
         .map(
@@ -243,11 +248,12 @@ async function renderDashboard() {
         .join("");
     }
   } catch (err) {
-    console.error("[admin]", err);
     tableError("dashboard-orders-body", 7);
   }
 
-  // Dashboard stat cards — fetch from analytics
+  // ─────────────────────────────────────────────
+  // 2. STAT CARDS + TOP PRODUCTS + LOW STOCK + CHARTS
+  // ─────────────────────────────────────────────
   try {
     const data = await fetchJSON(`${API}/analytics.php`);
     if (!data) return;
@@ -261,7 +267,6 @@ async function renderDashboard() {
     set("stat-avg-order", formatPrice(data.avg_order_value));
     set("stat-conversion", data.conversion_rate + "%");
 
-    // Update revenue change label
     const revenueChangeEl = document.getElementById("stat-revenue-change");
     if (revenueChangeEl) {
       const revChange = data.revenue_change_percent ?? 0;
@@ -270,7 +275,6 @@ async function renderDashboard() {
       revenueChangeEl.className = `stat-change ${revChange >= 0 ? "up" : "down"}`;
     }
 
-    // Update orders change label
     const ordersChangeEl = document.getElementById("stat-orders-change");
     if (ordersChangeEl) {
       const ordersChange = data.orders_change_percent ?? 0;
@@ -279,7 +283,6 @@ async function renderDashboard() {
       ordersChangeEl.className = `stat-change ${ordersChange >= 0 ? "up" : "down"}`;
     }
 
-    // Top products
     const topProds = document.getElementById("top-products-list");
     if (topProds && data.top_products) {
       topProds.innerHTML = data.top_products
@@ -300,7 +303,6 @@ async function renderDashboard() {
         .join("");
     }
 
-    // Low stock — fetch from inventory
     const invRes = await fetch(`${API}/inventory.php?status=low`, {
       credentials: "include",
     });
@@ -327,17 +329,13 @@ async function renderDashboard() {
         : `<div class="text-sm text-muted" style="padding:12px">All stock levels healthy.</div>`;
     }
 
-    // Feed revenue chart with real data
     _dashboardChartData = data;
     initCharts("dashboard");
   } catch (err) {
-    console.error("[admin]", err);
+    // silent fail – data will be missing but page stays usable
   }
 }
 
-/* ─────────────────────────────────────────────
-   ORDERS
-───────────────────────────────────────────── */
 let ordersPage = 1;
 let ordersStatusFilter = "";
 let ordersSearch = "";
@@ -357,7 +355,7 @@ async function renderOrdersTable() {
     if (!body) return;
 
     if (!data.success || !data.orders.length) {
-      body.innerHTML = `<tr><td colspan="7" class="text-muted text-sm" style="padding:16px">No orders found.</td></tr>`;
+      body.innerHTML = `<tr><td colspan="7" class="text-muted text-sm" style="padding:16px">No orders found. </td></table>`;
     } else {
       body.innerHTML = data.orders
         .map(
@@ -375,7 +373,7 @@ async function renderOrdersTable() {
           <td>${statusBadge(o.payment_method === "cod" ? "Pending" : "Paid")}</td>
           <td style="font-weight:500">${formatPrice(o.total_amount)}</td>
           <td><button class="ellipsis-btn">···</button></td>
-        </tr>`,
+        </td>`,
         )
         .join("");
     }
@@ -460,6 +458,19 @@ async function openOrderDetail(orderNumber) {
     if (elSub) elSub.textContent = formatPrice(subtotal);
     const elTotal = document.getElementById("detail-total-price");
     if (elTotal) elTotal.textContent = formatPrice(o.total_amount);
+
+    // ── Update discount ──────────────────────────────────────────────
+    const discountAmount = o.discount || 0;
+    const discountEl = document.getElementById("detail-discount");
+    if (discountEl) {
+      if (discountAmount > 0) {
+        discountEl.innerHTML = `−${formatPrice(discountAmount)}`;
+        discountEl.style.color = "var(--green)";
+      } else {
+        discountEl.innerHTML = "—";
+        discountEl.style.color = "";
+      }
+    }
 
     // Customer
     document.getElementById("detail-customer").innerHTML = `
@@ -591,7 +602,7 @@ async function renderProductsTable() {
     if (!body) return;
 
     if (!data.success || !data.products.length) {
-      body.innerHTML = `<tr><td colspan="6" class="text-muted text-sm" style="padding:16px">No products found.</td></tr>`;
+      body.innerHTML = `<tr><td colspan="6" class="text-muted text-sm" style="padding:16px">No products found. </td></tr>`;
     } else {
       body.innerHTML = data.products
         .map((p) => {
@@ -603,6 +614,8 @@ async function renderProductsTable() {
                 ? "Low Stock"
                 : p.status || "Active";
           return `
+
+
         <tr>
           <td>
             <div class="flex-center gap-12">
@@ -883,7 +896,7 @@ async function renderCustomersTable() {
     if (!body) return;
 
     if (!data.success || !data.customers.length) {
-      body.innerHTML = `<tr><td colspan="7" class="text-muted text-sm" style="padding:16px">No customers found.</td></tr>`;
+      body.innerHTML = `<tr><td colspan="7" class="text-muted text-sm" style="padding:16px">No customers found. </td></tr>`;
     } else {
       body.innerHTML = data.customers
         .map(
@@ -953,6 +966,16 @@ async function openCustomerProfile(id) {
       c.total_spent,
     );
 
+    // ── Update shipping address using the dedicated ID ──
+    const addrDiv = document.getElementById("customer-shipping-address");
+    if (addrDiv) {
+      if (c.address && c.address.street) {
+        addrDiv.innerHTML = `${c.address.street}<br>${c.address.city}, ${c.address.province}<br>${c.address.zip_code}`;
+      } else {
+        addrDiv.innerHTML = "No default address on file.";
+      }
+    }
+
     const noteEl = document.getElementById("profile-admin-notes");
     if (noteEl) noteEl.value = c.admin_notes || "";
 
@@ -965,10 +988,11 @@ async function openCustomerProfile(id) {
             <td class="text-muted">${new Date(o.created_at).toLocaleDateString("en-PH", { month: "short", day: "numeric", year: "numeric" })}</td>
             <td>${statusBadge(o.status)}</td>
             <td style="font-weight:500">${formatPrice(o.total_amount)}</td>
-          </tr>`,
+          </table>
+        `,
           )
           .join("")
-      : `<tr><td colspan="4" class="text-muted text-sm" style="padding:12px">No orders found</td></tr>`;
+      : `<table><td colspan="4" class="text-muted text-sm" style="padding:12px">No orders found </td></tr>`;
   } catch (err) {
     console.error("[admin]", err);
   }
@@ -1005,15 +1029,21 @@ async function renderAnalytics() {
     const data = await fetchJSON(`${API}/analytics.php`);
     _analyticsData = data;
 
-    // KPI cards
-    const set = (id, val) => {
-      const el = document.getElementById(id);
-      if (el) el.textContent = val;
-    };
-    set("analytics-total-revenue", formatPrice(data.total_revenue));
-    set("analytics-total-orders", data.total_orders);
-    set("analytics-avg-order", formatPrice(data.avg_order_value));
-    set("analytics-conversion-rate", data.conversion_rate + "%");
+    // Update KPI cards using classes (since HTML has no IDs)
+    const stats = document.querySelectorAll(
+      "#page-analytics .stats-grid .stat-card",
+    );
+    if (stats.length >= 4) {
+      stats[0].querySelector(".stat-value").innerText = formatPrice(
+        data.total_revenue,
+      );
+      stats[1].querySelector(".stat-value").innerText = data.total_orders;
+      stats[2].querySelector(".stat-value").innerText = formatPrice(
+        data.avg_order_value,
+      );
+      stats[3].querySelector(".stat-value").innerText =
+        data.conversion_rate + "%";
+    }
 
     // Top products
     const topProds = document.getElementById("analytics-top-products");
@@ -1028,14 +1058,15 @@ async function renderAnalytics() {
             <div class="text-sm text-muted">${p.quantity_sold} sold</div>
           </div>
           <div class="text-sm text-bold">${formatPrice(p.revenue)}</div>
-        </div>`,
+        </div>
+      `,
         )
         .join("");
     }
 
     initCharts("analytics");
   } catch (err) {
-    console.error("[admin]", err);
+    console.error("[admin] Analytics load error:", err);
   }
 }
 
@@ -1045,14 +1076,31 @@ async function renderAnalytics() {
 async function renderPromotions() {
   tableLoading("promotions-body", 8);
   try {
-    const data = await fetchJSON(`${API}/promotions.php`);
+    // Fetch both promotions list and stats
+    const [listData, statsData] = await Promise.all([
+      fetchJSON(`${API}/promotions.php`),
+      fetchJSON(`${API}/promotions-stats.php`),
+    ]);
+    // Inside renderPromotions(), after fetching statsData
+    // promotions-stats.php returns the data directly, no 'success' wrapper
+    if (statsData && typeof statsData.active_codes !== "undefined") {
+      document.getElementById("promo-active-codes").innerText =
+        statsData.active_codes;
+      document.getElementById("promo-total-uses").innerText =
+        statsData.total_uses;
+      document.getElementById("promo-revenue").innerHTML = formatPrice(
+        statsData.revenue_from_promos,
+      );
+    } else {
+      console.warn("Promotions stats failed:", statsData);
+    }
+
     const body = document.getElementById("promotions-body");
     if (!body) return;
-
-    if (!data.success || !data.promotions.length) {
-      body.innerHTML = `<tr><td colspan="8" class="text-muted text-sm" style="padding:16px">No promotions yet.</td></tr>`;
+    if (!listData.success || !listData.promotions.length) {
+      body.innerHTML = `<tr><td colspan="8" class="text-muted text-sm" style="padding:16px">No promotions yet. </td></tr>`;
     } else {
-      body.innerHTML = data.promotions
+      body.innerHTML = listData.promotions
         .map((p) => {
           const isExpired =
             p.expiry_date && new Date(p.expiry_date) < new Date();
@@ -1094,7 +1142,7 @@ async function renderPromotions() {
                 <button class="btn btn-outline btn-sm" style="color:var(--red)" onclick="deletePromo(${p.promo_id},'${p.code}')">Delete</button>
               </div>
             </td>
-          </tr>`;
+          <tr>`;
         })
         .join("");
     }
@@ -1201,7 +1249,7 @@ async function renderInventory() {
     if (!body) return;
 
     if (!data.success || !data.inventory.length) {
-      body.innerHTML = `<tr><td colspan="7" class="text-muted text-sm" style="padding:16px">No inventory data found.</td></tr>`;
+      body.innerHTML = `<tr><td colspan="7" class="text-muted text-sm" style="padding:16px">No inventory data found. </td></table>`;
     } else {
       body.innerHTML = data.inventory
         .map((item) => {
@@ -1286,7 +1334,7 @@ async function renderUsers() {
     if (!body) return;
 
     if (!data.success || !data.users.length) {
-      body.innerHTML = `<tr><td colspan="5" class="text-muted text-sm" style="padding:16px">No staff users found.</td></tr>`;
+      body.innerHTML = `<tr><td colspan="5" class="text-muted text-sm" style="padding:16px">No staff users found. </td></tr>`;
     } else {
       const roleClass = { admin: "role-admin", staff: "role-staff" };
       body.innerHTML = data.users
@@ -1410,7 +1458,7 @@ async function renderContactMessages() {
     if (!body) return;
 
     if (!data.success || !data.messages.length) {
-      body.innerHTML = `<tr><td colspan="7" class="text-muted text-sm" style="padding:16px">No messages found.</td></tr>`;
+      body.innerHTML = `<tr><td colspan="7" class="text-muted text-sm" style="padding:16px">No messages found. </td></tr>`;
     } else {
       body.innerHTML = data.messages
         .map(
@@ -1454,22 +1502,6 @@ async function renderContactMessages() {
         `function(p){contactPage=p;renderContactMessages();}`,
       );
     }
-    document.querySelectorAll(".reply-contact-btn").forEach((btn) => {
-      btn.addEventListener("click", () => {
-        const id = parseInt(btn.dataset.id);
-        const email = btn.dataset.email;
-        const subject = btn.dataset.subject;
-        openReplyModal(id, email, subject);
-      });
-    });
-
-    renderPagination(
-      "contact-pagination",
-      data.total,
-      contactPage,
-      20,
-      `function(p){contactPage=p;renderContactMessages();}`,
-    );
   } catch (err) {
     console.error("[admin]", err);
     tableError("contact-body", 7);

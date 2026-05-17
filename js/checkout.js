@@ -1,8 +1,3 @@
-// ============================================
-// CHECKOUT PAGE - Cart, quantities, payment
-// Loads admin settings from public API
-// ============================================
-
 let appliedPromo = null;
 let activePaymentMethod = "card";
 let checkoutSettings = {

@@ -1,7 +1,3 @@
-// ============================================
-// CONTACT PAGE - Form submission
-// ============================================
-
 async function sendMessage() {
   const name = document.getElementById("f-name").value.trim();
   const email = document.getElementById("f-email").value.trim();

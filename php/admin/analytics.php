@@ -18,27 +18,35 @@ if ($_SERVER['REQUEST_METHOD'] !== 'GET') {
 
 $pdo = getPDO();
 
-// ── Total revenue (delivered + shipped orders, not cancelled/refunded) ────────
+// Total revenue / orders / avg order value
 $rev = $pdo->query("
     SELECT
-        COALESCE(SUM(grand_total), 0)  AS total_revenue,
-        COUNT(*)                         AS total_orders,
-        COALESCE(AVG(grand_total), 0)  AS avg_order_value
+        COALESCE(SUM(total_amount), 0) AS total_revenue,
+        COUNT(*)                       AS total_orders,
+        COALESCE(AVG(total_amount), 0) AS avg_order_value
     FROM orders
     WHERE status NOT IN ('cancelled', 'refunded')
 ")->fetch();
 
-// ── Revenue by day (last 14 days) ─────────────────────────────────────────────
+// Revenue by day (last 14 days)
 $revByDay = $pdo->query("
     SELECT
         DATE(created_at)            AS date,
-        SUM(grand_total)           AS revenue
+        SUM(total_amount)           AS revenue
     FROM orders
     WHERE status NOT IN ('cancelled', 'refunded')
       AND created_at >= DATE_SUB(CURDATE(), INTERVAL 14 DAY)
     GROUP BY DATE(created_at)
     ORDER BY date ASC
 ")->fetchAll();
+
+// Revenue change (last 7 days vs previous 7 days)
+$revChange = $pdo->prepare("
+    SELECT COALESCE(SUM(total_amount), 0) AS revenue
+    FROM orders
+    WHERE status NOT IN ('cancelled', 'refunded')
+      AND created_at >= ? AND created_at < ?
+");
 
 // ── Orders by status ──────────────────────────────────────────────────────────
 $byStatus = $pdo->query("

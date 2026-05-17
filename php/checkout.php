@@ -58,7 +58,7 @@ if ($_mailerAvailable) {
 }
 
 /**
- * Send order confirmation email (FIXED: recalculate subtotal from items)
+ * Send order confirmation email
  */
 function send_order_confirmation(
     string $toEmail,
@@ -66,18 +66,17 @@ function send_order_confirmation(
     string $orderNumber,
     array  $items,
     PDO    $pdo,
-    float  $subtotal,        // kept for compatibility, but we recalc inside
+    float  $subtotal,
     float  $shippingFee,
     float  $grandTotal,
     string $paymentMethod,
     array  $shippingAddress
 ): void {
-    // Recalculate subtotal from items to ensure consistency with displayed rows
+    // Recalculate subtotal from items to ensure consistency
     $recalcSubtotal = 0;
     foreach ($items as $item) {
         $recalcSubtotal += $item['unit_price'] * $item['qty'];
     }
-    // Use the recalculated value for display, but keep passed shipping/grand if needed
     $subtotal = $recalcSubtotal;
     
     // Build items HTML rows
@@ -231,7 +230,7 @@ function send_order_confirmation(
     $mail->send();
 }
 
-// ── Rest of checkout logic unchanged ─────────────────────────────────────────
+// ── Main checkout logic ───────────────────────────────────────────────────────
 try {
     $pdo  = getPDO();
     $body = get_json_body();
@@ -293,24 +292,55 @@ try {
     }
 
     $shipping_fee = $subtotal >= 1000 ? 0.0 : 150.0;
-    $grand_total  = round($subtotal + $shipping_fee, 2);
+
+    // ── Promo validation and discount calculation ───────────────────────────
+    $promo_id = null;
+    $discount_amount = 0.00;
+
+    if ($promo_code !== '') {
+        $promo_stmt = $pdo->prepare('
+            SELECT promo_id, discount_type, discount_value, min_order, usage_limit, usage_count 
+            FROM promotions 
+            WHERE code = :code AND is_active = 1 
+              AND (expiry_date IS NULL OR expiry_date > NOW())
+              AND (usage_limit IS NULL OR usage_count < usage_limit)
+            LIMIT 1
+        ');
+        $promo_stmt->execute([':code' => $promo_code]);
+        $promo = $promo_stmt->fetch(PDO::FETCH_ASSOC);
+        
+        if ($promo) {
+            if ($subtotal >= ($promo['min_order'] ?? 0)) {
+                $promo_id = (int) $promo['promo_id'];
+                if ($promo['discount_type'] === 'percent') {
+                    $discount_amount = $subtotal * ($promo['discount_value'] / 100);
+                } else {
+                    $discount_amount = min($promo['discount_value'], $subtotal);
+                }
+            }
+        }
+    }
+
+    // ── Final grand total after discount ────────────────────────────────────
+    $grand_total = round($subtotal - $discount_amount + $shipping_fee, 2);
 
     $pdo->beginTransaction();
 
+    // ── Address handling (insert or reuse) ──────────────────────────────────
     $street   = trim($shipping_address['street']);
     $city     = trim($shipping_address['city']);
     $province = trim($shipping_address['province']);
     $zip_code = trim($shipping_address['zip_code']);
 
-    $addr_check = $pdo->prepare(
-        'SELECT address_id FROM addresses
-         WHERE user_id = :uid
-           AND street   = :street
-           AND city     = :city
-           AND province = :province
-           AND zip_code = :zip
-         LIMIT 1'
-    );
+    $addr_check = $pdo->prepare('
+        SELECT address_id FROM addresses
+        WHERE user_id = :uid
+          AND street   = :street
+          AND city     = :city
+          AND province = :province
+          AND zip_code = :zip
+        LIMIT 1
+    ');
     $addr_check->execute([
         ':uid'      => $user_id,
         ':street'   => $street,
@@ -323,10 +353,10 @@ try {
     if ($existing_addr) {
         $address_id = (int) $existing_addr['address_id'];
     } else {
-        $ins_addr = $pdo->prepare(
-            'INSERT INTO addresses (user_id, label, street, city, province, zip_code, is_default)
-             VALUES (:uid, :label, :street, :city, :province, :zip, 0)'
-        );
+        $ins_addr = $pdo->prepare('
+            INSERT INTO addresses (user_id, label, street, city, province, zip_code, is_default)
+            VALUES (:uid, :label, :street, :city, :province, :zip, 0)
+        ');
         $ins_addr->execute([
             ':uid'      => $user_id,
             ':label'    => 'Shipping',
@@ -340,43 +370,39 @@ try {
 
     $order_number = generate_order_number($pdo);
 
-    $promo_id = null;
-    if ($promo_code !== '') {
-        $promo_stmt = $pdo->prepare(
-            'SELECT promo_id FROM promotions WHERE code = :code LIMIT 1'
-        );
-        $promo_stmt->execute([':code' => $promo_code]);
-        $promo_row = $promo_stmt->fetch(PDO::FETCH_ASSOC);
-        if ($promo_row) {
-            $promo_id = (int) $promo_row['promo_id'];
-        }
-    }
-
-    $ins_order = $pdo->prepare(
-        'INSERT INTO orders
-             (user_id, address_id, order_number, subtotal, shipping_fee,
-              discount, grand_total, payment_method, promo_id, status)
-         VALUES
-             (:uid, :addr_id, :order_number, :subtotal, :shipping_fee,
-              :discount, :grand_total, :payment_method, :promo_id, "pending")'
-    );
+    // ── Insert order ────────────────────────────────────────────────────────
+    $ins_order = $pdo->prepare('
+        INSERT INTO orders
+            (user_id, address_id, order_number, subtotal, shipping_fee,
+             discount, grand_total, payment_method, promo_id, status)
+        VALUES
+            (:uid, :addr_id, :order_number, :subtotal, :shipping_fee,
+             :discount, :grand_total, :payment_method, :promo_id, "pending")
+    ');
     $ins_order->execute([
         ':uid'            => $user_id,
         ':addr_id'        => $address_id,
         ':order_number'   => $order_number,
         ':subtotal'       => round($subtotal, 2),
         ':shipping_fee'   => $shipping_fee,
-        ':discount'       => 0.00,
+        ':discount'       => round($discount_amount, 2),
         ':grand_total'    => $grand_total,
         ':payment_method' => $payment_method,
         ':promo_id'       => $promo_id,
     ]);
     $order_id = (int) $pdo->lastInsertId();
 
-    $ins_item = $pdo->prepare(
-        'INSERT INTO order_items (order_id, product_id, size, qty, unit_price)
-         VALUES (:order_id, :product_id, :size, :qty, :unit_price)'
-    );
+    // ── Increment promo usage count (if promo was applied) ───────────────────
+    if ($promo_id) {
+        $update_usage = $pdo->prepare('UPDATE promotions SET usage_count = usage_count + 1 WHERE promo_id = :pid');
+        $update_usage->execute([':pid' => $promo_id]);
+    }
+
+    // ── Insert order items ───────────────────────────────────────────────────
+    $ins_item = $pdo->prepare('
+        INSERT INTO order_items (order_id, product_id, size, qty, unit_price)
+        VALUES (:order_id, :product_id, :size, :qty, :unit_price)
+    ');
     foreach ($validated_items as $item) {
         $ins_item->execute([
             ':order_id'   => $order_id,
@@ -387,11 +413,13 @@ try {
         ]);
     }
 
+    // ── Clear cart ──────────────────────────────────────────────────────────
     $del_cart = $pdo->prepare('DELETE FROM cart WHERE user_id = :uid');
     $del_cart->execute([':uid' => $user_id]);
 
     $pdo->commit();
 
+    // ── Send confirmation email ─────────────────────────────────────────────
     $user_stmt = $pdo->prepare('SELECT email, full_name FROM users WHERE user_id = :uid LIMIT 1');
     $user_stmt->execute([':uid' => $user_id]);
     $user_row = $user_stmt->fetch(PDO::FETCH_ASSOC);

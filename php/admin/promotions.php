@@ -11,9 +11,13 @@ header('Content-Type: application/json');
 require_once __DIR__ . '/_auth.php';
 require_once __DIR__ . '/../db.php';
 
-requireAuth('admin');
 $method = $_SERVER['REQUEST_METHOD'];
-$pdo    = getPDO();
+if ($method === 'GET') {
+    requireAuth();  // staff and admin can view promotions
+} else {
+    requireAuth('admin'); // only admin can create/update/delete
+}
+$pdo = getPDO();
 
 // ── GET ───────────────────────────────────────────────────────────────────────
 if ($method === 'GET') {

@@ -1,8 +1,3 @@
-// ============================================
-// AUTH PAGE — js/auth.js
-// Sign up, Login, Password validation
-// Now backed by real PHP session API.
-// ============================================
 
 const API_BASE = "/styled";
 

@@ -211,6 +211,7 @@ function navigate(page, btn) {
 
 // ========== DASHBOARD ==========
 async function renderDashboard() {
+  // Recent orders
   tableLoading("dashboard-orders-body", 6);
   try {
     const data = await fetchJSON(`${API}/orders.php?page=1&limit=5`);
@@ -229,7 +230,7 @@ async function renderDashboard() {
           <td>${statusBadge(o.status)}</td>
           <td style="font-weight:500">${formatPrice(o.total_amount)}</td>
           <td><button class="ellipsis-btn">···</button></td>
-        </tr>
+         </tr>
       `,
         )
         .join("");
@@ -238,6 +239,7 @@ async function renderDashboard() {
     tableError("dashboard-orders-body", 6);
   }
 
+  // Low stock alerts
   try {
     const invRes = await fetch(`${API}/inventory.php?status=low`, {
       credentials: "include",
@@ -261,6 +263,44 @@ async function renderDashboard() {
     }
   } catch (err) {
     console.error(err);
+  }
+
+  // Staff dashboard stats
+  try {
+    const stats = await fetchJSON(`${API}/staff-analytics.php`);
+    console.log("Dashboard stats:", stats);
+
+    // Update by ID (foolproof)
+    document.getElementById("stat-total-revenue").innerText = formatPrice(
+      stats.total_revenue,
+    );
+    document.getElementById("stat-total-orders").innerText = stats.total_orders;
+    document.getElementById("stat-avg-order").innerText = formatPrice(
+      stats.avg_order_value,
+    );
+    document.getElementById("stat-conversion-rate").innerText =
+      stats.conversion_rate + "%";
+
+    const revChange = stats.revenue_change_percent;
+    const ordersChange = stats.orders_change_percent;
+    const revenueChangeEl = document
+      .querySelector("#stat-total-revenue")
+      ?.closest(".stat-card")
+      ?.querySelector(".stat-change");
+    const ordersChangeEl = document
+      .querySelector("#stat-total-orders")
+      ?.closest(".stat-card")
+      ?.querySelector(".stat-change");
+    if (revenueChangeEl) {
+      revenueChangeEl.innerHTML = `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="18 15 12 9 6 15"/></svg> ${revChange >= 0 ? "+" : ""}${revChange}% vs last 7 days`;
+      revenueChangeEl.className = `stat-change ${revChange >= 0 ? "up" : "down"}`;
+    }
+    if (ordersChangeEl) {
+      ordersChangeEl.innerHTML = `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="18 15 12 9 6 15"/></svg> ${ordersChange >= 0 ? "+" : ""}${ordersChange}% vs last 7 days`;
+      ordersChangeEl.className = `stat-change ${ordersChange >= 0 ? "up" : "down"}`;
+    }
+  } catch (err) {
+    console.warn("Could not load staff dashboard stats", err);
   }
 }
 
@@ -290,7 +330,7 @@ async function renderOrdersTable() {
           <td>${statusBadge(o.status)}</td>
           <td style="font-weight:500">${formatPrice(o.total_amount)}</td>
           <td><button class="ellipsis-btn">···</button></td>
-        </tr>
+         </tr>
       `,
         )
         .join("");
@@ -363,6 +403,44 @@ async function openOrderDetail(orderNumber) {
     document.getElementById("detail-total-price").innerHTML = formatPrice(
       o.total_amount,
     );
+
+    // ── Update discount ──────────────────────────────────────────────
+    const discountAmount = o.discount || 0;
+    const discountEl = document.getElementById("detail-discount");
+    if (discountEl) {
+      if (discountAmount > 0) {
+        discountEl.innerHTML = `−${formatPrice(discountAmount)}`;
+        discountEl.style.color = "var(--green)";
+      } else {
+        discountEl.innerHTML = "—";
+        discountEl.style.color = "";
+      }
+    }
+
+    // ── Timeline (moved inside try block) ─────────────────────────────
+    const timelineEl = document.getElementById("detail-timeline");
+    if (timelineEl) {
+      const tl = o.timeline || [];
+      if (tl.length === 0) {
+        timelineEl.innerHTML = `<div class="text-sm text-muted">No timeline events yet.</div>`;
+      } else {
+        timelineEl.innerHTML = tl
+          .map(
+            (t) => `
+              <div class="timeline-item">
+                <div class="timeline-dot"></div>
+                <div class="timeline-content">
+                  <div class="timeline-label">${escapeHtml(t.step_label)}</div>
+                  <div class="timeline-time">${new Date(t.occurred_at).toLocaleString()}</div>
+                  ${t.note ? `<div class="text-sm text-muted">${escapeHtml(t.note)}</div>` : ""}
+                </div>
+              </div>
+            `,
+          )
+          .join("");
+      }
+    }
+
     let actionsDiv = document.getElementById("detail-actions");
     if (!actionsDiv) {
       const container = document.querySelector(
@@ -454,13 +532,18 @@ async function renderProductsTable() {
                 ? "Low Stock"
                 : p.status || "Active";
           return `<tr>
-          <td><div class="flex-center gap-12"><div class="product-thumb">👗</div><span style="font-weight:500">${p.name}</span></div></td>
+          <td><div class="flex-center gap-12"><div class="product-thumb" style="display:flex;align-items:center;justify-content:center">
+  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="color:var(--brown-100)">
+    <path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/>
+    <line x1="7" y1="7" x2="7.01" y2="7"/>
+  </svg>
+</div><span style="font-weight:500">${p.name}</span></div></td>
           <td class="text-muted">${p.category || "—"}</td>
           <td>${formatPrice(p.price)}</td>
           <td><div class="stock-bar-wrap"><span class="stock-num">${stock}</span><div class="progress-bar"><div class="progress-fill" style="width:${Math.min(100, (stock / 30) * 100)}%"></div></div></div></td>
           <td>${statusBadge(statLbl)}</td>
           <td><button class="btn btn-outline btn-sm" onclick="openStockEditor(${p.product_id},'${p.name.replace(/'/g, "\\'")}',${stock})">Update Stock</button></td>
-        </tr>`;
+         </tr>`;
         })
         .join("");
     }
@@ -493,23 +576,84 @@ function filterProductsByCategory(c) {
 }
 
 let stockEditSizeId = null;
-function openStockEditor(productId, name, currentStock) {
+
+function openStockEditor(productId, productName) {
   stockEditSizeId = productId;
-  let modal = document.getElementById("modal-stock-edit");
-  if (!modal) {
-    modal = document.createElement("div");
-    modal.className = "modal-overlay";
-    modal.id = "modal-stock-edit";
-    modal.innerHTML = `<div class="modal" style="max-width:360px"><div class="modal-header"><div class="modal-title" id="stock-modal-title">Update Stock</div><button class="btn btn-ghost btn-icon" onclick="closeModal('modal-stock-edit')">✕</button></div><div class="modal-body"><div class="form-field"><label class="form-label">New Stock Quantity</label><input class="form-input" type="number" id="stock-qty-input" min="0" /></div></div><div class="modal-footer"><button class="btn btn-outline" onclick="closeModal('modal-stock-edit')">Cancel</button><button class="btn btn-primary" onclick="saveStock()">Save</button></div></div>`;
-    document.body.appendChild(modal);
-    modal.addEventListener("click", (e) => {
-      if (e.target === modal) closeModal("modal-stock-edit");
-    });
+  fetchJSON(`${API}/products.php?id=${productId}`)
+    .then((data) => {
+      if (!data.success) throw new Error();
+      const sizes = data.product.sizes || [];
+      if (!sizes.length) {
+        toast("No size variants found for this product.", "error");
+        return;
+      }
+      let modal = document.getElementById("modal-stock-edit-per-size");
+      if (!modal) {
+        modal = document.createElement("div");
+        modal.className = "modal-overlay";
+        modal.id = "modal-stock-edit-per-size";
+        modal.innerHTML = `
+        <div class="modal" style="max-width:500px">
+          <div class="modal-header"><div class="modal-title">Update Stock – <span id="stock-product-name"></span></div><button class="btn btn-ghost btn-icon" onclick="closeModal('modal-stock-edit-per-size')">✕</button></div>
+          <div class="modal-body">
+            <table style="width:100%"><thead><tr><th>Size</th><th>Current Stock</th><th>New Stock</th></tr></thead><tbody id="stock-sizes-tbody"></tbody></table>
+          </div>
+          <div class="modal-footer">
+            <button class="btn btn-outline" onclick="closeModal('modal-stock-edit-per-size')">Cancel</button>
+            <button class="btn btn-primary" onclick="savePerSizeStock()">Save All</button>
+          </div>
+        </div>`;
+        document.body.appendChild(modal);
+        modal.addEventListener("click", (e) => {
+          if (e.target === modal) closeModal("modal-stock-edit-per-size");
+        });
+      }
+      document.getElementById("stock-product-name").innerText = productName;
+      const tbody = document.getElementById("stock-sizes-tbody");
+      tbody.innerHTML = sizes
+        .map(
+          (s) => `
+      <tr>
+        <td>${s.size}</td>
+        <td>${s.stock_qty}</td>
+        <td><input type="number" class="form-input" data-size-id="${s.size_id}" value="${s.stock_qty}" style="width:80px"></td>
+       </tr>
+    `,
+        )
+        .join("");
+      openModal("modal-stock-edit-per-size");
+    })
+    .catch(() => toast("Could not load product sizes.", "error"));
+}
+
+async function savePerSizeStock() {
+  const inputs = document.querySelectorAll("#stock-sizes-tbody input");
+  const updates = [];
+  inputs.forEach((inp) => {
+    const sizeId = parseInt(inp.dataset.sizeId);
+    const newQty = parseInt(inp.value);
+    if (!isNaN(newQty) && newQty >= 0)
+      updates.push({ size_id: sizeId, stock_qty: newQty });
+  });
+  if (!updates.length) return;
+  try {
+    await Promise.all(
+      updates.map((u) =>
+        fetch(`${API}/inventory.php`, {
+          method: "PUT",
+          credentials: "include",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(u),
+        }),
+      ),
+    );
+    closeModal("modal-stock-edit-per-size");
+    renderProductsTable();
+    renderInventory();
+    toast("Stock updated.", "ok");
+  } catch (err) {
+    toast("Network error.", "error");
   }
-  document.getElementById("stock-modal-title").textContent =
-    "Update Stock — " + name;
-  document.getElementById("stock-qty-input").value = currentStock;
-  openModal("modal-stock-edit");
 }
 async function saveStock() {
   const qty = parseInt(document.getElementById("stock-qty-input")?.value, 10);
@@ -576,7 +720,7 @@ async function renderCustomersTable() {
           <td>${c.admin_notes ? `<span class="badge badge-processing">Has note</span>` : "—"}</td>
           <td class="text-muted">${new Date(c.created_at).toLocaleDateString()}</td>
           <td><button class="ellipsis-btn">···</button></td>
-        </tr>
+         </tr>
       `,
         )
         .join("");
@@ -592,24 +736,17 @@ async function renderCustomersTable() {
     tableError("customers-body", 7);
   }
 }
-function filterCustomers(q) {
-  customersSearch = q;
-  customersPage = 1;
-  renderCustomersTable();
-}
-function showCustomersList() {
-  document.getElementById("customers-list-view").style.display = "";
-  document.getElementById("customer-profile-view").style.display = "none";
-}
 async function openCustomerProfile(id) {
   viewingCustomerId = id;
   navigate("customers", document.querySelector("[onclick*=\"'customers'\"]"));
   document.getElementById("customers-list-view").style.display = "none";
   document.getElementById("customer-profile-view").style.display = "";
+
   try {
     const data = await fetchJSON(`${API}/customers.php?id=${id}`);
     if (!data.success) return;
     const c = data.customer;
+
     document.getElementById("profile-avatar").textContent = initials(
       c.full_name,
     );
@@ -619,6 +756,8 @@ async function openCustomerProfile(id) {
     document.getElementById("profile-total-spent").innerHTML = formatPrice(
       c.total_spent,
     );
+
+    // ── Internal notes section (create if not exists) ──
     let notesDiv = document.getElementById("profile-admin-notes");
     if (!notesDiv) {
       const card = document.querySelector(
@@ -627,19 +766,40 @@ async function openCustomerProfile(id) {
       if (card) {
         card.insertAdjacentHTML(
           "beforeend",
-          `<div class="form-field" style="margin-top:16px"><label class="form-label">Internal Notes</label><textarea class="form-textarea" id="profile-admin-notes" rows="2" placeholder="Add internal note…"></textarea><button class="btn btn-outline btn-sm" style="margin-top:8px" onclick="saveCustomerNote()">Save Note</button></div>`,
+          `<div class="form-field" style="margin-top:16px">
+             <label class="form-label">Internal Notes</label>
+             <textarea class="form-textarea" id="profile-admin-notes" rows="2" placeholder="Add internal note…"></textarea>
+             <button class="btn btn-outline btn-sm" style="margin-top:8px" onclick="saveCustomerNote()">Save Note</button>
+           </div>`,
         );
         notesDiv = document.getElementById("profile-admin-notes");
       }
     }
     if (notesDiv) notesDiv.value = c.admin_notes || "";
+
+    // ── Update shipping address using the dedicated ID ──
+    const addrDiv = document.getElementById("customer-shipping-address");
+    if (addrDiv) {
+      if (c.address && c.address.street) {
+        addrDiv.innerHTML = `${c.address.street}<br>${c.address.city}, ${c.address.province}<br>${c.address.zip_code}`;
+      } else {
+        addrDiv.innerHTML = "No default address on file.";
+      }
+    }
+
+    // ── Order history ──
     const ordersBody = document.getElementById("profile-orders");
     if (ordersBody) {
       ordersBody.innerHTML = c.orders.length
         ? c.orders
             .map(
               (o) =>
-                `<tr onclick="openOrderDetail('${o.order_number}')" style="cursor:pointer"><td>#${o.order_number}</td><td class="text-muted">${new Date(o.created_at).toLocaleDateString()}</td><td>${statusBadge(o.status)}</td><td>${formatPrice(o.total_amount)}</td></tr>`,
+                `<tr onclick="openOrderDetail('${o.order_number}')" style="cursor:pointer">
+                    <td>#${o.order_number}</td>
+                    <td class="text-muted">${new Date(o.created_at).toLocaleDateString()}</td>
+                    <td>${statusBadge(o.status)}</td>
+                    <td style="font-weight:500">${formatPrice(o.total_amount)}</td>
+                   </tr>`,
             )
             .join("")
         : `<tr><td colspan="4" class="text-muted">No orders found</td></tr>`;
@@ -648,6 +808,16 @@ async function openCustomerProfile(id) {
     toast("Failed to load customer profile.", "error");
   }
 }
+function filterCustomers(q) {
+  customersSearch = q;
+  customersPage = 1;
+  renderCustomersTable();
+}
+function showCustomersList() {
+  document.getElementById("customers-list-view").style.display = "";
+  document.getElementById("customer-profile-view").style.display = "none";
+}
+
 async function saveCustomerNote() {
   if (!viewingCustomerId) return;
   const notes = document.getElementById("profile-admin-notes")?.value || "";
@@ -672,13 +842,29 @@ async function saveCustomerNote() {
 async function renderPromotions() {
   tableLoading("promotions-body", 8);
   try {
-    const data = await fetchJSON(`${API}/promotions.php`);
+    const [listData, statsData] = await Promise.all([
+      fetchJSON(`${API}/promotions.php`),
+      fetchJSON(`${API}/promotions-stats.php`),
+    ]);
+
+    if (statsData && typeof statsData.active_codes !== "undefined") {
+      document.getElementById("promo-active-codes").innerText =
+        statsData.active_codes;
+      document.getElementById("promo-total-uses").innerText =
+        statsData.total_uses;
+      document.getElementById("promo-revenue").innerHTML = formatPrice(
+        statsData.revenue_from_promos,
+      );
+    } else {
+      console.warn("Promotions stats failed:", statsData);
+    }
+
     const body = document.getElementById("promotions-body");
     if (!body) return;
-    if (!data.success || !data.promotions.length) {
+    if (!listData.success || !listData.promotions.length) {
       body.innerHTML = `<tr><td colspan="8" class="text-muted">No promotions found.</td></tr>`;
     } else {
-      body.innerHTML = data.promotions
+      body.innerHTML = listData.promotions
         .map((p) => {
           const isExpired =
             p.expiry_date && new Date(p.expiry_date) < new Date();
@@ -691,7 +877,27 @@ async function renderPromotions() {
             p.discount_type === "percent"
               ? `${p.discount_value}% off`
               : `₱${p.discount_value} off`;
-          return `<tr><td><span style="font-weight:600">${p.code}</span></td><td>${p.discount_type === "percent" ? "Percentage" : "Fixed"}</td><td>${discount}</td><td>${p.min_order > 0 ? `Min. spend ₱${Number(p.min_order).toLocaleString()}` : "No minimum"}</td><td>${p.usage_limit ? `${p.usage_count} / ${p.usage_limit}` : `${p.usage_count} / —`}</td><td>${p.expiry_date ? new Date(p.expiry_date).toLocaleDateString() : "—"}</td><td>${statusBadge(status)}</td><td>—</td></tr>`;
+          const minOrder =
+            p.min_order > 0
+              ? `Min. spend ₱${Number(p.min_order).toLocaleString()}`
+              : "No minimum";
+          const uses = p.usage_limit
+            ? `${p.usage_count} / ${p.usage_limit}`
+            : `${p.usage_count} / —`;
+          const expiry = p.expiry_date
+            ? new Date(p.expiry_date).toLocaleDateString()
+            : "—";
+          return `
+          <tr>
+            <td><span style="font-weight:600">${p.code}</span></td>
+            <td>${p.discount_type === "percent" ? "Percentage" : "Fixed"}</td>
+            <td>${discount}</td>
+            <td>${minOrder}</td>
+            <td>${uses}</td>
+            <td>${expiry}</td>
+            <td>${statusBadge(status)}</td>
+            <td>—</td>
+           </tr>`;
         })
         .join("");
     }
@@ -702,7 +908,7 @@ async function renderPromotions() {
 
 // ========== INVENTORY ==========
 async function renderInventory() {
-  tableLoading("inventory-body", 6);
+  tableLoading("inventory-body", 7);
   const params = new URLSearchParams({ search: inventorySearch });
   if (inventoryStockFilter) params.set("status", inventoryStockFilter);
   try {
@@ -710,29 +916,96 @@ async function renderInventory() {
     const body = document.getElementById("inventory-body");
     if (!body) return;
     if (!data.success || !data.inventory.length) {
-      body.innerHTML = `<tr><td colspan="6" class="text-muted">No inventory data found.</td></tr>`;
+      body.innerHTML = `</table><td colspan="7" class="text-muted">No inventory data found.</td></tr>`;
     } else {
       body.innerHTML = data.inventory
         .map((item) => {
           const qty = parseInt(item.stock_qty) || 0;
-          const isOut = qty === 0,
-            isLow = qty > 0 && qty <= 5;
+          const isOut = qty === 0;
+          const isLow = qty > 0 && qty <= 5;
           const status = isOut
             ? "Out of Stock"
             : isLow
               ? "Low Stock"
               : "In Stock";
-          return `<tr>
-          <td>—</td>
-          <td><div><div style="font-weight:500">${item.product_name}</div><div class="text-sm text-muted">${item.size || "—"}</div></div></td>
-          <td style="color:${isOut ? "var(--red)" : isLow ? "var(--gold)" : "var(--brown-300)"}">${qty}</td>
-          <td>—</td><td>—</td><td>${statusBadge(status)}</td><td>—</td>
-        </tr>`;
+          return `
+          <tr>
+            <td style="font-weight:500;color:var(--brown-400)">${escapeHtml(item.product_name)}</td>
+            <td>${escapeHtml(item.size || "—")}</td>
+            <td><code style="font-size:12px">${escapeHtml(item.sku || "—")}</code></td>
+            <td>${escapeHtml(item.category || "—")}</td>
+            <td style="color:${isOut ? "var(--red)" : isLow ? "var(--gold)" : "var(--brown-300)"}">${qty}</td>
+            <td>${statusBadge(status)}</td>
+            <td><button class="btn btn-outline btn-sm" onclick="openSizeStockModal(${item.size_id}, '${escapeHtml(item.product_name)}', '${escapeHtml(item.size)}', ${qty})">Update</button></td>
+           </tr>`;
         })
         .join("");
     }
   } catch (err) {
-    tableError("inventory-body", 6);
+    tableError("inventory-body", 7);
+  }
+}
+
+function openSizeStockModal(sizeId, productName, size, currentStock) {
+  let modal = document.getElementById("modal-size-stock");
+  if (!modal) {
+    modal = document.createElement("div");
+    modal.className = "modal-overlay";
+    modal.id = "modal-size-stock";
+    modal.innerHTML = `
+      <div class="modal" style="max-width:360px">
+        <div class="modal-header">
+          <div class="modal-title">Update Stock</div>
+          <button class="btn btn-ghost btn-icon" onclick="closeModal('modal-size-stock')">✕</button>
+        </div>
+        <div class="modal-body">
+          <div class="form-field">
+            <label class="form-label">Product: <strong id="size-stock-product"></strong> (Size <span id="size-stock-size"></span>)</label>
+            <input class="form-input" type="number" id="size-stock-qty" min="0" />
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button class="btn btn-outline" onclick="closeModal('modal-size-stock')">Cancel</button>
+          <button class="btn btn-primary" onclick="saveSizeStock()">Save</button>
+        </div>
+      </div>`;
+    document.body.appendChild(modal);
+    modal.addEventListener("click", (e) => {
+      if (e.target === modal) closeModal("modal-size-stock");
+    });
+  }
+  document.getElementById("size-stock-product").innerText = productName;
+  document.getElementById("size-stock-size").innerText = size;
+  document.getElementById("size-stock-qty").value = currentStock;
+  window._currentSizeId = sizeId;
+  openModal("modal-size-stock");
+}
+
+async function saveSizeStock() {
+  const sizeId = window._currentSizeId;
+  const newQty = parseInt(document.getElementById("size-stock-qty").value, 10);
+  if (isNaN(newQty) || newQty < 0) {
+    toast("Enter a valid quantity.", "error");
+    return;
+  }
+  try {
+    const res = await fetch(`${API}/inventory.php`, {
+      method: "PUT",
+      credentials: "include",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ size_id: sizeId, stock_qty: newQty }),
+    });
+    const data = await res.json();
+    if (data.success) {
+      closeModal("modal-size-stock");
+      renderInventory();
+      renderProductsTable();
+      toast("Stock updated.", "ok");
+    } else {
+      toast(data.error || "Update failed.", "error");
+    }
+  } catch (err) {
+    toast("Network error.", "error");
   }
 }
 function filterInventoryByStatus(status) {
@@ -773,8 +1046,8 @@ async function renderContactMessages() {
               </button>
               ${m.status === "unread" ? `<button class="btn btn-outline btn-sm" onclick="markMessage(${m.message_id},'read')">Mark Read</button>` : ""}
             </div>
-          </td>
-        </tr>
+           </td>
+         </tr>
       `,
         )
         .join("");

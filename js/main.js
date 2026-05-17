@@ -1,7 +1,3 @@
-// ============================================
-// SHARED FUNCTIONS - Used across all pages
-// ============================================
-
 const API_BASE = "/styled";
 // PRODUCTS DATA (must be available for search on all pages)
 const CATEGORIES = {

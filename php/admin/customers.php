@@ -55,6 +55,16 @@ if ($method === 'GET') {
         $customer['order_count']  = (int)   $s['order_count'];
         $customer['total_spent']  = (float) $s['total_spent'];
 
+// Fetch default address
+$addr = $pdo->prepare("
+    SELECT street, city, province, zip_code
+    FROM addresses
+    WHERE user_id = ? AND is_default = 1
+    LIMIT 1
+");
+$addr->execute([$customer['user_id']]);
+$customer['address'] = $addr->fetch();
+
         echo json_encode(['success' => true, 'customer' => $customer]);
         exit;
     }

@@ -610,7 +610,7 @@
             >
               <circle cx="12" cy="12" r="3" />
               <path
-                d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"
+                d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l-.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"
               />
             </svg>
             Settings
@@ -893,8 +893,6 @@
                 </div>
               </div>
             </div>
-
-            <!-- Recent Orders + Top Products + Low Stock -->
             <div class="card mb-20" style="margin-bottom: 20px">
               <div class="card-header">
                 <div class="card-title">Recent Orders</div>
@@ -911,7 +909,7 @@
                 </button>
               </div>
               <div class="table-wrap">
-                <table>
+                <table class="data-table">
                   <thead>
                     <tr>
                       <th>Order</th>
@@ -1085,17 +1083,20 @@
                         padding-top: 12px;
                       "
                     >
+                      <!-- FIXED: Added Subtotal row, fixed duplicate discount -->
                       <div class="metric-row">
                         <span class="text-muted">Subtotal</span
                         ><span id="detail-subtotal"></span>
                       </div>
                       <div class="metric-row">
-                        <span class="text-muted">Shipping</span
-                        ><span>₱150.00</span>
+                        <span class="text-muted">Discount</span
+                        ><span id="detail-discount" style="color: var(--green)"
+                          >—</span
+                        >
                       </div>
                       <div class="metric-row">
-                        <span class="text-muted">Discount</span
-                        ><span style="color: var(--green)">—</span>
+                        <span class="text-muted">Shipping</span
+                        ><span>₱150.00</span>
                       </div>
                       <div
                         class="metric-row"
@@ -1644,7 +1645,6 @@ Shop the Oversized Wool Coat at Styled — timeless luxury fashion for every mom
                 </div>
                 <select class="filter-select">
                   <option value="">All Tags</option>
-                  <option>VIP</option>
                   <option>Repeat Buyer</option>
                   <option>New</option>
                 </select>
@@ -1740,10 +1740,6 @@ Shop the Oversized Wool Coat at Styled — timeless luxury fashion for every mom
                           bea.santiago@gmail.com
                         </div>
                       </div>
-                      <div style="margin-left: auto; display: flex; gap: 6px">
-                        <span class="badge badge-vip">VIP</span>
-                        <button class="btn btn-outline btn-sm">Add Tag</button>
-                      </div>
                     </div>
                     <div class="form-field">
                       <label class="form-label">Internal Notes</label>
@@ -1806,6 +1802,7 @@ Shop the Oversized Wool Coat at Styled — timeless luxury fashion for every mom
                   <div class="card">
                     <div class="card-title mb-16">Shipping Address</div>
                     <div
+                      id="customer-shipping-address"
                       style="
                         font-size: 13px;
                         color: var(--brown-300);
@@ -1932,10 +1929,7 @@ Shop the Oversized Wool Coat at Styled — timeless luxury fashion for every mom
                 <div class="card-title mb-16">Top Products</div>
                 <div id="analytics-top-products"></div>
               </div>
-              <div class="card">
-                <div class="card-title mb-16">Traffic Sources</div>
-                <div id="analytics-traffic"></div>
-              </div>
+
               <div class="card">
                 <div class="card-title mb-16">Customer Type</div>
                 <div
@@ -1978,15 +1972,18 @@ Shop the Oversized Wool Coat at Styled — timeless luxury fashion for every mom
             <div class="promo-stats">
               <div class="stat-card">
                 <div class="stat-label">Active Codes</div>
-                <div class="stat-value">5</div>
+                <div class="stat-value" id="promo-active-codes">5</div>
+                <!-- add id -->
               </div>
               <div class="stat-card">
                 <div class="stat-label">Total Uses</div>
-                <div class="stat-value">342</div>
+                <div class="stat-value" id="promo-total-uses">342</div>
+                <!-- add id -->
               </div>
               <div class="stat-card">
                 <div class="stat-label">Revenue from Promos</div>
-                <div class="stat-value">₱84,200</div>
+                <div class="stat-value" id="promo-revenue">₱84,200</div>
+                <!-- add id -->
               </div>
             </div>
             <div class="filter-bar">
@@ -2550,6 +2547,6 @@ Shop the Oversized Wool Coat at Styled — timeless luxury fashion for every mom
     <!-- /app-shell -->
 
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
-    <script src="js/admin.js"></script>
+    <script src="js/admin.js?v=2"></script>
   </body>
 </html>
