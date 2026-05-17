@@ -20,11 +20,12 @@ if ($method === 'GET') {
     // Single order
     if (!empty($_GET['id'])) {
         $stmt = $pdo->prepare("
-            SELECT o.*,
-                   u.full_name  AS customer_name,
-                   u.email      AS customer_email,
-                   a.street, a.city, a.province, a.zip_code
-            FROM orders o
+SELECT o.*,
+           o.grand_total AS total_amount,  
+           u.full_name  AS customer_name,
+           u.email      AS customer_email,
+           a.street, a.city, a.province, a.zip_code
+    FROM orders o
             LEFT JOIN users     u ON u.user_id    = o.user_id
             LEFT JOIN addresses a ON a.address_id = o.address_id
             WHERE o.order_number = ?

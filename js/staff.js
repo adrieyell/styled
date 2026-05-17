@@ -15,6 +15,7 @@ let contactPage = 1,
   contactStatusFilter = "";
 let viewingCustomerId = null;
 let inventorySearch = "";
+let inventoryStockFilter = "";
 
 const API = "/styled/php/admin";
 const ORDERS_PER_PAGE = 8;
@@ -703,6 +704,7 @@ async function renderPromotions() {
 async function renderInventory() {
   tableLoading("inventory-body", 6);
   const params = new URLSearchParams({ search: inventorySearch });
+  if (inventoryStockFilter) params.set("status", inventoryStockFilter);
   try {
     const data = await fetchJSON(`${API}/inventory.php?${params}`);
     const body = document.getElementById("inventory-body");
@@ -733,8 +735,8 @@ async function renderInventory() {
     tableError("inventory-body", 6);
   }
 }
-function filterInventory(q) {
-  inventorySearch = q;
+function filterInventoryByStatus(status) {
+  inventoryStockFilter = status;
   renderInventory();
 }
 
