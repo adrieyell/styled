@@ -173,8 +173,16 @@ function openOrderDetail(order) {
 
   const paymentEl = document.getElementById("od-payment");
   if (paymentEl) paymentEl.textContent = order.payment || "—";
-  const trackingData = buildTrackingFromStatus(order.status, order.date);
+
+  // Build tracking data from API response, not from status only
+  const trackingData = {
+    steps:
+      order.tracking?.steps || buildFallbackSteps(order.status.toLowerCase()),
+    tracking_number: order.tracking?.tracking_number || null,
+    estimated_delivery: order.tracking?.estimated_delivery || null,
+  };
   renderTrackingStepper(trackingData);
+
   renderOrderItems(order.items || []);
   document.getElementById("od-address").innerHTML = (
     order.shipping?.address || "—"
@@ -253,10 +261,13 @@ function renderTrackingStepper(trackingData) {
   const steps = trackingData.steps || [];
   const trackingNumber = trackingData.tracking_number;
   const estimatedDelivery = trackingData.estimated_delivery;
+
+  // Find active step (last done or active)
   let activeIdx = -1;
   steps.forEach((s, i) => {
     if (s.done || s.active) activeIdx = i;
   });
+
   const stepsHTML = steps
     .map((step, i) => {
       const isDone = i < activeIdx;
@@ -269,6 +280,7 @@ function renderTrackingStepper(trackingData) {
       return `<div class="${cls}"><div class="ts-dot"><svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg></div><p class="ts-label">${step.label}</p><p class="ts-date">${step.date !== "—" ? step.date : ""}</p></div>`;
     })
     .join("");
+
   let metaHTML = "";
   if (trackingNumber || estimatedDelivery) {
     metaHTML = `<div class="ts-meta-bar">${trackingNumber ? `<span class="ts-meta-item"><span class="ts-meta-label">Tracking #</span><strong>${trackingNumber}</strong></span>` : ""}${estimatedDelivery ? `<span class="ts-meta-item"><span class="ts-meta-label">Est. Delivery</span><strong>${estimatedDelivery}</strong></span>` : ""}</div>`;

@@ -1,11 +1,4 @@
 <?php
-// ============================================
-// DATABASE CONNECTION — php/db.php
-// ============================================
-// Returns a shared PDO instance (singleton pattern).
-// Usage in any other PHP file:
-//   require_once __DIR__ . '/../php/db.php';  (adjust depth as needed)
-//   $pdo = getPDO();
 
 define('DB_HOST', 'localhost');
 define('DB_NAME', 'styled_db');

@@ -22,6 +22,33 @@ const ORDERS_PER_PAGE = 8;
 const PRODUCTS_PER_PAGE = 8;
 const CUSTOMERS_PER_PAGE = 8;
 
+// ── Button loading state helper ─────────────────────────────────────
+function setButtonLoading(btn, isLoading, originalText = null) {
+  if (!btn) return;
+  if (isLoading) {
+    btn._originalText = btn.innerHTML;
+    btn.disabled = true;
+    btn.style.opacity = "0.7";
+    btn.innerHTML = `
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="animation: spin 0.7s linear infinite; margin-right: 6px;">
+        <circle cx="12" cy="12" r="10" stroke-dasharray="32" stroke-dashoffset="8"/>
+      </svg>
+      Updating...
+    `;
+    // Inject keyframes if not present
+    if (!document.querySelector("#loading-spinner-style")) {
+      const style = document.createElement("style");
+      style.id = "loading-spinner-style";
+      style.textContent =
+        "@keyframes spin { to { transform: rotate(360deg); } }";
+      document.head.appendChild(style);
+    }
+  } else {
+    btn.disabled = false;
+    btn.style.opacity = "";
+    if (btn._originalText) btn.innerHTML = btn._originalText;
+  }
+}
 // ========== HELPER FUNCTIONS ==========
 function escapeHtml(str) {
   if (!str) return "";
@@ -477,6 +504,12 @@ async function updateOrderStatus(orderId) {
   const status = document.getElementById("status-select")?.value;
   const tracking = document.getElementById("tracking-input")?.value || "";
   if (!status) return;
+
+  const updateBtn = document.querySelector(
+    "#orders-detail-view .btn-primary.btn-sm",
+  );
+  if (updateBtn) setButtonLoading(updateBtn, true);
+
   try {
     const res = await fetch(`${API}/orders.php`, {
       method: "PUT",
@@ -502,6 +535,8 @@ async function updateOrderStatus(orderId) {
     }
   } catch (err) {
     toast("Network error.", "error");
+  } finally {
+    if (updateBtn) setButtonLoading(updateBtn, false);
   }
 }
 
@@ -636,6 +671,12 @@ async function savePerSizeStock() {
       updates.push({ size_id: sizeId, stock_qty: newQty });
   });
   if (!updates.length) return;
+
+  const saveBtn = document.querySelector(
+    "#modal-stock-edit-per-size .btn-primary",
+  );
+  if (saveBtn) setButtonLoading(saveBtn, true);
+
   try {
     await Promise.all(
       updates.map((u) =>
@@ -653,6 +694,8 @@ async function savePerSizeStock() {
     toast("Stock updated.", "ok");
   } catch (err) {
     toast("Network error.", "error");
+  } finally {
+    if (saveBtn) setButtonLoading(saveBtn, false);
   }
 }
 async function saveStock() {
@@ -988,6 +1031,9 @@ async function saveSizeStock() {
     toast("Enter a valid quantity.", "error");
     return;
   }
+  const saveBtn = document.querySelector("#modal-size-stock .btn-primary");
+  if (saveBtn) setButtonLoading(saveBtn, true);
+
   try {
     const res = await fetch(`${API}/inventory.php`, {
       method: "PUT",
@@ -1006,6 +1052,8 @@ async function saveSizeStock() {
     }
   } catch (err) {
     toast("Network error.", "error");
+  } finally {
+    if (saveBtn) setButtonLoading(saveBtn, false);
   }
 }
 function filterInventoryByStatus(status) {

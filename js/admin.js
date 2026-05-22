@@ -122,6 +122,34 @@ document.querySelectorAll(".modal-overlay").forEach((overlay) => {
   });
 });
 
+// ── Button loading state helper ─────────────────────────────────────
+function setButtonLoading(btn, isLoading, originalText = null) {
+  if (!btn) return;
+  if (isLoading) {
+    btn._originalText = btn.innerHTML;
+    btn.disabled = true;
+    btn.style.opacity = "0.7";
+    btn.innerHTML = `
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="animation: spin 0.7s linear infinite; margin-right: 6px;">
+        <circle cx="12" cy="12" r="10" stroke-dasharray="32" stroke-dashoffset="8"/>
+      </svg>
+      Updating...
+    `;
+    // Inject keyframes if not present
+    if (!document.querySelector("#loading-spinner-style")) {
+      const style = document.createElement("style");
+      style.id = "loading-spinner-style";
+      style.textContent =
+        "@keyframes spin { to { transform: rotate(360deg); } }";
+      document.head.appendChild(style);
+    }
+  } else {
+    btn.disabled = false;
+    btn.style.opacity = "";
+    if (btn._originalText) btn.innerHTML = btn._originalText;
+  }
+}
+
 /* ─────────────────────────────────────────────
    HELPERS
 ───────────────────────────────────────────── */
@@ -551,6 +579,14 @@ async function updateOrderStatus(orderId) {
   const tracking = document.getElementById("tracking-input")?.value || "";
   if (!status) return;
 
+  // Find the Update button
+  const updateBtn = document.querySelector(
+    "#orders-detail-view .btn-primary.btn-sm",
+  );
+  if (!updateBtn) return;
+
+  setButtonLoading(updateBtn, true);
+
   try {
     const res = await fetch(`${API}/orders.php`, {
       method: "PUT",
@@ -564,7 +600,6 @@ async function updateOrderStatus(orderId) {
     });
     const data = await res.json();
     if (data.success) {
-      // Update the status badge in the detail view
       const el = document.getElementById("detail-status-badge");
       if (el)
         el.outerHTML = `<span id="detail-status-badge">${statusBadge(status)}</span>`;
@@ -575,6 +610,8 @@ async function updateOrderStatus(orderId) {
   } catch (err) {
     console.error("[admin]", err);
     showToast("Network error.", "error");
+  } finally {
+    setButtonLoading(updateBtn, false);
   }
 }
 
@@ -1300,11 +1337,15 @@ function filterInventoryByStatus(s) {
 }
 
 async function updateStock(sizeId) {
-  const qty = parseInt(document.getElementById(`inv-qty-${sizeId}`)?.value, 10);
+  const input = document.getElementById(`inv-qty-${sizeId}`);
+  const qty = parseInt(input?.value, 10);
   if (isNaN(qty) || qty < 0) {
     showToast("Enter a valid quantity.", "error");
     return;
   }
+  const updateBtn = input?.closest("tr")?.querySelector(".btn-outline.btn-sm");
+  if (updateBtn) setButtonLoading(updateBtn, true);
+
   try {
     const res = await fetch(`${API}/inventory.php`, {
       method: "PUT",
@@ -1320,6 +1361,8 @@ async function updateStock(sizeId) {
   } catch (err) {
     console.error("[admin]", err);
     showToast("Network error.", "error");
+  } finally {
+    if (updateBtn) setButtonLoading(updateBtn, false);
   }
 }
 
@@ -2128,6 +2171,9 @@ async function saveVariants() {
     showToast("Save product first.", "error");
     return;
   }
+  const saveBtn = document.querySelector("#tab-variants .btn-primary.btn-sm");
+  if (saveBtn) setButtonLoading(saveBtn, true);
+
   const rows = document.querySelectorAll("#variants-table-body tr");
   const variants = [];
   rows.forEach((row) => {
@@ -2142,6 +2188,7 @@ async function saveVariants() {
       });
     }
   });
+
   try {
     const res = await fetch(`${API}/products.php?id=${editingProductId}`, {
       method: "PUT",
@@ -2152,11 +2199,13 @@ async function saveVariants() {
     const data = await res.json();
     if (data.success) {
       showToast("Variants saved.", "ok");
-      currentVariants = variants; // Keep local state in sync
-      renderProductsTable(); // refresh stock display in product list
+      currentVariants = variants;
+      renderProductsTable();
     } else showToast(data.error || "Failed", "error");
   } catch (err) {
     showToast("Network error", "error");
+  } finally {
+    if (saveBtn) setButtonLoading(saveBtn, false);
   }
 }
 

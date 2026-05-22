@@ -52,7 +52,7 @@
   --shadow-1: 0 1px 3px rgba(28, 17, 9, 0.05);
   --shadow-2: 0 2px 12px rgba(28, 17, 9, 0.07);
   --shadow-3: 0 8px 32px rgba(28, 17, 9, 0.12);
-  --ease: 140ms ease;
+  --ease: 220ms ease;
 }
 
 html,
@@ -985,14 +985,23 @@ tbody td {
   background: rgba(28, 17, 9, 0.5);
   backdrop-filter: blur(3px);
   z-index: 100;
-  display: none;
+  display: flex;
   align-items: center;
   justify-content: center;
   padding: 24px;
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  transition:
+    opacity var(--ease),
+    visibility 0s linear 220ms;
 }
 
 .modal-overlay.open {
-  display: flex;
+  opacity: 1;
+  visibility: visible;
+  pointer-events: auto;
+  transition-delay: 0s;
 }
 
 .modal {
@@ -1004,6 +1013,12 @@ tbody td {
   overflow-y: auto;
   box-shadow: var(--shadow-3);
   border: 1px solid var(--border-color);
+  transform: translateY(18px) scale(0.96);
+  transition: transform 260ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.modal-overlay.open .modal {
+  transform: translateY(0) scale(1);
 }
 
 .modal-header {

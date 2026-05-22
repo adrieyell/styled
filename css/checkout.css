@@ -99,9 +99,35 @@
 }
 
 .order-table tbody tr {
-  border-bottom: 1px solid var(--border);
+  transition:
+    opacity 0.22s ease,
+    transform 0.22s ease,
+    background 0.2s ease;
 }
 
+.order-table tbody tr.removing {
+  opacity: 0;
+  transform: translateX(12px);
+}
+#grand-total-val {
+  display: inline-block;
+}
+#grand-total-val.total-pulse {
+  animation: totalPulse 0.45s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes totalPulse {
+  0% {
+    transform: scale(1);
+  }
+  45% {
+    transform: scale(1.08);
+    color: var(--brown-mid);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
 .order-table tbody td {
   padding: 16px 16px 16px 0;
   vertical-align: middle;

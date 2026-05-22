@@ -117,7 +117,7 @@ SELECT o.*,
     exit;
 }
 
-// ── PUT: Update status / tracking ─────────────────────────────────────────────
+// ── PUT: Update status (tracking is ignored, no email for tracking) ─────────────
 if ($method === 'PUT') {
     $body = json_decode(file_get_contents('php://input'), true) ?? [];
 
@@ -137,18 +137,17 @@ if ($method === 'PUT') {
         exit;
     }
 
-    // ── Fetch the current order row ───────────────────────────────────────────
+    // Fetch the current order
     $current = $pdo->prepare('SELECT order_id, status, tracking_number FROM orders WHERE order_id = ?');
     $current->execute([$orderId]);
     $currentOrder = $current->fetch(PDO::FETCH_ASSOC);
-
     if (!$currentOrder) {
         http_response_code(404);
         echo json_encode(['success' => false, 'error' => 'Order not found.']);
         exit;
     }
 
-    // ── Build UPDATE fields ───────────────────────────────────────────────────
+    $oldStatus = $currentOrder['status'];
     $fields = [];
     $params = [];
 
@@ -157,17 +156,9 @@ if ($method === 'PUT') {
         $params[] = $newStatus;
     }
 
-    $trackingNumber = null;
-    if (array_key_exists('tracking_number', $body)) {
-        $trackingNumber = trim($body['tracking_number'] ?? '');
-        $fields[]       = 'tracking_number = ?';
-        $params[]       = $trackingNumber ?: null;
-    }
-
-    if (array_key_exists('estimated_delivery', $body)) {
-        $fields[] = 'estimated_delivery = ?';
-        $params[] = $body['estimated_delivery'] ?: null;
-    }
+    // Even if tracking_number is sent, we ignore it (do not update the database)
+    // You can optionally remove the tracking_number field from the frontend entirely,
+    // but here we simply skip updating it.
 
     if (empty($fields)) {
         http_response_code(400);
@@ -176,18 +167,11 @@ if ($method === 'PUT') {
     }
 
     $params[] = $orderId;
-    $pdo->prepare(
-        'UPDATE orders SET ' . implode(', ', $fields) . ' WHERE order_id = ?'
-    )->execute($params);
+    $pdo->prepare('UPDATE orders SET ' . implode(', ', $fields) . ' WHERE order_id = ?')->execute($params);
 
-    // ── Store old status for email (before any changes) ──────────────────────
-    $oldStatus = $currentOrder['status'];
-
-    // ── Insert into order_timeline when status changes ────────────────────────
+    // Insert timeline for status change
     $statusChanged = ($newStatus !== null && $newStatus !== strtolower($oldStatus));
-
     if ($statusChanged) {
-        // Map DB status to the canonical stepper label used on the front-end
         $statusToLabel = [
             'pending'    => 'Order Placed',
             'processing' => 'Processing',
@@ -195,50 +179,17 @@ if ($method === 'PUT') {
             'delivered'  => 'Delivered',
             'cancelled'  => 'Cancelled',
         ];
-
         $stepLabel = $statusToLabel[$newStatus] ?? ucfirst($newStatus);
-        $note      = $body['note'] ?? null;
-
+        $note = $body['note'] ?? null;
         $pdo->prepare(
             'INSERT INTO order_timeline (order_id, step_label, occurred_at, note)
              VALUES (?, ?, NOW(), ?)'
         )->execute([$orderId, $stepLabel, $note]);
-
-        // If the order is now "shipped" and the admin explicitly passes out_for_delivery = true,
-        // also record an "Out for Delivery" step.
-        if ($newStatus === 'shipped' && !empty($body['out_for_delivery'])) {
-            $pdo->prepare(
-                'INSERT INTO order_timeline (order_id, step_label, occurred_at, note)
-                 VALUES (?, ?, NOW(), ?)'
-            )->execute([$orderId, 'Out for Delivery', null]);
-        }
     }
 
-    // ── If a tracking number is being saved for the first time, also ensure
-    //    the "Shipped" timeline step exists (in case admin skipped that PUT). ──
-    $trackingAdded = ($trackingNumber && empty($currentOrder['tracking_number']));
-    if ($trackingAdded) {
-        // Only insert if "Shipped" row not already present
-        $exists = $pdo->prepare(
-            "SELECT 1 FROM order_timeline
-             WHERE order_id = ? AND step_label = 'Shipped'
-             LIMIT 1"
-        );
-        $exists->execute([$orderId]);
-
-        if (!$exists->fetchColumn()) {
-            $pdo->prepare(
-                "INSERT INTO order_timeline (order_id, step_label, occurred_at, note)
-                 VALUES (?, 'Shipped', NOW(), ?)"
-            )->execute([$orderId, 'Tracking number assigned: ' . $trackingNumber]);
-        }
-    }
-
-    // ── SEND EMAIL NOTIFICATION if status changed OR tracking number added ────
-    if ($statusChanged || $trackingAdded) {
-        // Use the new status (or current status if only tracking added)
-        $emailStatus = $newStatus ?? $currentOrder['status'];
-        send_order_status_email($pdo, $orderId, $oldStatus, $emailStatus, $trackingNumber);
+    // Send email only when status changes (tracking updates do NOT trigger email)
+    if ($statusChanged) {
+        send_order_status_email($pdo, $orderId, $oldStatus, $newStatus, null);
     }
 
     echo json_encode(['success' => true]);

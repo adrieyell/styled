@@ -582,45 +582,6 @@
         <!-- PAGE BODY WRAPPER (matches admin layout) -->
         <div class="page-body">
           <div class="page active" id="page-dashboard">
-            <!-- Alert -->
-            <div class="alert alert-warning" style="margin-bottom: 20px">
-              <svg
-                width="16"
-                height="16"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                stroke-width="2"
-                style="flex-shrink: 0; margin-top: 1px"
-              >
-                <circle cx="12" cy="12" r="10" />
-                <line x1="12" y1="8" x2="12" y2="12" />
-                <line x1="12" y1="16" x2="12.01" y2="16" />
-              </svg>
-              <span
-                ><strong>5 orders</strong> need fulfillment.
-                <button
-                  onclick="
-                    navigate(
-                      'orders',
-                      document.querySelector('[onclick*=orders]'),
-                    )
-                  "
-                  style="
-                    background: none;
-                    border: none;
-                    cursor: pointer;
-                    color: var(--gold);
-                    font-weight: 500;
-                    font-size: 13.5px;
-                    padding: 0;
-                  "
-                >
-                  View orders →
-                </button></span
-              >
-            </div>
-
             <!-- Stats (static for staff) -->
             <div class="stats-grid">
               <div class="stat-card">
@@ -997,34 +958,6 @@
                       >
                         <span>Total</span><span id="detail-total-price"></span>
                       </div>
-                    </div>
-                  </div>
-                  <div class="card">
-                    <div class="card-title mb-16">Fulfillment</div>
-                    <div class="form-field mb-16">
-                      <label class="form-label">Tracking Number</label>
-                      <div style="display: flex; gap: 8px">
-                        <input
-                          class="form-input"
-                          type="text"
-                          placeholder="Enter tracking number"
-                          id="tracking-input"
-                        /><button
-                          class="btn btn-primary"
-                          style="flex-shrink: 0"
-                          onclick="updateOrderStatusFromDetail()"
-                        >
-                          Update
-                        </button>
-                      </div>
-                    </div>
-                    <div class="form-field">
-                      <label class="form-label">Internal Notes</label
-                      ><textarea
-                        class="form-textarea"
-                        placeholder="Add internal note…"
-                        rows="2"
-                      ></textarea>
                     </div>
                   </div>
                 </div>

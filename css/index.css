@@ -131,11 +131,15 @@ body {
   align-items: center;
   gap: 14px;
   cursor: pointer;
-  transition: transform 0.2s;
+  transition:
+    transform 0.2s ease,
+    filter 0.2s ease;
 }
 .category-item:hover {
   transform: translateY(-4px);
+  filter: drop-shadow(0 10px 18px rgba(44, 31, 20, 0.12));
 }
+
 .category-item.selected .cat-circle {
   border-color: var(--brown-dark);
 }
@@ -145,7 +149,9 @@ body {
   border-radius: 50%;
   overflow: hidden;
   border: 2px solid transparent;
-  transition: border-color 0.2s;
+  transition:
+    border-color 0.2s ease,
+    box-shadow 0.2s ease;
 }
 .cat-circle img {
   width: 100%;
@@ -282,27 +288,33 @@ body {
 }
 
 .price-dropdown {
-  /* CSS DROPDOWN: hidden by default */
-  display: none;
-  position: absolute; /* CSS Z-INDEX: positioned out of normal flow */
+  position: absolute;
   top: calc(100% + 6px);
   right: 0;
   background: var(--warm-white);
   border: 1px solid var(--border);
   padding: 20px 20px 16px;
   min-width: 220px;
-  z-index: var(
-    --z-dropdown
-  ); /* CSS Z-INDEX: panel floats above product grid cards */
+  z-index: var(--z-dropdown);
   box-shadow: 0 8px 24px rgba(44, 31, 20, 0.1);
-
-  /* CSS OVERFLOW: if panel is taller than viewport, scroll rather than clip */
   max-height: 360px;
   overflow-y: auto;
+  opacity: 0;
+  visibility: hidden;
+  transform: translateY(-10px);
+  pointer-events: none;
+  transition:
+    opacity 0.24s ease,
+    visibility 0s linear 0.24s,
+    transform 0.24s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 .price-filter.open .price-dropdown {
-  display: block; /* CSS DROPDOWN: revealed when parent has .open class */
+  opacity: 1;
+  visibility: visible;
+  transform: translateY(0);
+  pointer-events: auto;
+  transition-delay: 0s;
 }
 
 .price-dropdown-label {

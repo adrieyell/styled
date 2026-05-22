@@ -11,8 +11,9 @@ use PHPMailer\PHPMailer\Exception;
 
 /**
  * Send order status update email to customer
+ * @param bool $isTrackingOnly If true, the email subject/body is about tracking number change
  */
-function send_order_status_email($pdo, $orderId, $oldStatus, $newStatus, $trackingNumber = null)
+function send_order_status_email($pdo, $orderId, $oldStatus, $newStatus, $trackingNumber = null, $isTrackingOnly = false)
 {
     // Fetch order details
     $stmt = $pdo->prepare("
@@ -42,12 +43,12 @@ function send_order_status_email($pdo, $orderId, $oldStatus, $newStatus, $tracki
     $customerName = explode(' ', $order['full_name'])[0];
     $email = $order['email'];
     
-    // Calculate subtotal from items
+    // Calculate subtotal
     $subtotal = 0;
     foreach ($items as $item) {
         $subtotal += $item['unit_price'] * $item['qty'];
     }
-    $shippingFee = $order['grand_total'] - $subtotal;
+    $shippingFee = max(0, $order['grand_total'] - $subtotal);
     $shippingFeeDisplay = $shippingFee == 0 ? 'FREE' : '₱' . number_format($shippingFee, 2);
     $grandDisplay = '₱' . number_format($order['grand_total'], 2);
     $subtotalDisplay = '₱' . number_format($subtotal, 2);
@@ -70,11 +71,21 @@ function send_order_status_email($pdo, $orderId, $oldStatus, $newStatus, $tracki
         </tr>";
     }
 
-    $statusText = ucfirst($newStatus);
-    $trackingHtml = $trackingNumber ? "<p style='margin:12px 0 0;'><strong>Tracking Number:</strong> {$trackingNumber}</p>" : '';
+    // Build HTML email based on whether it's a tracking-only update
+    if ($isTrackingOnly) {
+        $subject = "Your Styled order #{$orderNumber} has a new tracking number";
+        $trackingHtml = "<p style='margin:12px 0 0;'><strong>New Tracking Number:</strong> {$trackingNumber}</p>";
+        $intro = "The tracking number for your order <strong>#{$orderNumber}</strong> has been updated.";
+        $statusText = null;
+    } else {
+        $statusText = ucfirst($newStatus);
+        $subject = "Your Styled order #{$orderNumber} has been {$statusText}";
+        $trackingHtml = $trackingNumber ? "<p style='margin:12px 0 0;'><strong>Tracking Number:</strong> {$trackingNumber}</p>" : '';
+        $intro = "Your order <strong>#{$orderNumber}</strong> status has been updated to <strong style='color:#3a6b4a;'>{$statusText}</strong>.";
+    }
+    
     $orderLink = "http://localhost/styled/orders.html";
 
-    // Build HTML email – use double quotes so variables are parsed
     $htmlBody = "
 <!DOCTYPE html>
 <html><head><meta charset='UTF-8'></head>
@@ -84,11 +95,12 @@ function send_order_status_email($pdo, $orderId, $oldStatus, $newStatus, $tracki
         <table width='600' cellpadding='0' cellspacing='0' style='background:#fff;border-radius:8px;overflow:hidden;box-shadow:0 2px 12px rgba(0,0,0,.06);'>
             <tr><td style='background:#2c1f14;padding:32px 40px;text-align:center;'>
                 <h1 style='margin:0;color:#e8ddd4;font-size:28px;font-weight:300;letter-spacing:4px;'>STYLED</h1>
-             </td> </tr>
+              </td>
+            </tr>
             <tr><td style='padding:40px;'>
-                <h2 style='margin:0 0 8px;font-size:22px;font-weight:400;'>Order Status Update</h2>
+                <h2 style='margin:0 0 8px;font-size:22px;font-weight:400;'>Order Update</h2>
                 <p style='margin:0 0 24px;color:#7a6a5a;font-size:14px;'>Hi {$customerName},</p>
-                <p style='margin:0 0 16px;font-size:14px;'>Your order <strong>#{$orderNumber}</strong> status has been updated to <strong style='color:#3a6b4a;'>{$statusText}</strong>.</p>
+                <p style='margin:0 0 16px;font-size:14px;'>{$intro}</p>
                 {$trackingHtml}
                 <div style='background:#faf7f4;border-radius:6px;padding:16px 20px;margin:28px 0;'>
                     <p style='margin:0;font-size:13px;color:#7a6a5a;'>Order #{$orderNumber}</p>
@@ -105,23 +117,32 @@ function send_order_status_email($pdo, $orderId, $oldStatus, $newStatus, $tracki
                 </table>
                 <table width='100%' cellpadding='0' cellspacing='0' style='font-size:13px;margin-bottom:32px;'>
                     <tr><td width='50%' style='vertical-align:top;padding-right:16px;'><p style='margin:0 0 6px;font-weight:500;color:#7a6a5a;text-transform:uppercase;font-size:11px;'>Shipping To</p><p style='margin:0;line-height:1.6;'>{$address}</p></td>
-                    <td width='50%' style='vertical-align:top;'><p style='margin:0 0 6px;font-weight:500;color:#7a6a5a;text-transform:uppercase;font-size:11px;'>Payment Method</p><p style='margin:0;'>{$paymentDisplay}</p></td></tr>
+                    <td width='50%' style='vertical-align:top;'><p style='margin:0 0 6px;font-weight:500;color:#7a6a5a;text-transform:uppercase;font-size:11px;'>Payment Method</p><p style='margin:0;'>{$paymentDisplay}</p></td>
+                </tr>
                 </table>
                 <a href='{$orderLink}' style='display:inline-block;background:#2c1f14;color:#fff;text-decoration:none;padding:14px 32px;border-radius:4px;font-size:13px;letter-spacing:1px;'>View Your Order</a>
-             </td> </tr>
-            <tr><td style='background:#faf7f4;padding:24px 40px;text-align:center;border-top:1px solid #f0ebe5;'>
+              </td>
+            </tr>
+            <td><td style='background:#faf7f4;padding:24px 40px;text-align:center;border-top:1px solid #f0ebe5;'>
                 <p style='margin:0;font-size:12px;color:#a89a8a;'>Questions? Reply to this email or visit our <a href='http://localhost/styled/contact.html' style='color:#2c1f14;'>Help Centre</a>.</p>
                 <p style='margin:8px 0 0;font-size:11px;color:#c4b8ae;'>© Styled Philippines</p>
-             </td> </tr>
+              </td>
+            </tr>
         </table>
-     </td> </tr>
+      </td>
+    </tr>
 </table>
 </body>
 </html>";
 
-    $textBody = "Hi {$customerName},\n\nYour order #{$orderNumber} status has been updated to {$statusText}.\n" .
-                ($trackingNumber ? "Tracking number: {$trackingNumber}\n" : "") .
-                "\nSubtotal: {$subtotalDisplay}\nShipping: {$shippingFeeDisplay}\nTotal: {$grandDisplay}\n\nView your order: {$orderLink}\n\nThank you for shopping at Styled.";
+    $textBody = "Hi {$customerName},\n\n";
+    if ($isTrackingOnly) {
+        $textBody .= "The tracking number for your order #{$orderNumber} has been updated.\nTracking number: {$trackingNumber}\n\n";
+    } else {
+        $textBody .= "Your order #{$orderNumber} status has been updated to {$statusText}.\n" .
+                     ($trackingNumber ? "Tracking number: {$trackingNumber}\n" : "") . "\n";
+    }
+    $textBody .= "Subtotal: {$subtotalDisplay}\nShipping: {$shippingFeeDisplay}\nTotal: {$grandDisplay}\n\nView your order: {$orderLink}\n\nThank you for shopping at Styled.";
 
     $mail = new PHPMailer(true);
     try {
@@ -136,14 +157,14 @@ function send_order_status_email($pdo, $orderId, $oldStatus, $newStatus, $tracki
         $mail->setFrom(SMTP_FROM, SMTP_FROM_NAME);
         $mail->addAddress($email, $order['full_name']);
         $mail->isHTML(true);
-        $mail->Subject = "Your Styled order #{$orderNumber} has been {$statusText}";
+        $mail->Subject = $subject;
         $mail->Body    = $htmlBody;
         $mail->AltBody = $textBody;
 
         $mail->send();
         return true;
     } catch (Exception $e) {
-        error_log("Order status email failed: " . $mail->ErrorInfo);
+        error_log("Order email failed: " . $mail->ErrorInfo);
         return false;
     }
 }

@@ -166,8 +166,16 @@ async function renderCart() {
   document.querySelectorAll(".remove-btn").forEach((btn) => {
     btn.addEventListener("click", async () => {
       const idx = parseInt(btn.dataset.idx);
+      const row = btn.closest("tr");
+
+      btn.disabled = true;
+      row?.classList.add("removing");
+
+      await new Promise((resolve) => setTimeout(resolve, 220));
+
       const cart = await getCart();
       const removed = cart.splice(idx, 1)[0];
+
       await fetch(`${API_BASE}/php/cart.php`, {
         method: "DELETE",
         credentials: "include",
@@ -177,6 +185,7 @@ async function renderCart() {
           size: removed.size || "",
         }),
       });
+
       await getCart();
       renderCart();
     });
@@ -251,7 +260,13 @@ function updateTotals(subtotal) {
     if (discountVal) discountVal.textContent = `−${formatPrice(discount)}`;
   } else if (discountRow) discountRow.remove();
 
-  document.getElementById("grand-total-val").textContent = formatPrice(grand);
+  const grandTotalEl = document.getElementById("grand-total-val");
+  if (grandTotalEl) {
+    grandTotalEl.textContent = formatPrice(grand);
+    grandTotalEl.classList.remove("total-pulse");
+    void grandTotalEl.offsetWidth;
+    grandTotalEl.classList.add("total-pulse");
+  }
 }
 
 async function applyPromo() {
